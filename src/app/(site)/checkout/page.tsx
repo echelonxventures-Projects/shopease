@@ -209,12 +209,21 @@ export default function CheckoutPage() {
     }
   }, [items.length, step, router]);
 
+  // Load Razorpay script safely
   useEffect(() => {
+    if (typeof window === "undefined" || window.Razorpay) return;
+
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
+    script.crossOrigin = "anonymous";
+    script.onerror = () => {
+      toast.error("Payment gateway failed to load. Please refresh and try again.");
+    };
     document.body.appendChild(script);
-    return () => { document.body.removeChild(script); };
+    return () => {
+      try { document.body.removeChild(script); } catch {}
+    };
   }, []);
 
   const handleApplyCode = async () => {
