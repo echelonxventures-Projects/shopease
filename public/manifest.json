@@ -1,0 +1,61 @@
+{
+  "name": "ShopEase - Your Online Shopping Destination",
+  "short_name": "ShopEase",
+  "description": "Shop everything you need with fast delivery and great prices",
+  "start_url": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "categories": ["shopping", "ecommerce"],
+  "dir": "auto",
+  "lang": "en-US",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "platform": "wide_color_gamut",
+      "label": "ShopEase Home"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "My Orders",
+      "url": "/account/orders",
+      "description": "View your order history"
+    },
+    {
+      "name": "Wishlist",
+      "url": "/wishlist",
+      "description": "Browse your saved items"
+    },
+    {
+      "name": "Deals",
+      "url": "/deals",
+      "description": "Today's best deals"
+    },
+    {
+      "name": "Cart",
+      "url": "/cart",
+      "description": "View your shopping cart"
+    }
+  ],
+  "prefer_related_applications": false
+}
