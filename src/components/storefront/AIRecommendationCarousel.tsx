@@ -46,7 +46,11 @@ export function AIRecommendationCarousel({ title, context, limit = 8 }: AIRecomm
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4" role="list">
-        {products.map((product: any) => (
+        {products
+          .filter((product: any, index: number, self: any[]) =>
+            index === self.findIndex((p) => p.id === product.id)
+          )
+          .map((product: any) => (
           <Link key={product.id} href={`/products/${product.slug}`} className="group" role="listitem">
             <div className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
               {product.images?.[0] && (

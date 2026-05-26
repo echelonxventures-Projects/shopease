@@ -9,7 +9,7 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
-export const dynamic = 'force-dynamic';
+
 
 export const metadata: Metadata = {
   title: "ShopEase - Your One-Stop Online Store",

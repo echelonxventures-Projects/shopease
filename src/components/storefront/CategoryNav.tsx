@@ -5,7 +5,9 @@ import Link from "next/link";
 export function CategoryNav({ categories }: { categories: any[] }) {
   return (
     <div className="flex gap-4 overflow-x-auto pb-2">
-      {categories.map((cat) => (
+      {categories
+        .filter((cat, index, self) => index === self.findIndex((c) => c.id === cat.id))
+        .map((cat) => (
         <Link
           key={cat.id}
           href={`/category/${cat.slug}`}

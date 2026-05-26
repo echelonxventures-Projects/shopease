@@ -11,6 +11,7 @@ interface Region {
   name: string;
   currency: string;
   currencySymbol: string;
+  taxInclusive?: boolean;
 }
 
 export function RegionSelector() {
@@ -38,7 +39,7 @@ export function RegionSelector() {
           {regions.map((r) => (
             <button
               key={r.id}
-              onClick={() => { setRegion(r.id, r.currency, r.currencySymbol); setOpen(false); }}
+              onClick={() => { setRegion(r.id, r.currency, r.currencySymbol, r.taxInclusive); setOpen(false); }}
               className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
                 regionId === r.id ? "bg-blue-50 text-blue-600 font-semibold" : ""
               }`}

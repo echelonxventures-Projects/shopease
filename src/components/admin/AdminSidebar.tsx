@@ -28,6 +28,7 @@ export function AdminSidebar() {
     { label: "Payment Gateways", href: "/admin/payments", icon: "💳" },
     { label: "Wallets", href: "/admin/wallets", icon: "👛" },
     { label: "Regions", href: "/admin/regions", icon: "🌍" },
+    { label: "Sites", href: "/admin/sites", icon: "🌐" },
     { label: "Locations", href: "/admin/locations", icon: "📍" },
     { label: "Banners", href: "/admin/banners", icon: "🖼️" },
     { label: "Translations", href: "/admin/translations", icon: "🌐" },

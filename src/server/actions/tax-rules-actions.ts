@@ -2,15 +2,29 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 
+const toNum = (v: any) => (v != null && typeof v === "object" && "toNumber" in v && typeof v.toNumber === "function") ? v.toNumber() : v;
+
+function serializeTaxRule(rule: any) {
+  return {
+    ...rule,
+    cgstRate: toNum(rule.cgstRate),
+    sgstRate: toNum(rule.sgstRate),
+    igstRate: toNum(rule.igstRate),
+    totalRate: toNum(rule.totalRate),
+  };
+}
+
 export async function getStateTaxRules(country?: string, state?: string) {
   const where: any = {};
   if (country) where.country = country;
   if (state) where.state = state;
 
-  return prisma.stateTaxRule.findMany({
+  const rules = await prisma.stateTaxRule.findMany({
     where,
     orderBy: [{ country: "asc" }, { state: "asc" }],
   });
+
+  return rules.map(serializeTaxRule);
 }
 
 export async function createStateTaxRule(data: {
@@ -28,7 +42,8 @@ export async function createStateTaxRule(data: {
   const session = await getSession();
   if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
 
-  return prisma.stateTaxRule.create({ data });
+  const rule = await prisma.stateTaxRule.create({ data });
+  return serializeTaxRule(rule);
 }
 
 export async function updateStateTaxRule(id: string, data: Partial<{
@@ -46,7 +61,8 @@ export async function updateStateTaxRule(id: string, data: Partial<{
   const session = await getSession();
   if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
 
-  return prisma.stateTaxRule.update({ where: { id }, data });
+  const rule = await prisma.stateTaxRule.update({ where: { id }, data });
+  return serializeTaxRule(rule);
 }
 
 export async function calculateBusinessTax(data: {

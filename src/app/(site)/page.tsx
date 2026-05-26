@@ -12,6 +12,8 @@ import { PersonalizedCarousel } from "@/components/storefront/PersonalizedCarous
 import { RelatedViewedCarousel } from "@/components/storefront/RelatedViewedCarousel";
 import { RecentViewedCarousel } from "@/components/storefront/RecentViewedCarousel";
 
+export const revalidate = 60;
+
 export default async function HomePage() {
   const locale = await getLocaleCookie();
   const [featuredProducts, categories, banners, brands] = await Promise.all([
@@ -54,7 +56,11 @@ export default async function HomePage() {
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {serializedFeatured.map((product: any) => {
+            {serializedFeatured
+              .filter((product: any, index: number, self: any[]) =>
+                index === self.findIndex((p) => p.id === product.id)
+              )
+              .map((product: any) => {
               const price = Number(product.price);
               const estimate = calculateDeliveryEstimate(2, 5, price, 500, 40);
               return (
@@ -83,7 +89,11 @@ export default async function HomePage() {
             </Link>
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
-            {serializedBrands.slice(0, 8).map((brand: any) => (
+            {serializedBrands
+              .filter((brand: any, index: number, self: any[]) =>
+                index === self.findIndex((b) => b.id === brand.id)
+              )
+              .slice(0, 8).map((brand: any) => (
               <Link
                 key={brand.id}
                 href={`/brands/${brand.slug}`}
@@ -106,7 +116,9 @@ export default async function HomePage() {
       <section className="max-w-7xl mx-auto px-4 py-8 border-t">
         <h2 className="text-2xl font-bold mb-6">Shop by Category</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {serializedCategories.map((cat) => (
+          {serializedCategories
+              .filter((cat, index, self) => index === self.findIndex((c) => c.id === cat.id))
+              .map((cat) => (
             <Link
               key={cat.id}
               href={`/category/${cat.slug}`}

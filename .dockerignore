@@ -1,0 +1,17 @@
+node_modules
+.next
+.git
+.gitignore
+.env
+.env.local
+*.md
+prisma/*.db
+prisma/*.db-journal
+src/tests
+coverage
+playwright-report
+.vscode
+.idea
+*.log
+DS_Store
+.github

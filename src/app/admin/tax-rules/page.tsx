@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getStateTaxRules, updateStateTaxRule, seedDefaultTaxRules } from "@/server/actions/tax-rules-actions";
+import { syncTaxRates, getTaxSyncStatus, getAvailableProviders } from "@/server/actions/tax-sync-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Database, Globe, Plus, Edit } from "lucide-react";
+import { Database, Globe, Plus, Edit, RefreshCw, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 const TAX_TYPES = ["GST", "CGST", "SGST", "IGST", "VAT", "SALES_TAX", "CST"];
@@ -32,9 +33,19 @@ export default function AdminTaxRulesPage() {
   const [filter, setFilter] = useState({ country: "", state: "" });
   const [editRule, setEditRule] = useState<any>(null);
   const [editForm, setEditForm] = useState({ totalRate: "", cgstRate: "", sgstRate: "", igstRate: "", notes: "" });
+  const [syncStatus, setSyncStatus] = useState<any[]>([]);
+  const [providers, setProviders] = useState<any[]>([]);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
-    getStateTaxRules().then(setRules).catch(() => {}).finally(() => setLoading(false));
+    Promise.all([getStateTaxRules(), getTaxSyncStatus(), getAvailableProviders()])
+      .then(([r, s, p]) => {
+        setRules(r);
+        setSyncStatus(s);
+        setProviders(p);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const filtered = rules.filter((r) => {
@@ -51,6 +62,25 @@ export default function AdminTaxRulesPage() {
       getStateTaxRules().then(setRules).catch(() => {});
     } catch {
       toast.error("Seed failed");
+    }
+  }
+
+  async function handleSync(countryCode?: string) {
+    setSyncing(true);
+    try {
+      const result = await syncTaxRates(countryCode);
+      const successes = result.results.filter((r: any) => r.status === "SUCCESS");
+      const failures = result.results.filter((r: any) => r.status === "FAILED");
+      successes.forEach((r: any) => toast.success(`${r.countryCode}: synced ${r.rulesCount} rules`));
+      failures.forEach((r: any) => toast.error(`${r.countryCode}: ${r.error}`));
+      if (failures.length === 0) toast.success("Tax sync completed");
+      Promise.all([getStateTaxRules(), getTaxSyncStatus()])
+        .then(([r, s]) => { setRules(r); setSyncStatus(s); })
+        .catch(() => {});
+    } catch (err: any) {
+      toast.error(err.message || "Sync failed");
+    } finally {
+      setSyncing(false);
     }
   }
 
@@ -94,6 +124,10 @@ export default function AdminTaxRulesPage() {
           <Button variant="outline" onClick={handleSeed}>
             <Database className="w-4 h-4 mr-2" /> Seed Defaults
           </Button>
+          <Button onClick={() => handleSync()} disabled={syncing}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Syncing..." : "Sync Now"}
+          </Button>
         </div>
       </div>
 
@@ -107,6 +141,58 @@ export default function AdminTaxRulesPage() {
         </Select>
         <Input value={filter.state} onChange={(e) => setFilter((f) => ({ ...f, state: e.target.value }))} placeholder="Filter by state code (MH, CA, etc.)" className="w-48" />
       </div>
+
+      {/* Sync Status */}
+      {(syncStatus.length > 0 || providers.length > 0) && (
+        <Card className="mb-6">
+          <CardHeader><CardTitle className="text-base flex items-center gap-2"><RefreshCw className="w-4 h-4" /> Sync Status</CardTitle></CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Country</TableHead>
+                  <TableHead>Provider</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Rules</TableHead>
+                  <TableHead>Last Sync</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {providers.map((p) => {
+                  const s = syncStatus.find((ss: any) => ss.countryCode === p.countryCode);
+                  const isStale = s?.lastSyncAt && (Date.now() - new Date(s.lastSyncAt).getTime()) > 7 * 24 * 60 * 60 * 1000;
+                  return (
+                    <TableRow key={p.countryCode}>
+                      <TableCell className="font-medium">{p.countryCode}</TableCell>
+                      <TableCell className="text-sm text-gray-500">{p.name}</TableCell>
+                      <TableCell>
+                        {!s || !s.lastSyncAt ? (
+                          <span className="text-gray-400">Never synced</span>
+                        ) : s.lastStatus === "SUCCESS" ? (
+                          <span className="flex items-center gap-1 text-green-700"><CheckCircle className="w-4 h-4" /> Synced</span>
+                        ) : s.lastStatus === "FAILED" ? (
+                          <span className="flex items-center gap-1 text-red-700"><XCircle className="w-4 h-4" /> Failed</span>
+                        ) : (
+                          <span className="text-gray-400">Never</span>
+                        )}
+                        {isStale && <Badge variant="outline" className="ml-2 text-amber-600 border-amber-600"><AlertTriangle className="w-3 h-3 mr-1" />Stale</Badge>}
+                      </TableCell>
+                      <TableCell>{s?.rulesCount ?? "—"}</TableCell>
+                      <TableCell className="text-sm">{s?.lastSyncAt ? new Date(s.lastSyncAt).toLocaleString() : "Never"}</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm" onClick={() => handleSync(p.countryCode)} disabled={syncing}>
+                          <RefreshCw className={`w-3 h-3 mr-1 ${syncing ? "animate-spin" : ""}`} /> Sync
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <Table>

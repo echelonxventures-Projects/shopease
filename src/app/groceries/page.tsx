@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, Suspense, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   getCategoryTree,
@@ -21,7 +21,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Zap, Package, History, TrendingUp, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 
-export default function GroceriesPage() {
+export const dynamic = "force-dynamic";
+
+function GroceriesPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [topCategories, setTopCategories] = useState<any[]>([]);
@@ -241,5 +243,17 @@ export default function GroceriesPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function GroceriesPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+      </div>
+    }>
+      <GroceriesPageContent />
+    </Suspense>
   );
 }

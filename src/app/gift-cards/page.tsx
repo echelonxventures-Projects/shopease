@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -16,7 +16,7 @@ import { GiftCardStoreCard } from "@/components/storefront/GiftCardStoreCard";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Gift, Filter, X } from "lucide-react";
 
-export default function GiftCardsPage() {
+function GiftCardsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tab = searchParams.get("tab") || "all";
@@ -74,10 +74,8 @@ export default function GiftCardsPage() {
     fetchCards();
   }, [fetchCards]);
 
-  // Load occasion-specific carousel when tab is not "all"
   useEffect(() => {
     if (tab === "all") {
-      // Load carousels for the homepage view
       const loadOccasionCards = async () => {
         const popular = ["birthday", "wedding", "anniversary", "congratulations", "christmas", "diwali"];
         const results = await Promise.all(
@@ -118,7 +116,6 @@ export default function GiftCardsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Gift Cards Header */}
       <div className="bg-gradient-to-r from-yellow-50 via-orange-50 to-pink-50 border-b">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center gap-3 mb-4">
@@ -128,8 +125,6 @@ export default function GiftCardsPage() {
               <p className="text-sm text-gray-500">Give the gift of choice</p>
             </div>
           </div>
-
-          {/* Tab Navigation */}
           <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-hide">
             {tabs.map((t) => (
               <button
@@ -148,7 +143,6 @@ export default function GiftCardsPage() {
         </div>
       </div>
 
-      {/* Featured Banner */}
       {featured.length > 0 && tab === "all" && (
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="bg-gradient-to-r from-orange-600 to-pink-600 rounded-xl p-6 text-white">
@@ -168,107 +162,53 @@ export default function GiftCardsPage() {
       )}
 
       <div className="max-w-7xl mx-auto px-4 py-6 flex gap-6">
-        {/* Sidebar Filters */}
         {showFilters && (
           <div className="w-64 shrink-0 space-y-6">
-            {/* Delivery Type */}
             <div className="bg-white rounded-lg border p-4">
               <h3 className="font-semibold text-sm mb-3">Delivery Type</h3>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="radio"
-                    name="delivery"
-                    checked={!deliveryFilter}
-                    onChange={() => setDeliveryFilter("")}
-                  />
+                  <input type="radio" name="delivery" checked={!deliveryFilter} onChange={() => setDeliveryFilter("")} />
                   All
                 </label>
                 <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="radio"
-                    name="delivery"
-                    checked={deliveryFilter === "E_GIFT"}
-                    onChange={() => setDeliveryFilter("E_GIFT")}
-                  />
+                  <input type="radio" name="delivery" checked={deliveryFilter === "E_GIFT"} onChange={() => setDeliveryFilter("E_GIFT")} />
                   eGift Cards
                 </label>
                 <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="radio"
-                    name="delivery"
-                    checked={deliveryFilter === "PHYSICAL"}
-                    onChange={() => setDeliveryFilter("PHYSICAL")}
-                  />
+                  <input type="radio" name="delivery" checked={deliveryFilter === "PHYSICAL"} onChange={() => setDeliveryFilter("PHYSICAL")} />
                   Physical Cards
                 </label>
               </div>
             </div>
-
-            {/* Sort By */}
             <div className="bg-white rounded-lg border p-4">
               <h3 className="font-semibold text-sm mb-3">Sort By</h3>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2 text-sm"
-              >
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm">
                 <option value="popularity">Popularity</option>
                 <option value="newest">Newest</option>
                 <option value="priceLow">Price: Low to High</option>
                 <option value="priceHigh">Price: High to Low</option>
               </select>
             </div>
-
-            {/* Quick Occasion Links */}
-            <div className="bg-white rounded-lg border p-4">
-              <h3 className="font-semibold text-sm mb-3">Occasions</h3>
-              <div className="space-y-1">
-                {occasions.slice(0, 12).map((o) => (
-                  <button
-                    key={o.slug}
-                    onClick={() => handleTabClick("occasion", o.slug)}
-                    className="block w-full text-left text-sm py-1 hover:text-orange-600 transition-colors"
-                  >
-                    {o.icon} {o.name}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
         )}
 
-        {/* Main Content */}
         <div className="flex-1 space-y-8">
-          {/* Toolbar */}
           <div className="bg-white rounded-lg border p-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center gap-2"
-                >
-                  <Filter className="w-4 h-4" />
-                  Filters
+                <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)} className="flex items-center gap-2">
+                  <Filter className="w-4 h-4" /> Filters
                 </Button>
                 <h2 className="text-lg font-bold">{pageTitle}</h2>
                 <span className="text-sm text-gray-500">{cards.length} items</span>
               </div>
               <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="Search gift cards..."
-                  value={search}
-                  onChange={(e) => { setSearch(e.target.value); }}
-                  className="border rounded-lg px-3 py-2 text-sm w-64"
-                />
+                <input type="text" placeholder="Search gift cards..." value={search} onChange={(e) => { setSearch(e.target.value); }} className="border rounded-lg px-3 py-2 text-sm w-64" />
               </div>
             </div>
           </div>
 
-          {/* Card Grid */}
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-4 border-orange-500 border-t-transparent" />
@@ -287,18 +227,13 @@ export default function GiftCardsPage() {
             </div>
           )}
 
-          {/* Occasion Carousels (Homepage View) */}
           {tab === "all" && (
             <>
-              {/* Bestsellers */}
               {bestsellers.length > 0 && (
                 <section className="bg-white rounded-lg border p-4">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-bold">Bestsellers in Gift Cards</h2>
-                    <button
-                      onClick={() => handleTabClick("bestsellers")}
-                      className="text-sm text-orange-600 hover:text-orange-700 flex items-center gap-1"
-                    >
+                    <button onClick={() => handleTabClick("bestsellers")} className="text-sm text-orange-600 hover:text-orange-700 flex items-center gap-1">
                       See all <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
@@ -309,16 +244,11 @@ export default function GiftCardsPage() {
                   </div>
                 </section>
               )}
-
-              {/* New Arrivals */}
               {newArrivals.length > 0 && (
                 <section className="bg-white rounded-lg border p-4">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-bold">New Arrivals</h2>
-                    <button
-                      onClick={() => handleTabClick("new-arrivals")}
-                      className="text-sm text-orange-600 hover:text-orange-700 flex items-center gap-1"
-                    >
+                    <button onClick={() => handleTabClick("new-arrivals")} className="text-sm text-orange-600 hover:text-orange-700 flex items-center gap-1">
                       See all <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
@@ -329,8 +259,6 @@ export default function GiftCardsPage() {
                   </div>
                 </section>
               )}
-
-              {/* By Occasion */}
               {occasionCards.length > 0 &&
                 occasionCards.map(({ slug, cards: oCards }: any) => {
                   const occasion = occasions.find((o) => o.slug === slug);
@@ -338,13 +266,8 @@ export default function GiftCardsPage() {
                   return (
                     <section key={slug} className="bg-white rounded-lg border p-4">
                       <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg font-bold">
-                          {occasion.icon} {occasion.name} Gift Cards
-                        </h2>
-                        <button
-                          onClick={() => handleTabClick("occasion", slug)}
-                          className="text-sm text-orange-600 hover:text-orange-700 flex items-center gap-1"
-                        >
+                        <h2 className="text-lg font-bold">{occasion.icon} {occasion.name} Gift Cards</h2>
+                        <button onClick={() => handleTabClick("occasion", slug)} className="text-sm text-orange-600 hover:text-orange-700 flex items-center gap-1">
                           See all <ChevronRight className="w-4 h-4" />
                         </button>
                       </div>
@@ -361,5 +284,17 @@ export default function GiftCardsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function GiftCardsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent" />
+      </div>
+    }>
+      <GiftCardsContent />
+    </Suspense>
   );
 }

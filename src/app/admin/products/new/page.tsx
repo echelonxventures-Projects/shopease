@@ -320,6 +320,26 @@ export default function NewProductPage() {
           <div><Label>Base Stock</Label><Input type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} /></div>
         </div>
 
+        {/* Tax Estimate Preview */}
+        {form.price && parseFloat(form.price) > 0 && (
+          <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-xs font-semibold text-blue-700 mb-1">💰 Tax Estimate ({form.taxCategory.toLowerCase()})</p>
+            <p className="text-sm text-blue-900">
+              Price: ₹{parseFloat(form.price).toLocaleString()}
+              {form.taxCategory !== "BOOKS" && form.taxCategory !== "ALCOHOL" && (
+                <>
+                  {" "}→ Tax incl.: ₹{(parseFloat(form.price) * 1.18).toFixed(2)} (est. 18% GST)
+                </>
+              )}
+              {(form.taxCategory === "BOOKS" || form.taxCategory === "ALCOHOL") && (
+                <>
+                  {" "}<span className="font-medium text-green-700">Nil-rated (0% tax)</span>
+                </>
+              )}
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label>Category *</Label>

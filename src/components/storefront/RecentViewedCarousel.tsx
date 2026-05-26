@@ -10,7 +10,16 @@ export function RecentViewedCarousel({ title = "Recently Viewed" }: { title?: st
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getRecentlyViewed(8).then(setProducts).catch(() => setProducts([])).finally(() => setLoading(false));
+    getRecentlyViewed(8).then((prods) => {
+      // Deduplicate by product ID
+      const seen = new Set<string>();
+      const unique = prods.filter((p: any) => {
+        if (seen.has(p.id)) return false;
+        seen.add(p.id);
+        return true;
+      });
+      setProducts(unique);
+    }).catch(() => setProducts([])).finally(() => setLoading(false));
   }, []);
 
   if (loading) {

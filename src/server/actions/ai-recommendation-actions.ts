@@ -221,7 +221,7 @@ export async function getRecentlyViewed(limit = 8) {
 
   if (!history.length) return [];
 
-  const productIds = history.map((h) => h.productId);
+  const productIds = [...new Set(history.map((h) => h.productId))];
   const products = await prisma.product.findMany({
     where: { id: { in: productIds }, isActive: true },
     include: { brand: true, category: true },

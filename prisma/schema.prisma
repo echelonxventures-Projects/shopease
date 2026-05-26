@@ -109,6 +109,7 @@ model Region {
   defaultLocale    String   // BCP 47: "en-IN", "en-US", "de-DE"
   supportedLocales String[]
   taxRate          Decimal  @default(0.18)
+  taxInclusive     Boolean  @default(true) // true = price includes tax (India), false = price excludes tax (US)
   isActive         Boolean  @default(true)
   timezone         String   @default("Asia/Kolkata")
   createdAt        DateTime @default(now())
@@ -216,6 +217,8 @@ model User {
   locale          String?  @default("en")
   regionId        String?
   region          Region?  @relation(fields: [regionId], references: [id])
+  siteId          String?
+  site            Site?    @relation(fields: [siteId], references: [id])
   avatar          String?
   isBlocked       Boolean  @default(false)
   deletedAt       DateTime?
@@ -410,6 +413,7 @@ model Category {
   translations CategoryTranslation[]
   position    Int       @default(0)
   isActive    Boolean   @default(true)
+  siteCategories SiteCategory[]
 
   @@index([slug])
 }
@@ -424,6 +428,7 @@ model Brand {
   products    Product[]
   translations BrandTranslation[]
   brandStories BrandStory[]
+  siteBrands   SiteBrand[]
 }
 
 model Product {
@@ -516,6 +521,7 @@ model Product {
   dailyDeals          DailyDeal[]
   questions           ProductQuestion[]
   priceHistory        PriceHistory[]
+  siteProducts        SiteProduct[]
   returnRequests      ReturnRequest[]
   // Master catalog
   masterStatus     String   @default("ACTIVE") // DRAFT, ACTIVE, ARCHIVED
@@ -959,6 +965,8 @@ model CartItem {
   variantId String?
   variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
   quantity  Int      @default(1)
+  siteId    String?
+  site      Site?    @relation(fields: [siteId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1001,6 +1009,8 @@ model Order {
   regionId        String?
   region          Region?       @relation(fields: [regionId], references: [id])
   currency        String        @default("INR")
+  siteId          String?
+  site            Site?         @relation(fields: [siteId], references: [id])
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -1095,6 +1105,8 @@ model Review {
   comment     String?
   images      String[]
   isVerified  Boolean  @default(false)
+  siteId      String?
+  site        Site?    @relation(fields: [siteId], references: [id])
   helpfulVotes    Int      @default(0)
   reviewVotes     ReviewVote[]
   videoReviews    VideoReview[]
@@ -1271,6 +1283,8 @@ model WishlistItem {
   variantId   String?
   variant     ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
   shareToken  String?  @unique
+  siteId      String?
+  site        Site?    @relation(fields: [siteId], references: [id])
   createdAt   DateTime @default(now())
 
   @@unique([userId, productId, variantId])
@@ -2588,6 +2602,8 @@ model Banner {
   link        String?
   position    Int      @default(0)
   isActive    Boolean  @default(true)
+  siteId      String?
+  site        Site?    @relation("SiteBanners", fields: [siteId], references: [id])
   createdAt   DateTime @default(now())
 }
 
@@ -4197,4 +4213,206 @@ model NextBestAction {
   createdAt   DateTime  @default(now())
 
   @@index([userId, delivered, converted])
+}
+
+// ===================== TAX SYNC =====================
+
+model TaxSyncLog {
+  id          String   @id @default(cuid())
+  countryCode String
+  source      String   // URL or notification reference
+  rulesCount  Int
+  status      String   @default("PENDING") // PENDING | SUCCESS | FAILED
+  error       String?
+  syncedAt    DateTime @default(now())
+
+  @@index([countryCode, syncedAt])
+  @@map("tax_sync_logs")
+}
+
+// ===================== MULTI-SITE / MULTI-TENANT =====================
+
+model Site {
+  id            String     @id @default(cuid())
+  name          String                        // "Tenant 1 Store"
+  slug          String     @unique             // "tenant1"
+  domain        String?    @unique             // "shop.tenant1.com" (custom domain)
+  subdomain     String?    @unique             // "tenant1" (subdomain part)
+  status        SiteStatus @default(PENDING)   // PENDING | ACTIVE | SUSPENDED
+  isDefault     Boolean    @default(false)     // fallback site (current platform)
+
+  // Branding
+  logo           String?
+  favicon        String?
+  primaryColor   String     @default("#2563eb")
+  secondaryColor String     @default("#f59e0b")
+  fontFamily     String     @default("sans")
+  theme          Json?
+
+  // Settings
+  settings       Json?    // {taxInclusive, currency, timezone, maintenanceMode}
+  description    String?
+  metaTitle      String?
+  metaDescription String?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  products       SiteProduct[]
+  categories     SiteCategory[]
+  brands         SiteBrand[]
+  banners        SiteBanner[]
+  menus          SiteMenu[]
+  pages          SitePage[]
+  domains        SiteDomain[]
+
+  // FK to existing data
+  orders         Order[]
+  users          User[]
+  carts          CartItem[]
+  reviews        Review[]
+  wishlists      WishlistItem[]
+  bannersLegacy  Banner[]  @relation("SiteBanners")
+
+  @@index([slug])
+  @@index([status])
+  @@index([isDefault])
+  @@map("sites")
+}
+
+enum SiteStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+model SiteDomain {
+  id          String   @id @default(cuid())
+  siteId      String
+  site        Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  hostname    String   @unique // "shop.tenant1.com" or "tenant1.platform.com"
+  type        String   @default("SUBDOMAIN") // SUBDOMAIN | CUSTOM
+  sslStatus   String   @default("PENDING") // PENDING | ACTIVE | FAILED
+  sslCert     String?
+  sslKey      String?
+  verifiedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([siteId])
+  @@map("site_domains")
+}
+
+// Per-tenant product override — links to shared Product
+model SiteProduct {
+  id            String        @id @default(cuid())
+  siteId        String
+  site          Site          @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  productId     String                              // FK to shared Product
+  product       Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  isVisible     Boolean       @default(true)
+  sortOrder     Int           @default(0)
+  addedAt       DateTime      @default(now())
+
+  // Price overrides (null = use shared price)
+  price         Decimal?
+  comparePrice  Decimal?
+  discountType  DiscountType  @default(NONE)
+  discountValue Decimal?
+
+  // Availability overrides
+  stock         Int?      // null = use shared stock
+  isAvailable   Boolean   @default(true)
+
+  // Custom slug per tenant (null = use shared slug)
+  customSlug    String?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([siteId, productId])
+  @@index([siteId])
+  @@map("site_products")
+}
+
+model SiteCategory {
+  id         String   @id @default(cuid())
+  siteId     String
+  site       Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  categoryId String   // FK to shared Category
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  isVisible  Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  customName String?  // override category name
+  customSlug String?  // override slug
+  createdAt  DateTime @default(now())
+
+  @@unique([siteId, categoryId])
+  @@index([siteId])
+  @@map("site_categories")
+}
+
+model SiteBrand {
+  id        String   @id @default(cuid())
+  siteId    String
+  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  brandId   String   // FK to shared Brand
+  brand     Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  isVisible Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@unique([siteId, brandId])
+  @@index([siteId])
+  @@map("site_brands")
+}
+
+model SiteBanner {
+  id          String   @id @default(cuid())
+  siteId      String
+  site        Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  imageUrl    String
+  link        String?
+  position    Int      @default(0)  // 0=hero, 1=top, 2=bottom
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@index([siteId, position, isActive])
+  @@map("site_banners")
+}
+
+model SiteMenu {
+  id          String     @id @default(cuid())
+  siteId      String
+  site        Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  name        String     // "main", "footer", "mobile"
+  label       String
+  href        String     // "/category/electronics"
+  icon        String?
+  sortOrder   Int        @default(0)
+  parentId    String?
+  parent      SiteMenu?  @relation("MenuHierarchy", fields: [parentId], references: [id])
+  children    SiteMenu[] @relation("MenuHierarchy")
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+
+  @@index([siteId, name, isActive])
+  @@map("site_menus")
+}
+
+model SitePage {
+  id          String   @id @default(cuid())
+  siteId      String
+  site        Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  slug        String   // "about", "contact", "shipping"
+  title       String
+  content     Json?    // {blocks: [...]}
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([siteId, slug])
+  @@map("site_pages")
 }

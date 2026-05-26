@@ -290,7 +290,7 @@ function FreeTextSearch({
   const [results, setResults] = useState<LocationOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [highlightedIdx, setHighlightedIdx] = useState(-1);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {

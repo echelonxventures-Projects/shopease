@@ -5,28 +5,32 @@
 export function serializeForClient<T>(value: T): T {
   if (value === null || value === undefined) return value;
 
-  // Prisma Decimal: { toNumber(), toString() }
-  if (typeof value === "object" && "toNumber" in value && typeof (value as any).toNumber === "function") {
-    return (value as any).toNumber() as T;
-  }
-
-  // Date → ISO string
-  if (value instanceof Date) {
-    return value.toISOString() as T;
-  }
-
-  // BigInt → number (safe for typical DB IDs and counts)
-  if (typeof value === "bigint") {
-    return Number(value) as T;
-  }
-
-  // Array
-  if (Array.isArray(value)) {
-    return value.map((item) => serializeForClient(item)) as T;
-  }
-
-  // Plain object — recurse
   if (typeof value === "object") {
+    // Prisma Decimal → number
+    if (typeof (value as any).toNumber === "function") {
+      try {
+        return (value as any).toNumber() as T;
+      } catch {
+        return Number(value) as any as T;
+      }
+    }
+
+    // Date → ISO string
+    if (value instanceof Date) {
+      return value.toISOString() as T;
+    }
+
+    // BigInt → number
+    if (typeof value === "bigint") {
+      return Number(value) as T;
+    }
+
+    // Array
+    if (Array.isArray(value)) {
+      return value.map((item) => serializeForClient(item)) as T;
+    }
+
+    // Plain object — recurse
     const result: any = {};
     for (const key of Object.keys(value)) {
       result[key] = serializeForClient((value as any)[key]);

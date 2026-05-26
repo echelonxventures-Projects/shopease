@@ -73,12 +73,14 @@ export interface EnrichedProduct {
 
 function serializeProduct(p: any): any {
   if (!p) return p;
+  // Robust Decimal detection: check prototype chain via "in" operator
+  const toNum = (v: any) => (v != null && typeof v === "object" && "toNumber" in v && typeof v.toNumber === "function") ? v.toNumber() : v;
   return {
     ...p,
-    price: typeof p.price?.toNumber === 'function' ? p.price.toNumber() : p.price,
-    comparePrice: typeof p.comparePrice?.toNumber === 'function' ? p.comparePrice.toNumber() : p.comparePrice,
-    discountValue: typeof p.discountValue?.toNumber === 'function' ? p.discountValue.toNumber() : p.discountValue,
-    avgRating: typeof p.avgRating?.toNumber === 'function' ? p.avgRating.toNumber() : p.avgRating,
+    price: toNum(p.price),
+    comparePrice: toNum(p.comparePrice),
+    discountValue: toNum(p.discountValue),
+    avgRating: toNum(p.avgRating),
   };
 }
 

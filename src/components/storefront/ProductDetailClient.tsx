@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { ProductDetailActions } from "@/components/storefront/ProductDetailActions";
-import { VariantSelector } from "@/components/storefront/VariantSelector";
+import { VariantSelector } from "@/components/variants/VariantSelector";
 
 interface VariantOption {
   optionName: string;

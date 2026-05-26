@@ -71,6 +71,7 @@ export default function CheckoutPage() {
   const [taxAmount, setTaxAmount] = useState(0);
   const [taxLoading, setTaxLoading] = useState(false);
   const [taxJurisdiction, setTaxJurisdiction] = useState("");
+  const [taxBreakdown, setTaxBreakdown] = useState<Array<{ type: string; rate: number; description: string }>>([]);
 
   // Guest checkout
   const [isGuest, setIsGuest] = useState(false);
@@ -148,10 +149,12 @@ export default function CheckoutPage() {
       .then((result) => {
         setTaxAmount(result.totalTax);
         setTaxJurisdiction(result.jurisdiction);
+        setTaxBreakdown(result.lineItems.flatMap((li: any) => li.breakdown || []).slice(0, 3));
       })
       .catch(() => {
         setTaxAmount(0);
         setTaxJurisdiction("");
+        setTaxBreakdown([]);
       })
       .finally(() => setTaxLoading(false));
   }, [address.country, address.state, address.zipCode, items.length]);
@@ -841,6 +844,16 @@ export default function CheckoutPage() {
               <span>{taxJurisdiction ? `Tax (${taxJurisdiction})` : taxLoading ? "Calculating tax…" : "Tax"}</span>
               <span>{currencySymbol}{tax.toLocaleString()}</span>
             </div>
+            {taxBreakdown.length > 0 && (
+              <div className="text-xs text-gray-500 -mt-1">
+                {taxBreakdown.map((b) => (
+                  <div key={b.type} className="flex justify-between">
+                    <span>{b.type} ({(b.rate * 100).toFixed(1)}%)</span>
+                    <span>{currencySymbol}{(tax * b.rate / (taxBreakdown.reduce((s, t) => s + t.rate, 0))).toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
             {isGift && (
               <div className="flex justify-between text-sm text-pink-600">
                 <span className="flex items-center gap-1"><Gift className="w-3 h-3" /> Gift Wrapping</span>

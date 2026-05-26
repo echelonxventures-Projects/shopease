@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { addToCartSchema, updateCartSchema, removeFromCartSchema } from "@/lib/validations/cart";
 
 function serializeCartItem(item: any, locale?: string) {
   if (!item) return item;
@@ -52,6 +53,10 @@ export async function getCartItems(locale?: string) {
 export async function addToCart(productId: string, quantity = 1, variantId?: string | null) {
   const session = await getSession();
   if (!session?.user?.id) return { error: "Unauthorized" };
+
+  const validationResult = addToCartSchema.safeParse({ productId, quantity, variantId: variantId || undefined });
+  if (!validationResult.success) return { error: "Invalid input", issues: validationResult.error.issues };
+  const { productId: validProductId, quantity: validQuantity } = validationResult.data;
 
   const userId = session.user.id as string;
   const effectiveVariantId = variantId || null;

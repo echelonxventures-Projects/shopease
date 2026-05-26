@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
+import { ChevronDown } from "lucide-react";
 
 interface VariantOption {
   optionName: string;
@@ -89,7 +90,6 @@ export function VariantSelector({ variants, optionGroups, onVariantSelect }: Var
     return !hasCompatible;
   }, [selectedValues, variants, optionGroups]);
 
-  // Notify parent of selection change with pricing info
   useMemo(() => {
     if (selectedVariant && Object.keys(selectedValues).length > 0) {
       const discountPercent = selectedVariant.comparePrice
@@ -124,60 +124,68 @@ export function VariantSelector({ variants, optionGroups, onVariantSelect }: Var
   }, [selectedVariant, selectedValues, onVariantSelect]);
 
   return (
-    <div className="space-y-4">
-      {optionGroups.map((group) => (
-        <div key={group.name}>
-          <p className="text-sm font-medium text-gray-700 mb-2">{group.label || group.name}</p>
-          <div className="flex flex-wrap gap-2">
-            {group.values.map((val) => {
-              const disabled = isOptionDisabled(group.name, val.id);
-              const isSelected = selectedValues[group.name] === val.id;
+    <div className="space-y-3">
+      {optionGroups.map((group) => {
+        const isColor = group.values.some((v) => v.hexColor);
 
-              if (val.hexColor) {
-                return (
-                  <button
-                    key={val.id}
-                    type="button"
-                    onClick={() => !disabled && handleSelect(group.name, val.id)}
-                    disabled={disabled}
-                    className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition ${
-                      isSelected
-                        ? "border-blue-600 ring-2 ring-blue-200"
-                        : disabled
-                        ? "border-gray-200 opacity-40 cursor-not-allowed"
-                        : "border-gray-300 hover:border-gray-400 cursor-pointer"
-                    }`}
-                    title={`${val.value}${disabled ? " (Out of Stock)" : ""}`}
-                  >
-                    <span
-                      className="w-7 h-7 rounded-full border border-black/10"
-                      style={{ backgroundColor: val.hexColor }}
-                    />
-                  </button>
-                );
-              }
+        return (
+          <div key={group.name} className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700">
+              {group.label || group.name}
+            </label>
 
-              return (
-                <button
-                  key={val.id}
-                  type="button"
-                  onClick={() => !disabled && handleSelect(group.name, val.id)}
-                  disabled={disabled}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${
-                    isSelected
-                      ? "border-blue-600 bg-blue-50 text-blue-700"
-                      : disabled
-                      ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed line-through"
-                      : "border-gray-300 bg-white text-gray-700 hover:border-gray-400 cursor-pointer"
-                  }`}
+            {isColor ? (
+              <div className="flex flex-wrap gap-2">
+                {group.values.map((val) => {
+                  const disabled = isOptionDisabled(group.name, val.id);
+                  const isSelected = selectedValues[group.name] === val.id;
+
+                  return (
+                    <button
+                      key={val.id}
+                      type="button"
+                      onClick={() => !disabled && handleSelect(group.name, val.id)}
+                      disabled={disabled}
+                      className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition ${
+                        isSelected
+                          ? "border-blue-600 ring-2 ring-blue-200"
+                          : disabled
+                          ? "border-gray-200 opacity-40 cursor-not-allowed"
+                          : "border-gray-300 hover:border-gray-400 cursor-pointer"
+                      }`}
+                      title={`${val.value}${disabled ? " (Out of Stock)" : ""}`}
+                    >
+                      <span
+                        className="w-7 h-7 rounded-full border border-black/10"
+                        style={{ backgroundColor: val.hexColor! }}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="relative">
+                <select
+                  value={selectedValues[group.name] || ""}
+                  onChange={(e) => handleSelect(group.name, e.target.value)}
+                  className="w-full appearance-none border border-gray-300 rounded-lg px-4 py-2.5 pr-10 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  {val.value}
-                </button>
-              );
-            })}
+                  <option value="">Select {group.label || group.name}</option>
+                  {group.values.map((val) => {
+                    const disabled = isOptionDisabled(group.name, val.id);
+                    return (
+                      <option key={val.id} value={val.id} disabled={disabled}>
+                        {val.value}${disabled ? " — Out of Stock" : ""}
+                      </option>
+                    );
+                  })}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
+            )}
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       {selectedVariant && (
         <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">

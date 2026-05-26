@@ -99,6 +99,8 @@ export async function createRazorpayOrder(orderId: string) {
   const order = await prisma.order.findUnique({ where: { id: orderId } });
   if (!order) throw new Error("Order not found");
 
+  if (!razorpay) throw new Error("Razorpay is not configured");
+
   const amountInPaise = Math.round(order.total.toNumber() * 100);
 
   const razorpayOrder = await razorpay.orders.create({

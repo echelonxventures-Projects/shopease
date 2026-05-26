@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { isRazorpayConfigured } from "@/lib/razorpay";
 import {
   resolveGateways,
   createPaymentTransaction,
@@ -10,26 +11,45 @@ import {
   getProvider,
 } from "@/lib/payments";
 
+const toNum = (v: any) =>
+  v != null && typeof v === "object" && "toNumber" in v && typeof v.toNumber === "function"
+    ? v.toNumber()
+    : v;
+
+function serializeGateway(gw: any) {
+  if (!gw) return gw;
+  return {
+    ...gw,
+    regions: (gw.regions || []).map((r: any) => ({
+      ...r,
+      region: r.region ? { ...r.region, taxRate: toNum(r.region.taxRate) } : null,
+    })),
+    methods: gw.methods || [],
+  };
+}
+
 // ===================== GATEWAY MANAGEMENT =====================
 
 export async function getPaymentGateways() {
-  return prisma.paymentGateway.findMany({
+  const gateways = await prisma.paymentGateway.findMany({
     include: {
       regions: { include: { region: true } },
       methods: true,
     },
     orderBy: { name: "asc" },
   });
+  return gateways.map(serializeGateway);
 }
 
 export async function getGatewayById(id: string) {
-  return prisma.paymentGateway.findUnique({
+  const gw = await prisma.paymentGateway.findUnique({
     where: { id },
     include: {
       regions: { include: { region: true } },
       methods: true,
     },
   });
+  return serializeGateway(gw);
 }
 
 export async function createPaymentGateway(data: {
@@ -73,10 +93,14 @@ export async function toggleGatewayActive(id: string, isActive: boolean) {
 // ===================== GATEWAY REGION CONFIG =====================
 
 export async function getGatewayRegions(gatewayId: string) {
-  return prisma.paymentGatewayRegion.findMany({
+  const regions = await prisma.paymentGatewayRegion.findMany({
     where: { gatewayId },
     include: { region: true },
   });
+  return regions.map((r: any) => ({
+    ...r,
+    region: r.region ? { ...r.region, taxRate: toNum(r.region.taxRate) } : null,
+  }));
 }
 
 export async function setGatewayRegion(
@@ -181,6 +205,10 @@ export async function createPaymentIntent(
 ) {
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");
+
+  if (provider === "razorpay" && !isRazorpayConfigured()) {
+    throw new Error("Payment provider not configured");
+  }
 
   const gateway = await prisma.paymentGateway.findUnique({ where: { provider } });
   if (!gateway) throw new Error("Gateway not found");

@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { ArrowLeft, ChevronLeft } from "lucide-react";
 import { ImageUploader } from "@/components/admin/ImageUploader";
-import { VariantBuilder } from "@/components/admin/VariantBuilder";
+import { VariantBuilder } from "@/components/variants/VariantBuilder";
 import { LOCALES, getLocaleName } from "@/lib/i18n";
 import {
   getProductTranslations,
@@ -228,6 +228,16 @@ export default function EditProductPage() {
           <div><Label>Compare Price</Label><Input type="number" value={form.comparePrice} onChange={(e) => setForm({ ...form, comparePrice: e.target.value })} /></div>
           <div><Label>Stock</Label><Input type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} /></div>
         </div>
+
+        {/* Tax Estimate Preview */}
+        {form.price && parseFloat(form.price) > 0 && (
+          <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-xs font-semibold text-blue-700 mb-1">💰 Tax Estimate (Standard rate)</p>
+            <p className="text-sm text-blue-900">
+              Price: ₹{parseFloat(form.price).toLocaleString()} → Tax incl. (est. 18%): ₹{(parseFloat(form.price) * 1.18).toFixed(2)}
+            </p>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label>Category *</Label>

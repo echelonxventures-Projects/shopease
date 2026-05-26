@@ -12,7 +12,8 @@ interface RegionState {
   regionId: string | null;
   currency: string;
   currencySymbol: string;
-  setRegion: (regionId: string, currency: string, currencySymbol: string) => void;
+  taxInclusive: boolean; // true = prices include tax (India), false = prices exclude tax (US)
+  setRegion: (regionId: string, currency: string, currencySymbol: string, taxInclusive?: boolean) => void;
   syncFromCookie: () => void;
 }
 
@@ -24,8 +25,9 @@ export const useRegionStore = create<RegionState>()(
       regionId: initialRegionId,
       currency: "INR",
       currencySymbol: "₹",
-      setRegion: (regionId, currency, currencySymbol) =>
-        set({ regionId, currency, currencySymbol }),
+      taxInclusive: true,
+      setRegion: (regionId, currency, currencySymbol, taxInclusive = true) =>
+        set({ regionId, currency, currencySymbol, taxInclusive }),
       syncFromCookie: () => {
         const cookieRegion = readRegionCookie();
         if (cookieRegion && cookieRegion !== get().regionId) {
