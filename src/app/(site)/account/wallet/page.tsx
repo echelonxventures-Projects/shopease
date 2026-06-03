@@ -19,7 +19,7 @@ export default function WalletPage() {
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [redemptions, setRedemptions] = useState<any[]>([]);
-  const [txnPage, setTxnPage] = useState(1);
+  const [_txnPage, _setTxnPage] = useState(1);
 
   const fetchData = () => {
     Promise.all([
@@ -140,7 +140,7 @@ export default function WalletPage() {
                   </div>
                   <div>
                     <p className="font-medium">{txn.description || txn.referenceType}</p>
-                    <p className="text-xs text-gray-500">{new Date(txn.createdAt).toLocaleString()}</p>
+                    <p className="text-xs text-gray-500">{new Date(txn.createdAt).toLocaleString("en-IN")}</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -166,7 +166,7 @@ export default function WalletPage() {
               <div key={r.id} className="flex items-center justify-between border-b pb-2 last:border-0">
                 <div>
                   <p className="font-mono font-bold">{r.voucherCode}</p>
-                  <p className="text-xs text-gray-500">{new Date(r.redeemedAt).toLocaleString()}</p>
+                  <p className="text-xs text-gray-500">{new Date(r.redeemedAt).toLocaleString("en-IN")}</p>
                 </div>
                 <p className="font-bold text-green-600">+₹{Number(r.creditAmount).toFixed(2)}</p>
               </div>

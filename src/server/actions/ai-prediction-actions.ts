@@ -1,5 +1,6 @@
 "use server";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 
 // ============ FRAUD DETECTION ============
 
@@ -8,6 +9,7 @@ export async function scoreOrder(orderId: string) {
   if (!order) throw new Error("Order not found");
 
   let score = 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   const factors: any = {};
 
   // Velocity check: many orders from same user in short time
@@ -27,7 +29,7 @@ export async function scoreOrder(orderId: string) {
   score += avg > 0 && orderTotal > avg * 3 ? 0.3 : 0;
 
   // Shipping vs billing mismatch
-  const shipping = order.shippingAddress as any;
+  const shipping = order.shippingAddress as Record<string, string>;
   if (shipping && shipping.city && shipping.state) {
     factors.addressRisk = 0; // Would need billing address to compare
   }
@@ -41,6 +43,7 @@ export async function scoreOrder(orderId: string) {
       orderId,
       type: "ORDER",
       score,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
       factors: factors as any,
       action,
     },
@@ -68,6 +71,7 @@ export async function predictChurn(userId: string) {
   if (!user) throw new Error("User not found");
 
   let score = 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   const factors: any = {};
 
   // Last order date
@@ -106,7 +110,9 @@ export async function predictChurn(userId: string) {
 
   return prisma.churnPrediction.upsert({
     where: { userId },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
     create: { userId, score, riskLevel, factors: factors as any },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
     update: { userId, score, riskLevel, factors: factors as any, lastUpdated: new Date() },
   });
 }
@@ -144,7 +150,7 @@ export async function segmentUser(userId: string) {
       userId,
       segment,
       confidence: 0.8,
-      metadata: { avgOrderValue, totalOrders: orders.length, daysSinceLastOrder: lastOrder } as any,
+      metadata: { avgOrderValue, totalOrders: orders.length, daysSinceLastOrder: lastOrder } as Prisma.InputJsonValue,
     },
   });
 }
@@ -201,8 +207,9 @@ export async function forecastDemand(productId: string, days: number = 7) {
 
   // Count how many times this product appears in delivered orders
   const productOrders = orders.filter((o) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
     const items = (o.items as any[]) || [];
-    return items.some((i: any) => i.productId === productId);
+    return items.some((i) => i.productId === productId);
   });
 
   const dailyCounts: Record<string, number> = {};
@@ -225,7 +232,7 @@ export async function forecastDemand(productId: string, days: number = 7) {
           forecastDate: date,
           predictedDemand: Math.round(avgDaily * (1 + (Math.random() - 0.5) * 0.4)),
           confidence: Math.min(0.9, 0.3 + productOrders.length * 0.01),
-          metadata: { method: "moving_average" } as any,
+          metadata: { method: "moving_average" } as Prisma.InputJsonValue,
         },
       })
     );

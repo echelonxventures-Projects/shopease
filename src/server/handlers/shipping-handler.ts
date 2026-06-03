@@ -7,6 +7,7 @@ export const shippingHandler: PromotionHandler = {
     return "SHIPPING";
   },
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PromotionHandler interface contract
   async evaluate(promo: any, context: PromotionContext) {
     const sp = promo.shippingPromo;
     if (!sp) return null;

@@ -17,6 +17,7 @@ import { toast } from "sonner";
 
 export default function BannersPage() {
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [banners, setBanners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -41,7 +42,7 @@ export default function BannersPage() {
         toast.success("Banner created");
       }
       setOpen(false); resetForm(); fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   if (loading) return <div className="p-6"><p className="text-gray-500">Loading...</p></div>;
@@ -57,7 +58,7 @@ export default function BannersPage() {
         {banners.length === 0 ? (
           <p className="text-gray-500 col-span-full text-center py-8">No banners</p>
         ) : (
-          banners.map((b: any) => (
+          banners.map((b) => (
             <div key={b.id} className="border rounded-lg overflow-hidden">
               <div className="aspect-video bg-gray-100 flex items-center justify-center">
                 {b.imageUrl ? <img src={b.imageUrl} alt={b.title} className="w-full h-full object-cover" /> : <span className="text-4xl">🖼️</span>}
@@ -77,7 +78,7 @@ export default function BannersPage() {
                     setEditId(b.id); setOpen(true);
                   }}>Edit</Button>
                   <Button size="sm" variant="destructive" onClick={() => {
-                    if (confirm("Delete banner?")) { deleteBanner(b.id).then(() => { toast.success("Deleted"); fetch(); }).catch((e: any) => toast.error(e.message)); }
+                    if (confirm("Delete banner?")) { deleteBanner(b.id).then(() => { toast.success("Deleted"); fetch(); }).catch((e) => toast.error(e.message)); }
                   }}>Delete</Button>
                 </div>
               </div>

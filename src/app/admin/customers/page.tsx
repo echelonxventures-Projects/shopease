@@ -33,7 +33,7 @@ export default function CustomersPage() {
       await toggleBlockCustomer(userId);
       toast.success("Customer status updated");
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleExport = async (userId: string) => {
@@ -47,7 +47,7 @@ export default function CustomersPage() {
       a.click();
       URL.revokeObjectURL(url);
       toast.success("Data exported");
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleDelete = async () => {
@@ -56,7 +56,7 @@ export default function CustomersPage() {
       toast.success("User deleted and data anonymized");
       setDeleteOpen(false);
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   if (loading) return <div className="p-6"><p className="text-gray-500">Loading...</p></div>;
@@ -82,13 +82,13 @@ export default function CustomersPage() {
             {data?.customers.length === 0 ? (
               <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-500">No customers found</td></tr>
             ) : (
-              data?.customers.map((c: any) => (
+              data?.customers.map((c) => (
                 <tr key={c.id} className="border-t">
                   <td className="px-4 py-3 font-medium">{c.name || "N/A"}</td>
                   <td className="px-4 py-3 text-sm">{c.email}</td>
                   <td className="px-4 py-3 text-sm">{c.phone || "-"}</td>
                   <td className="px-4 py-3 text-sm">{c.orders?.length || 0}</td>
-                  <td className="px-4 py-3 text-sm">{new Date(c.createdAt).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 text-sm">{new Date(c.createdAt).toLocaleDateString("en-IN")}</td>
                   <td className="px-4 py-3">
                     <Badge className={c.isBlocked ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"}>
                       {c.isBlocked ? "Blocked" : "Active"}

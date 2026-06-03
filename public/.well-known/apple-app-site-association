@@ -1,0 +1,30 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAMID.com.shopease.app",
+        "paths": [
+          "/dl/*",
+          "/products/*",
+          "/orders/*",
+          "/checkout",
+          "/categories/*",
+          "/brands/*",
+          "/share/*",
+          "/agent/*"
+        ]
+      },
+      {
+        "appID": "TEAMID.com.shopease.app.staging",
+        "paths": [
+          "/dl/*",
+          "/products/*"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["TEAMID.com.shopease.app"]
+  }
+}

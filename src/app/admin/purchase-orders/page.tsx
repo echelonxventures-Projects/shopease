@@ -35,12 +35,15 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: "bg-red-100 text-red-700",
 };
 
+interface POItem { id: string; productId: string; quantity: number; unitPrice: number; sentQuantity: number; receivedQuantity: number; returnQuantity: number; subtotal?: number; product?: { name: string; id: string } | null }
+interface PurchaseOrder { id: string; poNumber: string; status: string; supplierId: string; locationId: string | null; expectedDate: string | null; notes: string | null; totalAmount: number; total?: number; receivedDate?: string | null; approvedAt?: string | null; sentDate?: string | null; approvalNotes?: string | null; supplier?: { name: string; id: string } | null; location?: { name: string } | null; items: POItem[]; createdAt: string | Date; _count?: { items: number } }
+
 export default function PurchaseOrdersPage() {
   const router = useRouter();
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
   // Create dialog
@@ -67,7 +70,7 @@ export default function PurchaseOrdersPage() {
       const data = await getAllPurchaseOrders({
         status: statusFilter === "ALL" ? undefined : statusFilter,
       });
-      setOrders(data.orders);
+      setOrders(data.orders as PurchaseOrder[]);
     } catch {
       router.push("/auth/login");
     } finally {
@@ -81,7 +84,7 @@ export default function PurchaseOrdersPage() {
     setDetailLoading(true);
     try {
       const data = await getPurchaseOrder(id);
-      setSelectedOrder(data);
+      setSelectedOrder(data as PurchaseOrder | null);
     } catch {
       toast.error("Failed to load order details");
     } finally {
@@ -111,7 +114,7 @@ export default function PurchaseOrdersPage() {
       setCreateForm({ supplierId: "", locationId: "", expectedDate: "", notes: "" });
       setCreateItems([{ productId: "", quantity: "1", unitPrice: "" }]);
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleSubmitPO = async (id: string) => {
@@ -120,7 +123,7 @@ export default function PurchaseOrdersPage() {
       toast.success("Purchase order submitted");
       fetch();
       if (selectedOrder?.id === id) viewOrder(id);
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleApprove = async (id: string) => {
@@ -130,7 +133,7 @@ export default function PurchaseOrdersPage() {
       setApproveNotes("");
       fetch();
       viewOrder(id);
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleReject = async (id: string) => {
@@ -141,7 +144,7 @@ export default function PurchaseOrdersPage() {
       setRejectReason("");
       fetch();
       viewOrder(id);
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleMarkSent = async (id: string) => {
@@ -155,7 +158,7 @@ export default function PurchaseOrdersPage() {
       setSentItems([]);
       fetch();
       viewOrder(id);
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleCancelPO = async (id: string) => {
@@ -164,7 +167,7 @@ export default function PurchaseOrdersPage() {
       toast.success("Purchase order cancelled");
       fetch();
       if (selectedOrder?.id === id) viewOrder(id);
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleReceive = async () => {
@@ -182,12 +185,12 @@ export default function PurchaseOrdersPage() {
       setReceiveItems([]);
       viewOrder(selectedOrder.id);
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   // Open sent dialog with pre-filled quantities
-  const openSentDialog = (order: any) => {
-    setSentItems(order.items.map((item: any) => ({
+  const openSentDialog = (order: PurchaseOrder) => {
+    setSentItems(order.items.map((item) => ({
       productId: item.productId,
       sentQuantity: (item.sentQuantity || item.quantity).toString(),
     })));
@@ -204,7 +207,7 @@ export default function PurchaseOrdersPage() {
       </div>
 
       <div className="mb-4">
-        <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v || "ALL")}>
           <SelectTrigger className="max-w-xs">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
@@ -244,12 +247,12 @@ export default function PurchaseOrdersPage() {
                   <td className="px-4 py-3 font-mono text-sm font-bold">{o.poNumber}</td>
                   <td className="px-4 py-3">{o.supplier?.name || "—"}</td>
                   <td className="px-4 py-3 text-sm">{o._count?.items || 0}</td>
-                  <td className="px-4 py-3 font-bold">₹{(o.total as number).toLocaleString()}</td>
+                  <td className="px-4 py-3 font-bold">₹{(o.total as number).toLocaleString("en-IN")}</td>
                   <td className="px-4 py-3">
                     <Badge className={STATUS_COLORS[o.status] || "bg-gray-100"}>{o.status.replace(/_/g, " ")}</Badge>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-500">
-                    {new Date(o.createdAt).toLocaleDateString()}
+                    {new Date(o.createdAt).toLocaleDateString("en-IN")}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
@@ -288,25 +291,25 @@ export default function PurchaseOrdersPage() {
                 </div>
                 <div>
                   <span className="text-gray-500">Total:</span>{" "}
-                  <span className="font-bold">₹{selectedOrder.total.toLocaleString()}</span>
+                  <span className="font-bold">₹{(selectedOrder.total ?? selectedOrder.totalAmount).toLocaleString("en-IN")}</span>
                 </div>
                 <div>
                   <span className="text-gray-500">Expected:</span>{" "}
-                  {selectedOrder.expectedDate ? new Date(selectedOrder.expectedDate).toLocaleDateString() : "—"}
+                  {selectedOrder.expectedDate ? new Date(selectedOrder.expectedDate).toLocaleDateString("en-IN") : "—"}
                 </div>
                 <div>
                   <span className="text-gray-500">Received:</span>{" "}
-                  {selectedOrder.receivedDate ? new Date(selectedOrder.receivedDate).toLocaleDateString() : "—"}
+                  {selectedOrder.receivedDate ? new Date(selectedOrder.receivedDate).toLocaleDateString("en-IN") : "—"}
                 </div>
                 <div>
                   <span className="text-gray-500">Approved:</span>{" "}
                   {selectedOrder.approvedAt ? (
-                    <span>{new Date(selectedOrder.approvedAt).toLocaleDateString()}</span>
+                    <span>{new Date(selectedOrder.approvedAt).toLocaleDateString("en-IN")}</span>
                   ) : "—"}
                 </div>
                 <div>
                   <span className="text-gray-500">Sent:</span>{" "}
-                  {selectedOrder.sentDate ? new Date(selectedOrder.sentDate).toLocaleDateString() : "—"}
+                  {selectedOrder.sentDate ? new Date(selectedOrder.sentDate).toLocaleDateString("en-IN") : "—"}
                 </div>
               </div>
 
@@ -330,7 +333,7 @@ export default function PurchaseOrdersPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedOrder.items.map((item: any) => (
+                  {selectedOrder.items.map((item) => (
                     <tr key={item.id} className="border-b">
                       <td className="py-2">{item.product?.name || item.productId}</td>
                       <td className="py-2 text-right">{item.quantity}</td>
@@ -349,8 +352,8 @@ export default function PurchaseOrdersPage() {
                           {item.returnQuantity || 0}
                         </span>
                       </td>
-                      <td className="py-2 text-right">₹{item.unitPrice.toLocaleString()}</td>
-                      <td className="py-2 text-right font-bold">₹{item.subtotal.toLocaleString()}</td>
+                      <td className="py-2 text-right">₹{item.unitPrice.toLocaleString("en-IN")}</td>
+                      <td className="py-2 text-right font-bold">₹{(item.subtotal ?? item.unitPrice * item.quantity).toLocaleString("en-IN")}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -397,7 +400,7 @@ export default function PurchaseOrdersPage() {
             <DialogDescription>Enter quantities to receive for each item</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            {selectedOrder?.items.map((item: any) => (
+            {selectedOrder?.items.map((item) => (
               <div key={item.productId} className="flex items-center gap-3">
                 <div className="flex-1 text-sm">
                   <p className="font-medium">{item.product?.name}</p>
@@ -438,7 +441,7 @@ export default function PurchaseOrdersPage() {
             <DialogDescription>Adjust sent quantities per item (defaults to ordered quantity)</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            {selectedOrder?.items.map((item: any) => (
+            {selectedOrder?.items.map((item) => (
               <div key={item.productId} className="flex items-center gap-3">
                 <div className="flex-1 text-sm">
                   <p className="font-medium">{item.product?.name}</p>
@@ -466,7 +469,7 @@ export default function PurchaseOrdersPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSentOpen(false)}>Cancel</Button>
-            <Button onClick={() => handleMarkSent(selectedOrder?.id)}>Mark Sent</Button>
+            <Button onClick={() => { if (selectedOrder) handleMarkSent(selectedOrder.id); }}>Mark Sent</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -550,12 +553,12 @@ export default function PurchaseOrdersPage() {
 // ===================== INLINE DROPDOWN COMPONENTS =====================
 
 function SupplierSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<Array<{ id: string; name: string; code: string }>>([]);
   useEffect(() => {
-    getSuppliers({ limit: 100 }).then((d: any) => setSuppliers(d.suppliers));
+    getSuppliers({ limit: 100 }).then((d) => { if (d && typeof d === "object" && "suppliers" in d) setSuppliers((d as { suppliers: Array<{ id: string; name: string; code: string }> }).suppliers); });
   }, []);
   return (
-    <Select value={value} onValueChange={(v: any) => { if (v) onChange(v); }}>
+    <Select value={value} onValueChange={(v) => { if (v) onChange(v); }}>
       <SelectTrigger><SelectValue placeholder="Select supplier" /></SelectTrigger>
       <SelectContent>
         {suppliers.map((s) => (
@@ -567,12 +570,12 @@ function SupplierSelect({ value, onChange }: { value: string; onChange: (v: stri
 }
 
 function ProductSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<Array<{ id: string; name: string }>>([]);
   useEffect(() => {
-    fetchAllProducts({ limit: 100 }).then((d: any) => setProducts(d.products));
+    fetchAllProducts({ limit: 100 }).then((d) => { if (d && typeof d === "object" && "products" in d) setProducts((d as { products: Array<{ id: string; name: string }> }).products); });
   }, []);
   return (
-    <Select value={value} onValueChange={(v: any) => { if (v) onChange(v); }}>
+    <Select value={value} onValueChange={(v) => { if (v) onChange(v); }}>
       <SelectTrigger className="flex-1"><SelectValue placeholder="Select product" /></SelectTrigger>
       <SelectContent>
         {products.map((p) => (
@@ -584,5 +587,5 @@ function ProductSelect({ value, onChange }: { value: string; onChange: (v: strin
 }
 
 async function fetchAllProducts(args: { limit: number }) {
-  return getProducts(args as any);
+  return getProducts(args);
 }

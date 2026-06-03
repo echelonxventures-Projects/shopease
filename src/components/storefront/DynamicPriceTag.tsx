@@ -9,12 +9,12 @@ interface DynamicPriceTagProps {
 }
 
 export function DynamicPriceTag({ productId, originalPrice }: DynamicPriceTagProps) {
-  const [dynamic, setDynamic] = useState<any>(null);
+  const [dynamic, setDynamic] = useState<{ price: number; basePrice: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getDynamicPrice(productId)
-      .then((data: any) => setDynamic(data))
+      .then((data) => setDynamic(data as { price: number; basePrice: number }))
       .finally(() => setLoading(false));
   }, [productId]);
 
@@ -34,7 +34,7 @@ export function DynamicPriceTag({ productId, originalPrice }: DynamicPriceTagPro
         </div>
       )}
       <div className="text-xs text-gray-400">
-        Base: ₹{dynamic.basePrice.toLocaleString()}
+        Base: ₹{dynamic.basePrice.toLocaleString("en-IN")}
       </div>
     </div>
   );

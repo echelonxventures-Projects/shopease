@@ -13,11 +13,7 @@ export type WebhookEvent =
   | "REVIEW.CREATED"
   | "USER.CREATED";
 
-interface WebhookPayload {
-  event: WebhookEvent;
-  data: Record<string, any>;
-}
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
 export async function deliverWebhook(event: WebhookEvent, data: Record<string, any>) {
   const webhooks = await prisma.webhook.findMany({
     where: {
@@ -46,6 +42,7 @@ export async function deliverWebhook(event: WebhookEvent, data: Record<string, a
 async function deliverToWebhook(
   webhook: { url: string; secret: string },
   delivery: { id: string },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   data: Record<string, any>,
 ) {
   const maxRetries = 3;

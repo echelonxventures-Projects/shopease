@@ -1,16 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { z } from "zod";
+
+const chatbotInputSchema = z.object({
+  messages: z.array(z.object({
+    role: z.enum(["user", "assistant", "system"]),
+    content: z.string().max(5000),
+  })).min(1).max(50),
+  productId: z.string().trim().optional(),
+  userId: z.string().trim().optional(),
+});
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages, productId } = body;
+    const parsed = chatbotInputSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0]?.message || "Invalid input" }, { status: 400 });
+    }
+    const { messages, productId, userId } = parsed.data;
     const lastMessage = messages[messages.length - 1]?.content || "";
-    const userId = body.userId;
 
     // Load AI config for chatbot from DB
     const chatbotConfig = await prisma.aIConfig.findUnique({ where: { feature: "ai_chatbot" } });
-    const isEnabled = chatbotConfig?.enabled ?? false;
+    const _isEnabled = chatbotConfig?.enabled ?? false;
     const provider = chatbotConfig?.provider || "pattern";
     const config = (chatbotConfig?.config as any) || {};
 
@@ -163,7 +176,7 @@ async function callOpenAI(apiKey: string, messages: any[], model: string): Promi
 
 async function saveMessage(userId: string, historyMessages: any[], reply: string) {
   try {
-    let session = await prisma.chatbotSession.findFirst({
+    const session = await prisma.chatbotSession.findFirst({
       where: { userId },
       orderBy: { startedAt: "desc" },
     });

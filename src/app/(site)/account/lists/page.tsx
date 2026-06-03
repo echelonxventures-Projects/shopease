@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { getLists, deleteList, shareList } from "@/server/actions/list-actions";
-import { Button } from "@/components/ui/button";
-import { List, Plus, Trash2, Share2, Loader2 } from "lucide-react";
+
+import { List, Trash2, Share2, Loader2 } from "lucide-react";
 import { CreateListDialog } from "@/components/storefront/CreateListDialog";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";

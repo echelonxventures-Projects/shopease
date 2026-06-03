@@ -11,24 +11,24 @@ export default function MapboxMap({
   center,
   zoom = 13,
   height = "400px",
-  markers: markersProp,
+  markers: _markersProp,
   circles,
-  polygons: polygonsProp,
-  polylines: polylinesProp,
+  polygons: _polygonsProp,
+  polylines: _polylinesProp,
   onClick,
   onDragEnd,
   draggableMarker,
   initialPosition,
 }: MapProps) {
-  const accessToken = getMapApiKey() || "";
+  const _accessToken = getMapApiKey() || "";
 
   const mapStyle: React.CSSProperties = useMemo(
     () => ({ height, width: "100%", borderRadius: 8 }),
     [height]
   );
 
-  const handleClick = useCallback(
-    (e: any) => {
+  const _handleClick = useCallback(
+    (e: { lngLat: { lat: number; lng: number } }) => {
       onClick?.(e.lngLat.lat, e.lngLat.lng);
     },
     [onClick]

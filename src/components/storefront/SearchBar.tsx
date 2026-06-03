@@ -25,12 +25,13 @@ export function SearchBar() {
   };
 
   const startListening = () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web Speech API types vary across browsers
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) return;
     const recognition = new SpeechRecognition();
     recognition.lang = locale || "en-IN";
     recognition.interimResults = false;
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: { results: { 0: { 0: { transcript: string } } } }) => {
       const transcript = event.results[0][0].transcript;
       setQuery(transcript);
       setListening(false);

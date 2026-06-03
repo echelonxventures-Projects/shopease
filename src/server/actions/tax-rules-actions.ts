@@ -1,9 +1,12 @@
 "use server";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getSession, isAdminRole } from "@/lib/auth";
+import type { Prisma } from "@prisma/client";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
 const toNum = (v: any) => (v != null && typeof v === "object" && "toNumber" in v && typeof v.toNumber === "function") ? v.toNumber() : v;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- generic Prisma result serializer
 function serializeTaxRule(rule: any) {
   return {
     ...rule,
@@ -15,7 +18,7 @@ function serializeTaxRule(rule: any) {
 }
 
 export async function getStateTaxRules(country?: string, state?: string) {
-  const where: any = {};
+  const where: Prisma.StateTaxRuleWhereInput = {};
   if (country) where.country = country;
   if (state) where.state = state;
 
@@ -40,7 +43,7 @@ export async function createStateTaxRule(data: {
   notes?: string;
 }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const rule = await prisma.stateTaxRule.create({ data });
   return serializeTaxRule(rule);
@@ -59,7 +62,7 @@ export async function updateStateTaxRule(id: string, data: Partial<{
   notes: string;
 }>) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const rule = await prisma.stateTaxRule.update({ where: { id }, data });
   return serializeTaxRule(rule);
@@ -135,7 +138,7 @@ export async function getTaxExemption(businessId: string, regionCode: string) {
 
 export async function seedDefaultTaxRules() {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const defaultRules = [
     // India - GST

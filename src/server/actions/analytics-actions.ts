@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getSession, isAdminRole } from "@/lib/auth";
 
 // ===================== CUSTOMER ANALYTICS =====================
 
@@ -132,6 +132,7 @@ export async function getRevenueByCategory(days: number = 30) {
 
   const categoryMap = new Map<string, { revenue: number; count: number }>();
   for (const order of orders) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
     const items = order.items as any[];
     if (items) {
       for (const item of items) {
@@ -191,6 +192,7 @@ export async function getRevenueByProductType(days: number = 30) {
 
   const typeMap = new Map<string, { revenue: number; count: number }>();
   for (const order of orders) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
     const items = order.items as any[];
     if (items) {
       for (const item of items) {

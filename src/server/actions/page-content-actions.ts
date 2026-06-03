@@ -17,17 +17,20 @@ export async function getAllPageContents() {
 export async function getPageSections(slug: string) {
   const page = await getPageContent(slug);
   if (!page) return [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
   return page.sections as any[];
 }
 
 export async function getPageFaq(slug: string) {
   const page = await getPageContent(slug);
   if (!page) return [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
   return page.faq as any[];
 }
 
 export async function getPageFormConfig(slug: string) {
   const page = await getPageContent(slug);
   if (!page) return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
   return page.formConfig as any;
 }

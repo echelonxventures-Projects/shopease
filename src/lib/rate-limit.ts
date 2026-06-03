@@ -50,6 +50,47 @@ export function checkRateLimit(
 }
 
 /**
+ * Distributed, Edge-safe rate limit check.
+ *
+ * Uses Upstash Redis REST (HTTP, works in the Edge runtime) when
+ * UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN are set. Self-hosters can
+ * put an Upstash-compatible HTTP proxy (e.g. serverless-redis-http) in front of
+ * their Redis. Falls back to the in-memory limiter when not configured or on error.
+ */
+export async function checkRateLimitDistributed(
+  key: string,
+  maxAttempts: number,
+  windowMs: number = 60_000,
+): Promise<RateLimitResult> {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return checkRateLimit(key, maxAttempts, windowMs);
+
+  const windowSec = Math.ceil(windowMs / 1000);
+  try {
+    const res = await fetch(`${url}/pipeline`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify([
+        ["INCR", key],
+        ["EXPIRE", key, String(windowSec), "NX"],
+      ]),
+    });
+    if (!res.ok) return checkRateLimit(key, maxAttempts, windowMs);
+    const data = await res.json();
+    const count = Number(data?.[0]?.result ?? 0);
+    return {
+      allowed: count <= maxAttempts,
+      remaining: Math.max(0, maxAttempts - count),
+      resetAt: Date.now() + windowMs,
+      limit: maxAttempts,
+    };
+  } catch {
+    return checkRateLimit(key, maxAttempts, windowMs);
+  }
+}
+
+/**
  * Build a rate limit key from request parts.
  */
 export function buildRateLimitKey(...parts: string[]): string {
@@ -64,5 +105,5 @@ export const RATE_LIMITS = {
   payment: { maxAttempts: 10, windowMs: 60_000 },
   search: { maxAttempts: 30, windowMs: 60_000 },
   upload: { maxAttempts: 5, windowMs: 60_000 },
-  general: { maxAttempts: 60, windowMs: 60_000 },
+  general: { maxAttempts: 300, windowMs: 60_000 },
 } as const;

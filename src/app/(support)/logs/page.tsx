@@ -82,7 +82,7 @@ export default function LogsPage() {
                     <td className="px-4 py-3 font-medium">{log.activityType}</td>
                     <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">{log.details}</td>
                     <td className="px-4 py-3 text-sm text-gray-500">{log.source || "-"}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{new Date(log.createdAt).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-sm text-gray-500">{new Date(log.createdAt).toLocaleString("en-IN")}</td>
                   </tr>
                 );
               })

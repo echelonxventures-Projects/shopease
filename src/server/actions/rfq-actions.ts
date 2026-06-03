@@ -1,6 +1,7 @@
 "use server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import type { Prisma } from "@prisma/client";
 
 export async function createRFQ(data: {
   businessId: string;
@@ -29,6 +30,7 @@ export async function createRFQ(data: {
       title: data.title,
       description: data.description,
       category: data.category,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
       priority: (data.priority || "MEDIUM") as any,
       deadline: data.deadline,
       currency: data.currency || "INR",
@@ -170,7 +172,7 @@ export async function closeRFQ(rfqId: string) {
 }
 
 export async function getOpenRFQs(filter?: { category?: string; minAmount?: number }) {
-  const where: any = { status: "OPEN" };
+  const where: Prisma.RFQWhereInput = { status: "OPEN" };
   if (filter?.category) where.category = filter.category;
 
   return prisma.rFQ.findMany({

@@ -91,9 +91,9 @@ export default function PriceAlertsPage() {
                     {alert.product.name}
                   </Link>
                   <div className="flex items-center gap-3 mt-1 text-sm">
-                    <span className="text-gray-500">Current: ₹{currentPrice.toLocaleString()}</span>
+                    <span className="text-gray-500">Current: ₹{currentPrice.toLocaleString("en-IN")}</span>
                     <Tag className="w-3.5 h-3.5 text-gray-400" />
-                    <span className="text-green-600 font-medium">Target: ₹{targetPrice.toLocaleString()}</span>
+                    <span className="text-green-600 font-medium">Target: ₹{targetPrice.toLocaleString("en-IN")}</span>
                   </div>
                   {isBelow && (
                     <span className="inline-block mt-1 text-xs bg-green-200 text-green-800 px-2 py-0.5 rounded font-semibold">

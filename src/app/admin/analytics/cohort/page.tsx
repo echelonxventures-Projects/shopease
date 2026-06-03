@@ -5,7 +5,9 @@ import { getCohortRetention, getCohortRevenue } from "@/server/actions/conversio
 import { Users, TrendingUp, Calendar } from "lucide-react";
 
 export default function CohortAnalysisPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [retention, setRetention] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [revenue, setRevenue] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -47,7 +49,7 @@ export default function CohortAnalysisPage() {
               </tr>
             </thead>
             <tbody>
-              {retention.map((c: any) => (
+              {retention.map((c) => (
                 <tr key={c.month} className="border-b">
                   <td className="py-2 px-3 font-medium">{c.month}</td>
                   <td className="text-right py-2 px-3">{c.cohortSize}</td>
@@ -88,10 +90,10 @@ export default function CohortAnalysisPage() {
               </tr>
             </thead>
             <tbody>
-              {revenue.map((c: any) => (
+              {revenue.map((c) => (
                 <tr key={c.month} className="border-b">
                   <td className="py-2 px-3 font-medium">{c.month}</td>
-                  <td className="text-right py-2 px-3">₹{Number(c.revenue).toLocaleString()}</td>
+                  <td className="text-right py-2 px-3">₹{Number(c.revenue).toLocaleString("en-IN")}</td>
                   <td className="text-right py-2 px-3">₹{Number(c.avgRevenue).toFixed(2)}</td>
                 </tr>
               ))}

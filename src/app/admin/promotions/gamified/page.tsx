@@ -9,9 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 
 export default function GamifiedAdminPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [promos, setPromos] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
+  const [_editing, setEditing] = useState<any>(null);
 
   const formEmpty = { name: "", type: "SPIN_WHEEL", prizes: "", totalPrizes: 100, maxPerUser: 3, validFrom: "", validUntil: "" };
   const [form, setForm] = useState(formEmpty);
@@ -48,8 +50,8 @@ export default function GamifiedAdminPage() {
       setEditing(null);
       setForm(formEmpty);
       fetch();
-    } catch (err: any) {
-      toast.error(err.message || "Invalid prizes JSON");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Invalid prizes JSON");
     }
   };
 
@@ -59,9 +61,7 @@ export default function GamifiedAdminPage() {
       await deleteGamifiedPromo(id);
       toast.success("Deleted");
       fetch();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   return (
@@ -104,6 +104,7 @@ export default function GamifiedAdminPage() {
                   <div className="mt-2">
                     <div className="text-xs text-gray-500 mb-1">Prizes:</div>
                     <div className="flex flex-wrap gap-1">
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex type from external source
                       {prizes.map((pr: any, i: number) => (
                         <span key={i} className="px-2 py-1 bg-gray-100 rounded text-xs">
                           {pr.type}: {pr.value} (w: {pr.weight})

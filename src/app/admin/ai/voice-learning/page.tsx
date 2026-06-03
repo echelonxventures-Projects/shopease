@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import Link from "next/link";
+
 
 export default async function VoiceLearningPage() {
   const totalLogs = await prisma.voiceSearchLog.count().catch(() => 0);
@@ -40,7 +40,7 @@ export default async function VoiceLearningPage() {
               </tr>
             </thead>
             <tbody>
-              {patterns.map((p: any) => (
+              {patterns.map((p) => (
                 <tr key={p.id} className="border-b last:border-0">
                   <td className="p-3 font-mono text-sm">{p.phonemeGroup}</td>
                   <td className="p-3">{p.commonProduct}</td>
@@ -57,10 +57,10 @@ export default async function VoiceLearningPage() {
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-bold mb-4">Recent Voice Searches</h2>
         <div className="space-y-2">
-          {logs.map((l: any) => (
+          {logs.map((l) => (
             <div key={l.id} className="flex items-center justify-between py-2 border-b last:border-0 text-sm">
               <div>
-                <span>"{l.transcript}"</span>
+                <span>&quot;{l.transcript}&quot;</span>
                 <span className={`ml-2 text-xs px-1.5 py-0.5 rounded ${l.hadResults ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
                   {l.hadResults ? "Found" : "No Results"}
                 </span>

@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import { listFAQs, createFAQ, updateFAQ, deleteFAQ } from "@/server/actions/commerce-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 const CATEGORIES = ["SHIPPING", "PAYMENT", "RETURNS", "PRODUCTS", "GENERAL"];
 
 export default function AdminFAQPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [faqs, setFaqs] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);

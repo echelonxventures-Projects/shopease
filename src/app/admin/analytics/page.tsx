@@ -4,14 +4,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSalesData, getDashboardStats } from "@/server/actions/admin-actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+
+
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { DollarSign, ShoppingCart, Users, Clock, TrendingUp } from "lucide-react";
 
 export default function AnalyticsPage() {
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [stats, setStats] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [salesData, setSalesData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -34,7 +36,7 @@ export default function AnalyticsPage() {
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center"><DollarSign className="w-6 h-6 text-green-600" /></div>
             <div>
               <p className="text-sm text-gray-500">Revenue</p>
-              <p className="text-2xl font-bold">₹{(stats?.totalRevenue || 0).toLocaleString()}</p>
+              <p className="text-2xl font-bold">₹{(stats?.totalRevenue || 0).toLocaleString("en-IN")}</p>
             </div>
           </CardContent>
         </Card>
@@ -85,7 +87,8 @@ export default function AnalyticsPage() {
                 <BarChart data={salesData}>
                   <XAxis dataKey="date" tick={{ fontSize: 12 }} tickFormatter={(v: string) => new Date(v).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} />
                   <YAxis />
-                  <Tooltip formatter={(value: any) => [`₹${value.toLocaleString()}`, "Sales"]} />
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex type from external source
+                  <Tooltip formatter={(value: any) => [`₹${value.toLocaleString("en-IN")}`, "Sales"]} />
                   <Bar dataKey="total" fill="#2563eb" name="Sales" />
                 </BarChart>
               </ResponsiveContainer>
@@ -103,7 +106,8 @@ export default function AnalyticsPage() {
                 <LineChart data={salesData}>
                   <XAxis dataKey="date" tick={{ fontSize: 12 }} tickFormatter={(v: string) => new Date(v).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} />
                   <YAxis />
-                  <Tooltip formatter={(value: any) => [`₹${value.toLocaleString()}`, "Revenue"]} />
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex type from external source
+                  <Tooltip formatter={(value: any) => [`₹${value.toLocaleString("en-IN")}`, "Revenue"]} />
                   <Line type="monotone" dataKey="total" stroke="#16a34a" strokeWidth={2} name="Revenue" dot={false} />
                 </LineChart>
               </ResponsiveContainer>

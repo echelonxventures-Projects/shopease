@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Bot, Send, X, User, Minus } from "lucide-react";
+import { Bot, Send, User, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -103,7 +103,7 @@ export function AIChatbot({ productId }: AIChatbotProps) {
         {messages.length === 0 && (
           <div className="text-center py-8 text-gray-400">
             <Bot className="w-8 h-8 mx-auto mb-2" />
-            <p className="text-sm">Hi! I'm your AI shopping assistant.</p>
+            <p className="text-sm">Hi! I&apos;m your AI shopping assistant.</p>
             <p className="text-xs mt-1">Ask me about products, orders, or deals!</p>
           </div>
         )}

@@ -1,7 +1,8 @@
 "use server";
 
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getSession, isAdminRole } from "@/lib/auth";
 import { isRazorpayConfigured } from "@/lib/razorpay";
 import {
   resolveGateways,
@@ -10,17 +11,21 @@ import {
   getPaymentTransactions,
   getProvider,
 } from "@/lib/payments";
+import { validate, vId, vStr, vOptStr } from "@/lib/validate";
+import { evaluateAdvancedFraud } from "@/lib/fraud/advanced-detection";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
 const toNum = (v: any) =>
   v != null && typeof v === "object" && "toNumber" in v && typeof v.toNumber === "function"
     ? v.toNumber()
     : v;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- generic Prisma result serializer
 function serializeGateway(gw: any) {
   if (!gw) return gw;
   return {
     ...gw,
-    regions: (gw.regions || []).map((r: any) => ({
+    regions: (gw.regions || []).map((r: { region?: { taxRate?: unknown } }) => ({
       ...r,
       region: r.region ? { ...r.region, taxRate: toNum(r.region.taxRate) } : null,
     })),
@@ -60,10 +65,18 @@ export async function createPaymentGateway(data: {
   isActive?: boolean;
 }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN")
+  if (!session || !isAdminRole(session!.user?.role))
     throw new Error("Unauthorized");
 
-  return prisma.paymentGateway.create({ data });
+  const input = validate(z.object({
+    provider: z.string().trim().min(1).max(100),
+    name: vStr(200),
+    logo: z.string().trim().url().max(2048).optional().or(z.literal("")),
+    description: vOptStr(1000),
+    isActive: z.boolean().optional(),
+  }), data);
+
+  return prisma.paymentGateway.create({ data: { provider: input.provider, name: input.name as string, logo: input.logo || undefined, description: input.description as string | undefined, isActive: input.isActive ?? true } });
 }
 
 export async function updatePaymentGateway(
@@ -76,7 +89,7 @@ export async function updatePaymentGateway(
   }
 ) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN")
+  if (!session || !isAdminRole(session!.user?.role))
     throw new Error("Unauthorized");
 
   return prisma.paymentGateway.update({ where: { id }, data });
@@ -84,7 +97,7 @@ export async function updatePaymentGateway(
 
 export async function toggleGatewayActive(id: string, isActive: boolean) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN")
+  if (!session || !isAdminRole(session!.user?.role))
     throw new Error("Unauthorized");
 
   return prisma.paymentGateway.update({ where: { id }, data: { isActive } });
@@ -97,7 +110,7 @@ export async function getGatewayRegions(gatewayId: string) {
     where: { gatewayId },
     include: { region: true },
   });
-  return regions.map((r: any) => ({
+  return regions.map((r) => ({
     ...r,
     region: r.region ? { ...r.region, taxRate: toNum(r.region.taxRate) } : null,
   }));
@@ -110,12 +123,13 @@ export async function setGatewayRegion(
     isActive?: boolean;
     isPrimary?: boolean;
     priority?: number;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
     config?: any;
     currency?: string;
   }
 ) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN")
+  if (!session || !isAdminRole(session!.user?.role))
     throw new Error("Unauthorized");
 
   // If setting as primary, unset other primary for this region
@@ -135,7 +149,7 @@ export async function setGatewayRegion(
 
 export async function removeGatewayRegion(gatewayId: string, regionId: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN")
+  if (!session || !isAdminRole(session!.user?.role))
     throw new Error("Unauthorized");
 
   return prisma.paymentGatewayRegion.delete({
@@ -158,15 +172,18 @@ export async function setGatewayMethod(
     name?: string;
     icon?: string;
     isEnabled?: boolean;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
     config?: any;
   }
 ) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN")
+  if (!session || !isAdminRole(session!.user?.role))
     throw new Error("Unauthorized");
 
   return prisma.paymentGatewayMethod.upsert({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
     where: { gatewayId_method: { gatewayId, method: method as any } },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
     create: { gatewayId, method: method as any, name: data.name || method, ...data },
     update: data,
   });
@@ -178,10 +195,11 @@ export async function toggleGatewayMethod(
   isEnabled: boolean
 ) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN")
+  if (!session || !isAdminRole(session!.user?.role))
     throw new Error("Unauthorized");
 
   return prisma.paymentGatewayMethod.update({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
     where: { gatewayId_method: { gatewayId, method: method as any } },
     data: { isEnabled },
   });
@@ -205,6 +223,21 @@ export async function createPaymentIntent(
 ) {
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");
+
+  // Prevent double-charge: check if a successful payment already exists for this order
+  const existingSuccess = await prisma.paymentTransaction.findFirst({
+    where: { orderId, status: "COMPLETED" as never },
+    select: { id: true },
+  });
+  if (existingSuccess) throw new Error("Payment already completed for this order");
+
+  // Fraud detection for high-value payments
+  if (amount > 10000) {
+    const verdict = await evaluateAdvancedFraud(session.user?.id as string, "PAYMENT", { timestamp: new Date() });
+    if (verdict.action === "BLOCK") {
+      throw new Error("Payment blocked: suspicious activity detected. Contact support.");
+    }
+  }
 
   if (provider === "razorpay" && !isRazorpayConfigured()) {
     throw new Error("Payment provider not configured");
@@ -244,6 +277,7 @@ export async function createPaymentIntent(
 
 export async function confirmPaymentAction(
   transactionId: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   params?: any
 ) {
   const session = await getSession();
@@ -282,7 +316,7 @@ export async function refundPaymentAction(
   amount?: number
 ) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN")
+  if (!session || !isAdminRole(session!.user?.role))
     throw new Error("Unauthorized");
 
   const transaction = await prisma.paymentTransaction.findUnique({

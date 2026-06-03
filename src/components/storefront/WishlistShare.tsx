@@ -12,7 +12,7 @@ interface WishlistShareProps {
 }
 
 export function WishlistShare({ className }: WishlistShareProps) {
-  const router = useRouter();
+  const _router = useRouter();
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 

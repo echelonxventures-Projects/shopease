@@ -8,13 +8,14 @@ interface BehavioralPromoModalProps {
 }
 
 export function BehavioralPromoModal({ userId }: BehavioralPromoModalProps) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action returns heterogeneous promo shape
   const [promo, setPromo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
     getBehavioralPromoForUser(userId)
-      .then((data: any) => setPromo(data))
+      .then((data) => setPromo(data))
       .finally(() => setLoading(false));
   }, [userId]);
 

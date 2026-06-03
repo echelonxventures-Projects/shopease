@@ -96,7 +96,7 @@ export function VariantBuilder({ productId }: { productId: string }) {
 
 function OptionsTab({ productId }: { productId: string }) {
   const [optionTypes, setOptionTypes] = useState<OptionType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [newTypeName, setNewTypeName] = useState("");
   const [newTypeLabel, setNewTypeLabel] = useState("");
   const [bulkValues, setBulkValues] = useState<string>("");
@@ -281,7 +281,7 @@ function GenerateButton({ productId, onComplete }: { productId: string; onComple
       const result = await generateVariants(productId);
       toast.success(`Generated ${result.count} variants`);
       onComplete();
-    } catch (err: any) { toast.error(err.message || "Failed to generate"); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Failed to generate"); }
     finally { setGenerating(false); }
   };
   return (
@@ -320,13 +320,13 @@ function VariantsTab({ productId }: { productId: string }) {
     try {
       const result = await getVariantsWithFilters(productId, {
         search, status: statusFilter !== "all" ? statusFilter : undefined,
-        sortBy: sortBy as any, sortOrder, page, pageSize,
+        sortBy: sortBy as "price" | "stock" | "sku" | "createdAt", sortOrder, page, pageSize,
       });
-      setVariants(result.variants.map((v: any) => ({
+      setVariants(result.variants.map((v) => ({
         ...v,
         price: Number(v.price), comparePrice: v.comparePrice ? Number(v.comparePrice) : null,
         discountValue: v.discountValue ? Number(v.discountValue) : null,
-      })));
+      } as unknown as Variant)));
       setTotal(result.total); setTotalPages(result.totalPages);
     } catch { toast.error("Failed to load variants"); }
     finally { setLoading(false); }
@@ -345,7 +345,8 @@ function VariantsTab({ productId }: { productId: string }) {
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
@@ -358,7 +359,7 @@ function VariantsTab({ productId }: { productId: string }) {
     }
   };
 
-  const handleBulkEdit = async (field: string, value: any) => {
+  const handleBulkEdit = async (field: string, value: string | number | boolean) => {
     if (selectedIds.size === 0) return;
     try {
       await bulkUpdateVariants([...selectedIds], { [field]: value });
@@ -443,7 +444,7 @@ function VariantsTab({ productId }: { productId: string }) {
         {[
           { label: "Total", value: stats.total, color: "blue" },
           { label: "Avg Price", value: `₹${stats.avgPrice}`, color: "green" },
-          { label: "Total Stock", value: stats.totalStock.toLocaleString(), color: "purple" },
+          { label: "Total Stock", value: stats.totalStock.toLocaleString("en-IN"), color: "purple" },
           { label: "Out of Stock", value: stats.outOfStock, color: "red" },
           { label: "Active", value: stats.active, color: "emerald" },
         ].map((s) => (
@@ -598,7 +599,7 @@ function VariantsTab({ productId }: { productId: string }) {
                               className="h-8 w-16" placeholder="Val" type="number" />
                           </div>
                         ) : (
-                          <span>₹{v.price.toLocaleString()}</span>
+                          <span>₹{v.price.toLocaleString("en-IN")}</span>
                         )}
                       </td>
                       <td className="py-2 px-3">
@@ -640,7 +641,7 @@ function VariantsTab({ productId }: { productId: string }) {
                               <Button size="sm" variant="ghost" onClick={() => {
                                 setImageModal(v.id);
                                 setImageInput(v.images.join(","));
-                              }}><Image className="w-3.5 h-3.5 text-gray-400" /></Button>
+                              }}><Image className="w-3.5 h-3.5 text-gray-400" aria-label="Edit images" /></Button>
                               <Button size="sm" variant="ghost" onClick={() => handleDuplicate(v.id)}>
                                 <Copy className="w-3.5 h-3.5 text-gray-400" />
                               </Button>
@@ -675,7 +676,7 @@ function VariantsTab({ productId }: { productId: string }) {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
-                <div><span className="font-medium">Price:</span> ₹{v.price.toLocaleString()}</div>
+                <div><span className="font-medium">Price:</span> ₹{v.price.toLocaleString("en-IN")}</div>
                 <div><span className="font-medium">Stock:</span> <span className={v.stock <= 0 ? "text-red-600 font-bold" : ""}>{v.stock}</span></div>
                 <div className="col-span-2"><span className="font-medium">SKU:</span> <span className="font-mono">{v.sku || "—"}</span></div>
               </div>
@@ -717,7 +718,7 @@ function VariantsTab({ productId }: { productId: string }) {
                         <Badge variant={v.isActive ? "default" : "secondary"} className="text-xs">{v.isActive ? "Active" : "Inactive"}</Badge>
                       </div>
                       <div className="flex items-center gap-4 text-xs text-gray-500">
-                        <span>₹{v.price.toLocaleString()}</span>
+                        <span>₹{v.price.toLocaleString("en-IN")}</span>
                         <span>Stock: {v.stock}</span>
                         <span className="font-mono">{v.sku || "—"}</span>
                       </div>
@@ -780,7 +781,7 @@ function RulesTab({ productId }: { productId: string }) {
 
   useEffect(() => {
     getVariantsForProduct(productId)
-      .then((v: any[]) => setVariants(v.map((x: any) => ({ ...x, price: Number(x.price), comparePrice: x.comparePrice ? Number(x.comparePrice) : null, discountValue: x.discountValue ? Number(x.discountValue) : null }))))
+      .then((v: unknown[]) => setVariants((v as Variant[]).map((x) => ({ ...x, price: Number(x.price), comparePrice: x.comparePrice ? Number(x.comparePrice) : null, discountValue: x.discountValue ? Number(x.discountValue) : null }))))
       .catch(() => {});
   }, [productId]);
 
@@ -791,7 +792,7 @@ function RulesTab({ productId }: { productId: string }) {
       await autoGenerateSKUs(productId, skuTemplate);
       toast.success("SKUs generated");
       getVariantsForProduct(productId)
-        .then((v: any[]) => setVariants(v.map((x: any) => ({ ...x, price: Number(x.price), comparePrice: x.comparePrice ? Number(x.comparePrice) : null, discountValue: x.discountValue ? Number(x.discountValue) : null }))))
+        .then((v: unknown[]) => setVariants((v as Variant[]).map((x) => ({ ...x, price: Number(x.price), comparePrice: x.comparePrice ? Number(x.comparePrice) : null, discountValue: x.discountValue ? Number(x.discountValue) : null }))))
         .catch(() => {});
     } catch { toast.error("Failed to generate SKUs"); }
     finally { setLoading(false); }
@@ -836,7 +837,7 @@ function RulesTab({ productId }: { productId: string }) {
               await setDefaultVariant(e.target.value);
               toast.success("Default variant set");
               getVariantsForProduct(productId)
-                .then((v: any[]) => setVariants(v.map((x: any) => ({ ...x, price: Number(x.price), comparePrice: x.comparePrice ? Number(x.comparePrice) : null, discountValue: x.discountValue ? Number(x.discountValue) : null }))))
+                .then((v: unknown[]) => setVariants((v as Variant[]).map((x) => ({ ...x, price: Number(x.price), comparePrice: x.comparePrice ? Number(x.comparePrice) : null, discountValue: x.discountValue ? Number(x.discountValue) : null }))))
                 .catch(() => {});
             } catch { toast.error("Failed to set default"); }
           }}>

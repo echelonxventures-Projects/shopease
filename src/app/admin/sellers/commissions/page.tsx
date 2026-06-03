@@ -8,6 +8,7 @@ import { CheckCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function CommissionManagementPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [sellers, setSellers] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newRate, setNewRate] = useState("");

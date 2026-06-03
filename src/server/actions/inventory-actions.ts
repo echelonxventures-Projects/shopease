@@ -1,18 +1,21 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
-import type { PrismaClient } from "@prisma/client";
+import { getSession, isAdminRole } from "@/lib/auth";
+import type { Prisma, InventoryLogType, SupplierIdType } from "@prisma/client";
 
 // ===================== TYPE HELPERS =====================
 
-function serializeDecimal(obj: any): any {
+function serializeDecimal(obj: unknown): unknown {
   if (!obj) return obj;
+  if (Array.isArray(obj)) {
+    return obj.map((item) => serializeDecimal(item));
+  }
   if (typeof obj === "object") {
-    const result: any = Array.isArray(obj) ? [] : {};
+    const result: Record<string, unknown> = {};
     for (const [key, val] of Object.entries(obj)) {
       if (val && typeof val === "object" && "toNumber" in val) {
-        result[key] = (val as any).toNumber();
+        result[key] = (val as { toNumber(): number }).toNumber();
       } else {
         result[key] = serializeDecimal(val);
       }
@@ -22,6 +25,7 @@ function serializeDecimal(obj: any): any {
   return obj;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- generic Prisma result serializer for Decimal/Date fields
 function serializeInventory(item: any) {
   return {
     ...item,
@@ -63,7 +67,7 @@ async function logInventoryChange(params: {
   productId: string;
   supplierId?: string | null;
   locationId?: string | null;
-  type: string;
+  type: InventoryLogType;
   quantity: number;
   beforeQuantity: number;
   afterQuantity: number;
@@ -72,16 +76,16 @@ async function logInventoryChange(params: {
   reference?: string | null;
   userId?: string | null;
   notes?: string | null;
-  tx?: PrismaClient;
+  tx?: Prisma.TransactionClient;
 }) {
-  const client = params.tx ? (params.tx as any) : prisma;
+  const client = params.tx ?? prisma;
   await client.inventoryLog.create({
     data: {
       inventoryId: params.inventoryId,
       productId: params.productId,
       supplierId: params.supplierId || null,
       locationId: params.locationId || null,
-      type: params.type as any,
+      type: params.type,
       quantity: params.quantity,
       beforeQuantity: params.beforeQuantity,
       afterQuantity: params.afterQuantity,
@@ -98,9 +102,9 @@ async function logInventoryChange(params: {
 
 export async function getSuppliers({ page = 1, limit = 20, search }: { page?: number; limit?: number; search?: string } = {}) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
-  const where: any = {};
+  const where: Prisma.SupplierWhereInput = {};
   if (search) {
     where.OR = [
       { name: { contains: search, mode: "insensitive" } },
@@ -130,7 +134,7 @@ export async function getSuppliers({ page = 1, limit = 20, search }: { page?: nu
 
 export async function getSupplierById(id: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const supplier = await prisma.supplier.findUnique({
     where: { id },
@@ -172,7 +176,7 @@ export async function createSupplier(data: {
   idType?: string;
 }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   // Look up country ISO code for uniqueId generation
   let countryIso = "";
@@ -208,7 +212,7 @@ export async function createSupplier(data: {
       zipCode: data.zipCode || null,
       countryId: data.countryId || null,
       stateId: data.stateId || null,
-      idType: (data.idType as any) || "TAX_ID",
+      idType: (data.idType as SupplierIdType) || "TAX_ID",
       gstin: data.gstin || null,
       taxId: data.taxId || null,
       paymentTerms: data.paymentTerms || null,
@@ -225,7 +229,7 @@ export async function updateSupplier(id: string, data: {
   idType?: string;
 }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   // If gstin and idType are provided, validate
   if (data.gstin && data.idType) {
@@ -235,7 +239,7 @@ export async function updateSupplier(id: string, data: {
 
   // Regenerate uniqueId if it's still the default cuid (existing supplier without proper ID)
   const existing = await prisma.supplier.findUnique({ where: { id }, select: { uniqueId: true } });
-  const updateData: any = { ...data };
+  const updateData: Record<string, unknown> = { ...data };
   if (existing && existing.uniqueId && !existing.uniqueId.startsWith("SUP-")) {
     let countryIso = "";
     if (data.countryId) {
@@ -253,20 +257,20 @@ export async function updateSupplier(id: string, data: {
 
 export async function toggleSupplierActive(id: string, isActive: boolean) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   return prisma.supplier.update({ where: { id }, data: { isActive } });
 }
 
 export async function verifySupplier(id: string, status: "VERIFIED" | "REJECTED", notes?: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const supplier = await prisma.supplier.findUnique({ where: { id } });
   if (!supplier) throw new Error("Supplier not found");
   if (supplier.verificationStatus !== "PENDING") throw new Error("Supplier already verified/rejected");
 
-  const userId = (session as any).user?.id;
+  const userId = session!.user?.id;
 
   return prisma.supplier.update({
     where: { id },
@@ -285,7 +289,7 @@ export async function assignSupplierToProduct(productId: string, supplierId: str
   supplierSku?: string; costPrice?: number; leadTimeDays?: number; isPreferred?: boolean;
 }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   return prisma.productSupplier.upsert({
     where: { productId_supplierId: { productId, supplierId } },
@@ -308,7 +312,7 @@ export async function assignSupplierToProduct(productId: string, supplierId: str
 
 export async function removeSupplierFromProduct(productId: string, supplierId: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   return prisma.productSupplier.deleteMany({
     where: { productId, supplierId },
@@ -329,7 +333,7 @@ export async function getProductSuppliers(productId: string) {
 
 export async function getSupplierProducts(supplierId: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const items = await prisma.productSupplier.findMany({
     where: { supplierId, isActive: true },
@@ -347,8 +351,8 @@ export async function createPurchaseOrder(data: {
   expectedDate?: string; notes?: string;
 }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
-  const userId = (session as any).user?.id as string;
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
+  const userId = session!.user?.id as string;
 
   const poCount = await prisma.purchaseOrder.count();
   const poNumber = `PO-${Date.now().toString().slice(-6)}-${(poCount + 1).toString().padStart(4, "0")}`;
@@ -389,9 +393,9 @@ export async function updatePurchaseOrder(id: string, data: {
   expectedDate?: string; notes?: string; tax?: number;
 }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
-  const updateData: any = {
+  const updateData: Prisma.PurchaseOrderUpdateInput = {
     expectedDate: data.expectedDate ? new Date(data.expectedDate) : undefined,
     notes: data.notes,
     tax: data.tax,
@@ -413,7 +417,7 @@ export async function updatePurchaseOrder(id: string, data: {
 
 export async function submitPurchaseOrder(id: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const po = await prisma.purchaseOrder.findUnique({ where: { id } });
   if (!po) throw new Error("Purchase order not found");
@@ -427,8 +431,8 @@ export async function submitPurchaseOrder(id: string) {
 
 export async function approvePurchaseOrder(id: string, notes?: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
-  const userId = (session as any).user?.id as string;
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
+  const userId = session!.user?.id as string;
 
   const po = await prisma.purchaseOrder.findUnique({ where: { id } });
   if (!po) throw new Error("Purchase order not found");
@@ -457,8 +461,8 @@ export async function approvePurchaseOrder(id: string, notes?: string) {
 
 export async function rejectPurchaseOrder(id: string, notes: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
-  const userId = (session as any).user?.id as string;
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
+  const userId = session!.user?.id as string;
 
   const po = await prisma.purchaseOrder.findUnique({ where: { id } });
   if (!po) throw new Error("Purchase order not found");
@@ -487,7 +491,7 @@ export async function rejectPurchaseOrder(id: string, notes: string) {
 
 export async function markPurchaseOrderSent(id: string, sentItems?: { productId: string; sentQuantity: number }[]) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const po = await prisma.purchaseOrder.findUnique({ where: { id }, include: { items: true } });
   if (!po) throw new Error("Purchase order not found");
@@ -516,7 +520,7 @@ export async function markPurchaseOrderSent(id: string, sentItems?: { productId:
 
   await prisma.auditLog.create({
     data: {
-      userId: (session as any).user?.id as string,
+      userId: session!.user?.id as string,
       action: "SENT",
       entityType: "PurchaseOrder",
       entityId: id,
@@ -532,7 +536,7 @@ export async function markPurchaseOrderSent(id: string, sentItems?: { productId:
 
 export async function receivePurchaseOrder(id: string, items: { productId: string; quantity: number }[]) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   return prisma.$transaction(async (tx) => {
     const po = await tx.purchaseOrder.findUnique({
@@ -542,7 +546,7 @@ export async function receivePurchaseOrder(id: string, items: { productId: strin
     if (!po) throw new Error("Purchase order not found");
     if (po.status === "CANCELLED") throw new Error("Cannot receive cancelled order");
 
-    let anyUpdated = false;
+    let _anyUpdated = false;
     for (const recv of items) {
       if (recv.quantity <= 0) continue;
 
@@ -587,9 +591,9 @@ export async function receivePurchaseOrder(id: string, items: { productId: strin
           referenceId: id,
           referenceType: "PURCHASE_ORDER",
           reference: po.poNumber,
-          userId: (session as any).user?.id,
+          userId: session!.user?.id,
           notes: `Received ${recv.quantity} units from PO ${po.poNumber}`,
-          tx: tx as any,
+          tx,
         });
       } else {
         const newInv = await tx.inventory.create({
@@ -616,9 +620,9 @@ export async function receivePurchaseOrder(id: string, items: { productId: strin
           referenceId: id,
           referenceType: "PURCHASE_ORDER",
           reference: po.poNumber,
-          userId: (session as any).user?.id,
+          userId: session!.user?.id,
           notes: `Received ${recv.quantity} units from PO ${po.poNumber}`,
-          tx: tx as any,
+          tx,
         });
       }
 
@@ -636,7 +640,7 @@ export async function receivePurchaseOrder(id: string, items: { productId: strin
         },
       });
 
-      anyUpdated = true;
+      _anyUpdated = true;
     }
 
     // Check if all items fully received
@@ -653,7 +657,7 @@ export async function receivePurchaseOrder(id: string, items: { productId: strin
     return tx.purchaseOrder.update({
       where: { id },
       data: {
-        status: newStatus as any,
+        status: newStatus,
         receivedDate: allReceived ? new Date() : null,
       },
       include: { items: true, supplier: true },
@@ -663,7 +667,7 @@ export async function receivePurchaseOrder(id: string, items: { productId: strin
 
 export async function cancelPurchaseOrder(id: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const po = await prisma.purchaseOrder.findUnique({ where: { id } });
   if (!po) throw new Error("Purchase order not found");
@@ -694,10 +698,10 @@ export async function getAllPurchaseOrders({ page = 1, limit = 20, status, suppl
   page?: number; limit?: number; status?: string; supplierId?: string;
 } = {}) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
-  const where: any = {};
-  if (status && status !== "ALL") where.status = status;
+  const where: Prisma.PurchaseOrderWhereInput = {};
+  if (status && status !== "ALL") where.status = status as Prisma.PurchaseOrderWhereInput["status"];
   if (supplierId) where.supplierId = supplierId;
 
   const [orders, total] = await Promise.all([
@@ -722,9 +726,9 @@ export async function getAllPurchaseOrders({ page = 1, limit = 20, status, suppl
 
 export async function getAllInventory({ supplierId, locationId }: { supplierId?: string; locationId?: string } = {}) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
-  const where: any = {};
+  const where: Prisma.InventoryWhereInput = {};
   if (supplierId) where.supplierId = supplierId;
   if (locationId) where.locationId = locationId;
 
@@ -743,7 +747,7 @@ export async function getAllInventory({ supplierId, locationId }: { supplierId?:
 
 export async function getInventoryBySupplier(supplierId: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const items = await prisma.inventory.findMany({
     where: { supplierId },
@@ -756,9 +760,9 @@ export async function getInventoryBySupplier(supplierId: string) {
 
 export async function getStockValuation({ supplierId, locationId }: { supplierId?: string; locationId?: string } = {}) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
-  const where: any = {};
+  const where: Prisma.InventoryWhereInput = {};
   if (supplierId) where.supplierId = supplierId;
   if (locationId) where.locationId = locationId;
 
@@ -811,9 +815,9 @@ export async function getStockValuation({ supplierId, locationId }: { supplierId
 
 export async function getStockMovements(productId?: string, supplierId?: string, locationId?: string, limit = 50) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
-  const where: any = {};
+  const where: Prisma.StockMovementWhereInput = {};
   if (productId) where.productId = productId;
   if (supplierId) where.supplierId = supplierId;
   if (locationId) where.locationId = locationId;
@@ -829,7 +833,7 @@ export async function getStockMovements(productId?: string, supplierId?: string,
     take: limit,
   });
 
-  return movements.map((m: any) => ({
+  return movements.map((m) => ({
     id: m.id,
     productId: m.productId,
     supplierId: m.supplierId,
@@ -851,7 +855,7 @@ export async function createStockMovement(data: {
   type: string; quantity: number; reference?: string; referenceType?: string; notes?: string;
 }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   if (!["IN", "OUT", "TRANSFER", "ADJUSTMENT", "ORDER_FULFILLMENT", "PURCHASE", "RETURN"].includes(data.type)) {
     throw new Error("Invalid movement type");
@@ -886,7 +890,7 @@ export async function createStockMovement(data: {
       afterQuantity: newQty,
       referenceType: data.referenceType || "STOCK_MOVEMENT",
       reference: data.reference,
-      userId: (session as any).user?.id,
+      userId: session!.user?.id,
       notes: data.notes || undefined,
     });
   } else if (data.quantity > 0) {
@@ -910,7 +914,7 @@ export async function createStockMovement(data: {
       afterQuantity: newQty,
       referenceType: data.referenceType || "STOCK_MOVEMENT",
       reference: data.reference,
-      userId: (session as any).user?.id,
+      userId: session!.user?.id,
       notes: data.notes || undefined,
     });
   }
@@ -933,7 +937,7 @@ export async function createStockMovement(data: {
 
 export async function adjustStock(inventoryId: string, delta: number, notes?: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const inv = await prisma.inventory.findUnique({ where: { id: inventoryId } });
   if (!inv) throw new Error("Inventory record not found");
@@ -958,7 +962,7 @@ export async function adjustStock(inventoryId: string, delta: number, notes?: st
     beforeQuantity: beforeQty,
     afterQuantity: newQty,
     referenceType: "ADJUSTMENT",
-    userId: (session as any).user?.id,
+    userId: session!.user?.id,
     notes,
   });
 
@@ -982,12 +986,12 @@ export async function getInventoryLogs({ productId, inventoryId, type, limit = 5
   productId?: string; inventoryId?: string; type?: string; limit?: number;
 } = {}) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
-  const where: any = {};
+  const where: Prisma.InventoryLogWhereInput = {};
   if (productId) where.productId = productId;
   if (inventoryId) where.inventoryId = inventoryId;
-  if (type) where.type = type;
+  if (type) where.type = type as InventoryLogType;
 
   const logs = await prisma.inventoryLog.findMany({
     where,
@@ -1001,7 +1005,7 @@ export async function getInventoryLogs({ productId, inventoryId, type, limit = 5
     take: limit,
   });
 
-  return logs.map((l: any) => ({
+  return logs.map((l) => ({
     id: l.id,
     inventoryId: l.inventoryId,
     productId: l.productId,
@@ -1031,8 +1035,8 @@ export async function createSupplierReturn(data: {
   items: { productId: string; quantity: number; notes?: string }[];
 }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
-  const userId = (session as any).user?.id as string;
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
+  const userId = session!.user?.id as string;
 
   const po = await prisma.purchaseOrder.findUnique({
     where: { id: data.purchaseOrderId },
@@ -1046,7 +1050,7 @@ export async function createSupplierReturn(data: {
   const retCount = await prisma.supplierReturn.count();
   const returnNumber = `RET-${Date.now().toString().slice(-6)}-${(retCount + 1).toString().padStart(4, "0")}`;
 
-  let total = 0;
+  let _total = 0;
   const returnItems = data.items.map((item) => {
     const poItem = po.items.find((i) => i.productId === item.productId);
     if (!poItem) throw new Error(`Product ${item.productId} not found in PO`);
@@ -1059,7 +1063,7 @@ export async function createSupplierReturn(data: {
     }
 
     const subtotal = item.quantity * Number(poItem.unitPrice);
-    total += subtotal;
+    _total += subtotal;
     return {
       productId: item.productId,
       quantity: item.quantity,
@@ -1085,7 +1089,7 @@ export async function createSupplierReturn(data: {
 
 export async function submitSupplierReturn(id: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const ret = await prisma.supplierReturn.findUnique({ where: { id } });
   if (!ret) throw new Error("Return not found");
@@ -1099,8 +1103,8 @@ export async function submitSupplierReturn(id: string) {
 
 export async function approveSupplierReturn(id: string, notes?: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
-  const userId = (session as any).user?.id as string;
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
+  const userId = session!.user?.id as string;
 
   const ret = await prisma.supplierReturn.findUnique({ where: { id } });
   if (!ret) throw new Error("Return not found");
@@ -1123,8 +1127,8 @@ export async function approveSupplierReturn(id: string, notes?: string) {
 
 export async function rejectSupplierReturn(id: string, notes: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
-  const userId = (session as any).user?.id as string;
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
+  const userId = session!.user?.id as string;
 
   const ret = await prisma.supplierReturn.findUnique({ where: { id } });
   if (!ret) throw new Error("Return not found");
@@ -1147,7 +1151,7 @@ export async function rejectSupplierReturn(id: string, notes: string) {
 
 export async function shipSupplierReturn(id: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   return prisma.$transaction(async (tx) => {
     const ret = await tx.supplierReturn.findUnique({
@@ -1185,9 +1189,9 @@ export async function shipSupplierReturn(id: string) {
           referenceId: id,
           referenceType: "SUPPLIER_RETURN",
           reference: ret.returnNumber,
-          userId: (session as any).user?.id,
+          userId: session!.user?.id,
           notes: `Returned ${item.quantity} units to supplier (Return ${ret.returnNumber})`,
-          tx: tx as any,
+          tx,
         });
       }
 
@@ -1205,7 +1209,7 @@ export async function shipSupplierReturn(id: string) {
 
     await prisma.auditLog.create({
       data: {
-        userId: (session as any).user?.id as string,
+        userId: session!.user?.id as string,
         action: "SHIP_RETURN",
         entityType: "SupplierReturn",
         entityId: id,
@@ -1223,7 +1227,7 @@ export async function shipSupplierReturn(id: string) {
 
 export async function completeSupplierReturn(id: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const ret = await prisma.supplierReturn.findUnique({ where: { id } });
   if (!ret) throw new Error("Return not found");
@@ -1231,7 +1235,7 @@ export async function completeSupplierReturn(id: string) {
 
   await prisma.auditLog.create({
     data: {
-      userId: (session as any).user?.id as string,
+      userId: session!.user?.id as string,
       action: "COMPLETE_RETURN",
       entityType: "SupplierReturn",
       entityId: id,
@@ -1247,7 +1251,7 @@ export async function completeSupplierReturn(id: string) {
 
 export async function cancelSupplierReturn(id: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const ret = await prisma.supplierReturn.findUnique({ where: { id } });
   if (!ret) throw new Error("Return not found");
@@ -1263,7 +1267,7 @@ export async function cancelSupplierReturn(id: string) {
 
 export async function getSupplierReturn(id: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const ret = await prisma.supplierReturn.findUnique({
     where: { id },
@@ -1281,10 +1285,10 @@ export async function getAllSupplierReturns({ status, supplierId, page = 1, limi
   status?: string; supplierId?: string; page?: number; limit?: number;
 } = {}) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
-  const where: any = {};
-  if (status && status !== "ALL") where.status = status;
+  const where: Prisma.SupplierReturnWhereInput = {};
+  if (status && status !== "ALL") where.status = status as Prisma.SupplierReturnWhereInput["status"];
   if (supplierId) where.supplierId = supplierId;
 
   const [returns, total] = await Promise.all([

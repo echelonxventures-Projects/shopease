@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Search, Plus, ShoppingBag, Package, Eye, Edit, Check, X } from "lucide-react";
+import { Search, Plus, ShoppingBag, Check, X } from "lucide-react";
 
 interface Product {
   id: string;
@@ -70,8 +70,8 @@ export default function SupplierCatalogPage() {
         search, category, alreadyListed: showAlreadyListed,
       });
       setBrowseProducts(res.products);
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Operation failed");
     } finally {
       setLoading(false);
     }
@@ -83,8 +83,8 @@ export default function SupplierCatalogPage() {
         status: listingFilter || undefined,
       });
       setMyListings(res.listings as Listing[]);
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Operation failed");
     }
   }
 
@@ -108,8 +108,8 @@ export default function SupplierCatalogPage() {
       setSelectedProduct(null);
       setPriceForm({ listingPrice: "", comparePrice: "", quantity: "", listingSku: "" });
       loadBrowse();
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Operation failed");
     }
   }, [selectedProduct, priceForm]);
 
@@ -210,14 +210,14 @@ export default function SupplierCatalogPage() {
                   </div>
 
                   <div className="flex items-center gap-3 text-sm">
-                    <span className="font-bold text-lg">₹{p.price.toLocaleString()}</span>
+                    <span className="font-bold text-lg">₹{p.price.toLocaleString("en-IN")}</span>
                     {p.comparePrice && (
-                      <span className="text-gray-400 line-through">₹{p.comparePrice.toLocaleString()}</span>
+                      <span className="text-gray-400 line-through">₹{p.comparePrice.toLocaleString("en-IN")}</span>
                     )}
                   </div>
 
                   <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>Stock: {p.stock.toLocaleString()}</span>
+                    <span>Stock: {p.stock.toLocaleString("en-IN")}</span>
                     {p.avgRating > 0 && <span>⭐ {p.avgRating.toFixed(1)} ({p.reviewCount})</span>}
                   </div>
 
@@ -247,7 +247,7 @@ export default function SupplierCatalogPage() {
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
               <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
                 <div className="p-6 border-b">
-                  <h2 className="text-lg font-bold">List "{selectedProduct.name}"</h2>
+                  <h2 className="text-lg font-bold">List &quot;{selectedProduct.name}&quot;</h2>
                   <p className="text-sm text-gray-500">Set your selling price and available quantity</p>
                 </div>
                 <div className="p-6 space-y-4">
@@ -297,7 +297,7 @@ export default function SupplierCatalogPage() {
                     </div>
                     <div className="flex justify-between text-gray-600">
                       <span>Master Price:</span>
-                      <span>₹{selectedProduct.price.toLocaleString()}</span>
+                      <span>₹{selectedProduct.price.toLocaleString("en-IN")}</span>
                     </div>
                     <div className="flex justify-between font-medium mt-2 pt-2 border-t border-blue-200">
                       <span>Potential Margin:</span>
@@ -361,9 +361,9 @@ export default function SupplierCatalogPage() {
                         <div className="font-medium">{l.product?.name}</div>
                         {l.listingSku && <div className="text-xs text-gray-500">SKU: {l.listingSku}</div>}
                       </td>
-                      <td className="p-3 text-right font-medium">₹{Number(l.listingPrice).toLocaleString()}</td>
+                      <td className="p-3 text-right font-medium">₹{Number(l.listingPrice).toLocaleString("en-IN")}</td>
                       <td className="p-3 text-right text-sm text-gray-400">
-                        {l.comparePrice ? `₹${Number(l.comparePrice).toLocaleString()}` : "-"}
+                        {l.comparePrice ? `₹${Number(l.comparePrice).toLocaleString("en-IN")}` : "-"}
                       </td>
                       <td className="p-3 text-center">
                         <input
@@ -388,7 +388,7 @@ export default function SupplierCatalogPage() {
                         </span>
                       </td>
                       <td className="p-3 text-center text-xs text-gray-500">
-                        {l.enabledAt ? new Date(l.enabledAt).toLocaleDateString() : "-"}
+                        {l.enabledAt ? new Date(l.enabledAt).toLocaleDateString("en-IN") : "-"}
                       </td>
                       <td className="p-3 text-center">
                         <div className="flex items-center justify-center gap-1">

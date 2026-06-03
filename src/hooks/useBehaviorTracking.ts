@@ -4,8 +4,9 @@ import { trackBehavior } from "@/server/actions/ai-behavior-actions";
 
 export function useBehaviorTracking(enabled: boolean = true) {
   const sessionIdRef = useRef<string>("");
-  const dwellTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const pageStartRef = useRef<number>(Date.now());
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _dwellTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const pageStartRef = useRef<number>(0);
 
   // Initialize session ID
   useEffect(() => {
@@ -26,12 +27,12 @@ export function useBehaviorTracking(enabled: boolean = true) {
     return () => {
       // Track dwell time on unmount
       const dwellTime = Date.now() - pageStartRef.current;
-      trackBehavior("DWELL_TIME", undefined, { page: path, dwellTime } as any);
+      trackBehavior("DWELL_TIME", undefined, { page: path, dwellTime } as Record<string, unknown>);
     };
   }, [enabled]);
 
   // Track specific events
-  const track = useCallback((type: string, productId?: string, metadata?: any) => {
+  const track = useCallback((type: string, productId?: string, metadata?: Record<string, unknown>) => {
     if (!enabled) return;
     trackBehavior(type, productId, metadata);
   }, [enabled]);

@@ -28,12 +28,12 @@ interface ProductDetailWrapperProps {
     subscriptionTrialDays?: number | null;
   };
   hasVariants: boolean;
-  variants: any[];
-  optionGroups: any[];
-  brand: any;
+  variants: { id: string; sku: string | null; price: number; comparePrice: number | null; discountType: string; discountValue: number | null; stock: number; images: string[]; isActive: boolean; options: { optionName: string; value: string; hexColor?: string | null }[]; optionLabel: string }[];
+  optionGroups: { id: string; name: string; label: string | null; values: { id: string; value: string; hexColor: string | null; inStock: boolean }[] }[];
+  brand: { name: string } | null;
   shortDesc: string | null;
   description: string | null;
-  specs: any;
+  specs: Record<string, unknown> | null;
   avgRating: number;
   reviewCount: number;
   hasTranslation: boolean;
@@ -42,9 +42,9 @@ interface ProductDetailWrapperProps {
   baseComparePrice: number | null;
   currencySymbol: string;
   initialImages: string[];
-  tierPrices?: any[];
-  subscription?: any;
-  bundleItems?: any[];
+  tierPrices?: { id: string; minQty: number; maxQty?: number | null; price?: number | string | null; discountPercentage?: number | string | null }[];
+  subscription?: { interval?: string; trialDays?: number } | null;
+  bundleItems?: { id: string; quantity: number; isRequired?: boolean; product?: { name: string; images?: string[] } | null }[];
 }
 
 export function ProductDetailWrapper({

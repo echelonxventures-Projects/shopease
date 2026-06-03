@@ -5,9 +5,13 @@ import { getRevenueByChannel, getRevenueByCategory, getRevenueByRegion, getReven
 import { BarChart3, Loader2 } from "lucide-react";
 
 export default function RevenueAnalyticsPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [channels, setChannels] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [categories, setCategories] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [regions, setRegions] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [productTypes, setProductTypes] = useState<any[]>([]);
   const [days, setDays] = useState(30);
   const [loading, setLoading] = useState(true);
@@ -51,7 +55,7 @@ export default function RevenueAnalyticsPage() {
                 style={{ width: `${pct}%` }}
               />
             </div>
-            <span className="text-sm font-medium w-24 text-right">₹{Math.round(item.value).toLocaleString()}</span>
+            <span className="text-sm font-medium w-24 text-right">₹{Math.round(item.value).toLocaleString("en-IN")}</span>
           </div>
         );
       })}

@@ -29,19 +29,19 @@ export default async function AIAnalyticsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow p-6">
           <div className="text-sm text-gray-500">Behavior Events</div>
-          <div className="text-3xl font-bold text-violet-600">{totalBehaviors.toLocaleString()}</div>
+          <div className="text-3xl font-bold text-violet-600">{totalBehaviors.toLocaleString("en-IN")}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
           <div className="text-sm text-gray-500">Recommendations</div>
-          <div className="text-3xl font-bold text-blue-600">{totalRecommendations.toLocaleString()}</div>
+          <div className="text-3xl font-bold text-blue-600">{totalRecommendations.toLocaleString("en-IN")}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
           <div className="text-sm text-gray-500">Agent Runs</div>
-          <div className="text-3xl font-bold text-green-600">{totalAgentRuns.toLocaleString()}</div>
+          <div className="text-3xl font-bold text-green-600">{totalAgentRuns.toLocaleString("en-IN")}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
           <div className="text-sm text-gray-500">Conversion Events</div>
-          <div className="text-3xl font-bold text-orange-600">{conversionCount.toLocaleString()}</div>
+          <div className="text-3xl font-bold text-orange-600">{conversionCount.toLocaleString("en-IN")}</div>
         </div>
       </div>
 
@@ -69,7 +69,7 @@ export default async function AIAnalyticsPage() {
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-lg font-bold mb-4">Behavior Event Types</h2>
         <div className="space-y-3">
-          {behaviorTypes.map((b: any) => {
+          {behaviorTypes.map((b) => {
             const pct = totalBehaviors > 0 ? (b._count / totalBehaviors * 100).toFixed(1) : "0";
             return (
               <div key={b.type}>
@@ -91,11 +91,11 @@ export default async function AIAnalyticsPage() {
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-bold mb-4">Recent Activity</h2>
         <div className="space-y-2">
-          {recentActivity.map((b: any) => (
+          {recentActivity.map((b) => (
             <div key={b.id} className="flex items-center justify-between py-2 border-b last:border-0 text-sm">
               <span className="font-medium">{b.type}</span>
               <span className="text-gray-500">{b.productId ? `Product: ${b.productId.slice(0, 8)}...` : "—"}</span>
-              <span className="text-gray-400">{new Date(b.createdAt).toLocaleString()}</span>
+              <span className="text-gray-400">{new Date(b.createdAt).toLocaleString("en-IN")}</span>
             </div>
           ))}
           {!recentActivity.length && <p className="text-gray-500 text-sm">No activity yet</p>}

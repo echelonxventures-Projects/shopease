@@ -20,6 +20,7 @@ export async function getTierPrice(productId: string, qty: number) {
     orderBy: { minQty: "asc" },
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   let best: any = null;
   for (const tier of tiers) {
     if (qty >= tier.minQty) {
@@ -69,7 +70,7 @@ export async function getMyB2BOrders() {
   if (!session?.user?.id) throw new Error("Unauthorized");
 
   return prisma.order.findMany({
-    where: { userId: session.user.id, orderNotes: { startsWith: "B2B" } },
+    where: { userId: session.user.id, orderNumber: { startsWith: "B2B-" } },
     orderBy: { createdAt: "desc" },
     take: 50,
   });

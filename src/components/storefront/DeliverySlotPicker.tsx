@@ -8,8 +8,18 @@ interface DeliverySlotPickerProps {
   selectedSlotId?: string;
 }
 
+interface DeliverySlot {
+  id: string;
+  date: string | Date;
+  timeFrom: string | Date;
+  timeTo: string | Date;
+  maxOrders: number;
+  bookedOrders: number;
+  fee: number | string | { toString(): string };
+}
+
 export function DeliverySlotPicker({ onSelect, selectedSlotId }: DeliverySlotPickerProps) {
-  const [slots, setSlots] = useState<any[]>([]);
+  const [slots, setSlots] = useState<DeliverySlot[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,9 +39,9 @@ export function DeliverySlotPicker({ onSelect, selectedSlotId }: DeliverySlotPic
   if (loading) return <p className="text-gray-500">Loading delivery slots...</p>;
   if (slots.length === 0) return <p className="text-gray-500">No delivery slots available</p>;
 
-  const grouped: Record<string, any[]> = {};
+  const grouped: Record<string, DeliverySlot[]> = {};
   slots.forEach(slot => {
-    const date = new Date(slot.date).toLocaleDateString();
+    const date = new Date(slot.date).toLocaleDateString("en-IN");
     if (!grouped[date]) grouped[date] = [];
     grouped[date].push(slot);
   });

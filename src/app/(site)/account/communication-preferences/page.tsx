@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getNotificationPreferences, updateNotificationPreferences } from "@/server/actions/commerce-actions";
-import { Button } from "@/components/ui/button";
+
 import { Settings, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";

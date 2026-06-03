@@ -43,9 +43,9 @@ export async function listApiKeys() {
     },
   });
 
-  return keys.map((k: any) => ({
+  return keys.map((k) => ({
     ...k,
-    permissions: JSON.parse(k.permissions || "[]"),
+    permissions: typeof k.permissions === "string" ? JSON.parse(k.permissions) : (k.permissions || []),
   }));
 }
 

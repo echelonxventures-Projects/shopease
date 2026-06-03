@@ -5,15 +5,23 @@ import Link from "next/link";
 import { getRecentlyViewed } from "@/server/actions/ai-recommendation-actions";
 import { Sparkles, ChevronRight, Loader2 } from "lucide-react";
 
+interface RecentProduct {
+  id: string;
+  slug: string;
+  name: string;
+  price: number | string;
+  images?: string[];
+}
+
 export function RecentViewedCarousel({ title = "Recently Viewed" }: { title?: string }) {
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<RecentProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getRecentlyViewed(8).then((prods) => {
       // Deduplicate by product ID
       const seen = new Set<string>();
-      const unique = prods.filter((p: any) => {
+      const unique = prods.filter((p: RecentProduct) => {
         if (seen.has(p.id)) return false;
         seen.add(p.id);
         return true;
@@ -45,7 +53,7 @@ export function RecentViewedCarousel({ title = "Recently Viewed" }: { title?: st
         </Link>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4" role="list">
-        {products.map((product: any) => (
+        {products.map((product) => (
           <Link key={product.id} href={`/products/${product.slug}`} className="group" role="listitem">
             <div className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
               {product.images?.[0] && (
@@ -55,7 +63,7 @@ export function RecentViewedCarousel({ title = "Recently Viewed" }: { title?: st
               )}
               <div className="p-3">
                 <p className="text-sm font-medium truncate">{product.name}</p>
-                <p className="text-sm font-bold text-violet-600 mt-1">₹{Number(product.price).toLocaleString()}</p>
+                <p className="text-sm font-bold text-violet-600 mt-1">₹{Number(product.price).toLocaleString("en-IN")}</p>
               </div>
             </div>
           </Link>

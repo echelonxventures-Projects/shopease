@@ -1,8 +1,9 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getSession, isAdminRole } from "@/lib/auth";
 import { productTranslationSchema, categoryTranslationSchema, brandTranslationSchema, promoTranslationSchema, voucherTierTranslationSchema } from "@/lib/validations/translation";
+import type { Prisma } from "@prisma/client";
 
 // ===================== REGIONS =====================
 
@@ -78,7 +79,7 @@ export async function createRegion(data: {
   isActive?: boolean;
 }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   return prisma.region.create({ data });
 }
@@ -95,14 +96,14 @@ export async function updateRegion(id: string, data: {
   isActive?: boolean;
 }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   return prisma.region.update({ where: { id }, data });
 }
 
 export async function toggleRegionActive(id: string, isActive: boolean) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   return prisma.region.update({ where: { id }, data: { isActive } });
 }
@@ -130,7 +131,7 @@ export async function createProductTranslation(productId: string, locale: string
 
   await prisma.auditLog.create({
     data: {
-      userId: (session as any).user?.id ?? null,
+      userId: session!.user?.id ?? null,
       action: parsed.data.name ? "UPDATE" : "CREATE",
       entityType: "ProductTranslation",
       entityId: result.id,
@@ -167,7 +168,7 @@ export async function deleteProductTranslationById(id: string) {
   if (translation) {
     await prisma.auditLog.create({
       data: {
-        userId: (session as any).user?.id ?? null,
+        userId: session!.user?.id ?? null,
         action: "DELETE",
         entityType: "ProductTranslation",
         entityId: id,
@@ -199,7 +200,7 @@ export async function updateProductTranslation(id: string, data: {
 
   await prisma.auditLog.create({
     data: {
-      userId: (session as any).user?.id ?? null,
+      userId: session!.user?.id ?? null,
       action: "UPDATE",
       entityType: "ProductTranslation",
       entityId: id,
@@ -226,7 +227,7 @@ export async function getTranslationOverview({
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");
 
-  const where: any = {};
+  const where: Prisma.ProductWhereInput = {};
   if (search) {
     where.OR = [
       { name: { contains: search, mode: "insensitive" } },
@@ -234,7 +235,7 @@ export async function getTranslationOverview({
     ];
   }
 
-  const [products, total] = await Promise.all([
+  const [products, _total] = await Promise.all([
     prisma.product.findMany({
       where,
       include: { translations: true, category: { select: { name: true } } },
@@ -331,7 +332,7 @@ export async function createCategoryTranslation(categoryId: string, locale: stri
 
   await prisma.auditLog.create({
     data: {
-      userId: (session as any).user?.id ?? null,
+      userId: session!.user?.id ?? null,
       action: "CREATE",
       entityType: "CategoryTranslation",
       entityId: result.id,
@@ -367,7 +368,7 @@ export async function updateCategoryTranslation(id: string, data: {
 
   await prisma.auditLog.create({
     data: {
-      userId: (session as any).user?.id ?? null,
+      userId: session!.user?.id ?? null,
       action: "UPDATE",
       entityType: "CategoryTranslation",
       entityId: id,
@@ -388,7 +389,7 @@ export async function deleteCategoryTranslation(id: string) {
   if (translation) {
     await prisma.auditLog.create({
       data: {
-        userId: (session as any).user?.id ?? null,
+        userId: session!.user?.id ?? null,
         action: "DELETE",
         entityType: "CategoryTranslation",
         entityId: id,
@@ -419,7 +420,7 @@ export async function createBrandTranslation(brandId: string, locale: string, da
 
   await prisma.auditLog.create({
     data: {
-      userId: (session as any).user?.id ?? null,
+      userId: session!.user?.id ?? null,
       action: "CREATE",
       entityType: "BrandTranslation",
       entityId: result.id,
@@ -455,7 +456,7 @@ export async function updateBrandTranslation(id: string, data: {
 
   await prisma.auditLog.create({
     data: {
-      userId: (session as any).user?.id ?? null,
+      userId: session!.user?.id ?? null,
       action: "UPDATE",
       entityType: "BrandTranslation",
       entityId: id,
@@ -476,7 +477,7 @@ export async function deleteBrandTranslation(id: string) {
   if (translation) {
     await prisma.auditLog.create({
       data: {
-        userId: (session as any).user?.id ?? null,
+        userId: session!.user?.id ?? null,
         action: "DELETE",
         entityType: "BrandTranslation",
         entityId: id,
@@ -498,7 +499,7 @@ export async function setProductRegionPrice(productId: string, regionId: string,
   discountValue?: number;
 }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   return prisma.productRegionPrice.upsert({
     where: { productId_regionId: { productId, regionId } },
@@ -506,6 +507,7 @@ export async function setProductRegionPrice(productId: string, regionId: string,
       currency: data.currency,
       price: data.price,
       comparePrice: data.comparePrice ?? null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- enum string cast
       discountType: (data.discountType || "NONE") as any,
       discountValue: data.discountValue ?? null,
     },
@@ -515,6 +517,7 @@ export async function setProductRegionPrice(productId: string, regionId: string,
       currency: data.currency,
       price: data.price,
       comparePrice: data.comparePrice ?? null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- enum string cast
       discountType: (data.discountType || "NONE") as any,
       discountValue: data.discountValue ?? null,
     },
@@ -543,7 +546,7 @@ export async function setProductRegionAvailability(productId: string, regionId: 
   notes?: string;
 }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   return prisma.productRegionAvailability.upsert({
     where: { productId_regionId: { productId, regionId } },
@@ -567,7 +570,7 @@ export async function getProductRegionAvailabilities(productId: string) {
 
 export async function getProductsMissingTranslation(locale: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   return prisma.product.findMany({
     where: {
@@ -581,7 +584,7 @@ export async function getProductsMissingTranslation(locale: string) {
 
 export async function createBulkTranslations(locale: string, productIds: string[], sourceLocale?: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const results: { success: boolean; productId: string; error?: string }[] = [];
 
@@ -630,8 +633,8 @@ export async function createBulkTranslations(locale: string, productIds: string[
       });
 
       results.push({ success: true, productId });
-    } catch (err: any) {
-      results.push({ success: false, productId, error: err.message });
+    } catch (err) {
+      results.push({ success: false, productId, error: err instanceof Error ? err.message : String(err) });
     }
   }
 

@@ -11,9 +11,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+
 import { toast } from "sonner";
-import { Search, Plus, AlertTriangle, Package, Edit, Trash2, Eye } from "lucide-react";
+import { Search, Plus, AlertTriangle, Package, Edit, Eye } from "lucide-react";
 
 interface Product {
   id: string;
@@ -53,8 +53,8 @@ export default function MasterCatalogPage() {
       const res = await getMasterProducts({ search, category, status, sort, page, limit: perPage });
       setProducts(res.products);
       setTotal(res.total);
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Operation failed");
     } finally {
       setLoading(false);
     }
@@ -170,14 +170,14 @@ export default function MasterCatalogPage() {
                     {p.masterCategory && <div className="text-xs text-gray-500">{p.masterCategory}</div>}
                   </td>
                   <td className="p-3 text-right text-sm font-medium">
-                    ₹{p.price.toLocaleString()}
+                    ₹{p.price.toLocaleString("en-IN")}
                     {p.comparePrice && (
                       <span className="text-xs text-gray-400 line-through ml-1">
-                        ₹{p.comparePrice.toLocaleString()}
+                        ₹{p.comparePrice.toLocaleString("en-IN")}
                       </span>
                     )}
                   </td>
-                  <td className="p-3 text-center text-sm">{p.stock.toLocaleString()}</td>
+                  <td className="p-3 text-center text-sm">{p.stock.toLocaleString("en-IN")}</td>
                   <td className="p-3 text-center text-sm">
                     {p.avgRating > 0 ? `${p.avgRating.toFixed(1)} (${p.reviewCount})` : "-"}
                   </td>
@@ -241,8 +241,9 @@ function CreateProductModal({ onClose, onSuccess }: { onClose: () => void; onSuc
     categoryId: "", brandId: "", stock: "", tags: "", images: "", sku: "",
     masterCategory: "", productType: "PHYSICAL", taxCategory: "STANDARD",
   });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [duplicates, setDuplicates] = useState<any[]>([]);
-  const [checking, setChecking] = useState(false);
+  const [_checking, setChecking] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -288,8 +289,8 @@ function CreateProductModal({ onClose, onSuccess }: { onClose: () => void; onSuc
       });
       toast.success("Product added to master catalog");
       onSuccess();
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Operation failed");
     } finally {
       setSaving(false);
     }

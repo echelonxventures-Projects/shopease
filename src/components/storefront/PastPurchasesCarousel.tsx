@@ -7,12 +7,12 @@ import Link from "next/link";
 import { History } from "lucide-react";
 
 export function PastPurchasesCarousel() {
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<{ id: string; slug: string; name: string; price: number | string; images?: string[] }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getPastPurchases(12)
-      .then(setProducts)
+      .then((data) => setProducts(data as unknown as typeof products))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);

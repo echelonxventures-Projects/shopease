@@ -22,9 +22,11 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function AdminBusinessPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [businesses, setBusinesses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({ status: "", search: "" });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [selected, setSelected] = useState<any>(null);
   const [adminNote, setAdminNote] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
@@ -113,7 +115,7 @@ export default function AdminBusinessPage() {
                     {b.verificationStatus}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-sm text-gray-500">{new Date(b.createdAt).toLocaleDateString()}</TableCell>
+                <TableCell className="text-sm text-gray-500">{new Date(b.createdAt).toLocaleDateString("en-IN")}</TableCell>
                 <TableCell>
                   <div className="flex gap-1">
                     {b.verificationStatus !== "VERIFIED" && (

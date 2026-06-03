@@ -26,6 +26,7 @@ import { Languages } from "lucide-react";
 
 export default function CategoriesPage() {
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -33,9 +34,12 @@ export default function CategoriesPage() {
   const [form, setForm] = useState({ name: "", description: "", position: 0 });
 
   // Translations
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [translations, setTranslations] = useState<any[]>([]);
   const [transDialogOpen, setTransDialogOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [editingCategory, setEditingCategory] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [editingTranslation, setEditingTranslation] = useState<any>(null);
   const [transForm, setTransForm] = useState({ locale: "", name: "", slug: "", description: "" });
 
@@ -58,15 +62,16 @@ export default function CategoriesPage() {
         toast.success("Category created");
       }
       setOpen(false); resetForm(); fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this category? Products in this category will be affected.")) return;
     try { await deleteCategory(id); toast.success("Category deleted"); fetch(); }
-    catch (err: any) { toast.error(err.message); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex type from external source
   const openTranslations = async (category: any) => {
     setEditingCategory(category);
     setEditingTranslation(null);
@@ -96,7 +101,7 @@ export default function CategoriesPage() {
       setTransForm({ locale: "", name: "", slug: "", description: "" });
       const data = await getCategoryTranslations(editingCategory.id);
       setTranslations(data);
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleDeleteTranslation = async (id: string, locale: string) => {
@@ -106,7 +111,7 @@ export default function CategoriesPage() {
       toast.success("Translation deleted");
       const data = await getCategoryTranslations(editingCategory.id);
       setTranslations(data);
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   if (loading) return <div className="p-6"><p className="text-gray-500">Loading...</p></div>;
@@ -132,7 +137,7 @@ export default function CategoriesPage() {
             {categories.length === 0 ? (
               <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-500">No categories</td></tr>
             ) : (
-              categories.map((c: any) => (
+              categories.map((c) => (
                 <tr key={c.id} className="border-t">
                   <td className="px-4 py-3 font-medium">{c.name}</td>
                   <td className="px-4 py-3 text-sm text-gray-500">{c.slug}</td>
@@ -204,7 +209,7 @@ export default function CategoriesPage() {
               <p className="text-sm text-gray-400 py-4">No translations yet</p>
             ) : (
               <div className="space-y-2 max-h-60 overflow-auto">
-                {translations.map((t: any) => (
+                {translations.map((t) => (
                   <div key={t.id} className="flex items-center justify-between border rounded-lg p-3">
                     <div>
                       <Badge className="mb-1">{getLocaleName(t.locale)}</Badge>
@@ -239,7 +244,7 @@ export default function CategoriesPage() {
                   <select
                     value={transForm.locale}
                     onChange={(e) => {
-                      const existing = translations.find((t: any) => t.locale === e.target.value);
+                      const existing = translations.find((t) => t.locale === e.target.value);
                       if (existing && !editingTranslation) {
                         setEditingTranslation(existing);
                         setTransForm({
@@ -257,8 +262,8 @@ export default function CategoriesPage() {
                   >
                     <option value="">Select locale</option>
                     {LOCALES.filter((l) => l.code !== "en").map((loc) => (
-                      <option key={loc.code} value={loc.code} disabled={!editingTranslation && translations.some((t: any) => t.locale === loc.code)}>
-                        {loc.nativeName} {!editingTranslation && translations.some((t: any) => t.locale === loc.code) ? "(exists)" : ""}
+                      <option key={loc.code} value={loc.code} disabled={!editingTranslation && translations.some((t) => t.locale === loc.code)}>
+                        {loc.nativeName} {!editingTranslation && translations.some((t) => t.locale === loc.code) ? "(exists)" : ""}
                       </option>
                     ))}
                   </select>

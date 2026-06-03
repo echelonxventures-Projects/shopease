@@ -34,7 +34,7 @@ export function encrypt(code: string): string {
  */
 export function decrypt(encoded: string): string {
   const [encryptedB64, ivB64, authTagB64] = encoded.split(":");
-  if (!encryptedB64 || !ivB64 || !authTagB64) {
+  if (encryptedB64 === undefined || !ivB64 || !authTagB64) {
     throw new Error("Invalid encrypted data format");
   }
   const encrypted = Buffer.from(encryptedB64, "base64");
@@ -64,7 +64,7 @@ export function hash(code: string): string {
  * Total: 23 characters with built-in checksum capability.
  */
 export function generateSecureCode(prefix = "VOU", length = 20): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // excluded: I, O, Q, 0, 1 (ambiguous)
+  const chars = "ABCDEFGHJKLMNPRSTUVWXYZ23456789"; // excluded: I, O, Q, 0, 1 (ambiguous)
   const cleanPrefix = prefix.toUpperCase();
 
   if (length <= cleanPrefix.length) {
@@ -163,7 +163,7 @@ export function decryptPII(value: string | null | undefined): string {
  * Returns a new object with encrypted values.
  */
 export function encryptPIIFields<T extends Record<string, string | null | undefined>>(fields: T): T {
-  const result = { ...fields } as any;
+  const result = { ...fields } as Record<string, string | null | undefined>;
   for (const key of Object.keys(fields)) {
     if (fields[key]) {
       result[key] = encryptPII(fields[key]);
@@ -177,7 +177,7 @@ export function encryptPIIFields<T extends Record<string, string | null | undefi
  * Returns a new object with decrypted values.
  */
 export function decryptPIIFields<T extends Record<string, string | null | undefined>>(fields: T): T {
-  const result = { ...fields } as any;
+  const result = { ...fields } as Record<string, string | null | undefined>;
   for (const key of Object.keys(fields)) {
     if (fields[key]) {
       result[key] = decryptPII(fields[key]);

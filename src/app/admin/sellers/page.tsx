@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export default function SellersPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [sellers, setSellers] = useState<any[]>([]);
   const [filter, setFilter] = useState<string>("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -21,8 +22,8 @@ export default function SellersPage() {
       await updateSellerStatus(id, status);
       toast.success(`Seller ${status.toLowerCase()}`);
       load();
-    } catch (err: any) {
-      toast.error(err.message || "Failed");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed");
     } finally {
       setActionLoading(null);
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 
 let sessionId: string;
 
@@ -10,7 +10,8 @@ function generateSessionId() {
     : crypto.randomUUID();
 }
 
-function getPageType(): string {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _getPageType(): string {
   if (typeof window === "undefined") return "PAGE_VIEW";
   const path = window.location.pathname;
   if (path.startsWith("/products")) return "PAGE_VIEW";
@@ -20,7 +21,7 @@ function getPageType(): string {
 }
 
 export function useConversionTracking() {
-  const [initialized, setInitialized] = useState(false);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     sessionId = generateSessionId();
@@ -39,11 +40,11 @@ export function useConversionTracking() {
       }),
     }).catch(() => {});
 
-    setInitialized(true);
+    initializedRef.current = true;
   }, []);
 
-  const track = async (type: string, productId?: string, metadata?: Record<string, any>) => {
-    if (!initialized) return;
+  const track = async (type: string, productId?: string, metadata?: Record<string, unknown>) => {
+    if (!initializedRef.current) return;
     fetch("/api/events", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -18,9 +18,7 @@ const nextConfig: NextConfig = {
     },
   },
   typescript: {
-    // Temporarily ignore pre-existing type errors in LocationSelector
-    // TODO: Fix all type errors before going to production
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   images: {
     formats: ["image/webp", "image/avif"],

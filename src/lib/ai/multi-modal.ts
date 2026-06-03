@@ -155,7 +155,8 @@ export async function analyzeImage(imageBuffer: Buffer): Promise<ImageAnalysis> 
   }
 
   try {
-    const base64 = imageBuffer.toString("base64").slice(0, 1000);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _base64 = imageBuffer.toString("base64").slice(0, 1000);
     const result = await provider.generate(`Describe this image and return JSON: { width, height, format, dominantColors: [{color, percentage}], description, tags[], objects[], sentiment, quality (0-100) }`);
     return parseImageAnalysis(result.text) || simpleImageAnalysis(imageBuffer);
   } catch {

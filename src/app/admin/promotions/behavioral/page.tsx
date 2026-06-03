@@ -14,7 +14,9 @@ const BEHAVIORAL_TYPES = [
 ];
 
 export default function BehavioralTriggersPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [triggers, setTriggers] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [promos, setPromos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -33,6 +35,7 @@ export default function BehavioralTriggersPage() {
 
   const handleSubmit = async () => {
     if (!form.name.trim() || !form.promoId) return toast.error("Name and promo required");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex type from external source
     let condition: any = {};
     try { condition = JSON.parse(form.condition || "{}"); } catch { return toast.error("Invalid condition JSON"); }
     try {
@@ -46,18 +49,18 @@ export default function BehavioralTriggersPage() {
       toast.success("Created");
       setShowForm(false); setForm({ name: "", type: "CART_ABANDONMENT", promoId: "", condition: "", cooldownHours: "24" });
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete?")) return;
     try { await deleteBehavioralTrigger(id); toast.success("Deleted"); fetch(); }
-    catch (err: any) { toast.error(err.message); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleToggle = async (id: string, active: boolean) => {
     try { await updateBehavioralTrigger(id, { isActive: !active }); toast.success("Updated"); fetch(); }
-    catch (err: any) { toast.error(err.message); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   return (

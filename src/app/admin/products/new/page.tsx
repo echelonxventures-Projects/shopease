@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createProduct, getProduct, getCategories, getBrands } from "@/server/actions/product-actions";
+import { createProduct, getCategories, getBrands } from "@/server/actions/product-actions";
+import { getCategoryBrands } from "@/server/actions/brand-category-actions";
 import { getAllUoms } from "@/server/actions/product-catalog-actions";
 import {
   createOptionType, createOptionValue, generateVariants, getOptionTypes,
@@ -16,8 +17,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import Link from "next/link";
+
 import { ArrowLeft, Plus, Trash2, X, RefreshCw, Edit, Check } from "lucide-react";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 
@@ -48,8 +50,13 @@ interface VariantRow {
 
 export default function NewProductPage() {
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [categories, setCategories] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [brands, setBrands] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
+  const [filteredBrands, setFilteredBrands] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [uoms, setUoms] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState<string[]>([]);
@@ -57,7 +64,7 @@ export default function NewProductPage() {
   const [optionTypes, setOptionTypes] = useState<OptionType[]>([]);
   const [newTypeName, setNewTypeName] = useState("");
   const [newTypeLabel, setNewTypeLabel] = useState("");
-  const [generating, setGenerating] = useState(false);
+  const [generating, _setGenerating] = useState(false);
   const [editingVariant, setEditingVariant] = useState<string | null>(null);
   const [variantRows, setVariantRows] = useState<VariantRow[]>([]);
 
@@ -79,6 +86,31 @@ export default function NewProductPage() {
     subscriptionTrialDays: "",
     barcodeInput: "",
     barcodes: [] as string[],
+    // International fields
+    gtin: "", mpn: "", isbn: "", upc: "", ean: "", asin: "", unspsc: "",
+    condition: "NEW", manufacturer: "", countryOfOrigin: "",
+    weightGrams: "", lengthMm: "", widthMm: "", heightMm: "",
+    costPrice: "", wholesalePrice: "", msrp: "", mapPrice: "",
+    warrantyType: "NONE", warrantyDurationMonths: "", returnPolicy: "DAYS_30",
+    ageRestriction: "NONE", safetyClass: "GENERAL", hazardClass: "NONE",
+    energyRating: "NOT_RATED",
+    // Food
+    ingredients: "", allergens: [] as string[], dietaryFlags: [] as string[],
+    halalCertified: false, kosherCertified: false, glutenFree: false, veganFriendly: false, organicCertified: false,
+    // Pharma
+    activeIngredient: "", dosageForm: "", strength: "", prescriptionRequired: false, genericName: "",
+    // Automotive
+    vehicleMake: "", vehicleModel: "", vehicleYear: "", vehicleFuelType: "",
+    // Electronics
+    powerConsumption: "", voltage: "", batteryType: "", batteryCapacity: "", connectivity: [] as string[],
+    displaySize: "", processorType: "", ramSize: "", storageSize: "", operatingSystem: "",
+    // Fashion
+    material: "", fitType: "", gender: "", season: "", colorFamily: "", careInstructions: [] as string[],
+    // Logistics
+    shippable: true, freeShipping: false, shipsFrom: "", deliveryLeadTimeDays: "",
+    coldChainRequired: false, dangerousGoods: false, lithiumBattery: false, oversized: false,
+    // SEO
+    metaTitle: "", metaDescription: "", videoUrl: "", googleProductCategory: "",
   });
 
   useEffect(() => {
@@ -86,6 +118,16 @@ export default function NewProductPage() {
       .then(([cats, brs, uoms]) => { setCategories(cats); setBrands(brs); setUoms(uoms); })
       .catch(() => router.push("/auth/login"));
   }, []);
+
+  // Filter brands based on selected category
+  useEffect(() => {
+    if (!form.categoryId) { setFilteredBrands(brands); return; }
+    getCategoryBrands(form.categoryId).then((mappings) => {
+      if (mappings.length === 0) { setFilteredBrands(brands); return; }
+      const allowedIds = new Set(mappings.map((m: { brand: { id: string } }) => m.brand.id));
+      setFilteredBrands(brands.filter((b: { id: string }) => allowedIds.has(b.id)));
+    }).catch(() => setFilteredBrands(brands));
+  }, [form.categoryId, brands]);
 
   const handleAddOptionType = () => {
     if (!newTypeName) { toast.error("Option type name required"); return; }
@@ -99,7 +141,7 @@ export default function NewProductPage() {
   };
 
   const handleAddValue = (idx: number) => {
-    const ot = optionTypes[idx];
+    const _ot = optionTypes[idx];
     const value = prompt("Value name (e.g., 128GB, Blue):");
     if (!value) return;
     const hexColor = prompt("Hex color (optional, e.g., #000000):") || undefined;
@@ -143,7 +185,7 @@ export default function NewProductPage() {
     toast.success(`Generated ${combinations.length} variant combinations`);
   };
 
-  const handleSaveVariant = (variantId: string) => {
+  const handleSaveVariant = (_variantId: string) => {
     setEditingVariant(null);
   };
 
@@ -180,17 +222,100 @@ export default function NewProductPage() {
         images: images,
         barcodes: form.barcodes,
         isSnappable: false,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion needed for dynamic data
         productType: form.productType as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion needed for dynamic data
         taxCategory: form.taxCategory as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion needed for dynamic data
         uom: form.uom as any || undefined,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion needed for dynamic data
         freightClass: form.freightClass as any || undefined,
         hsCode: form.hsCode || undefined,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion needed for dynamic data
         trackingType: form.trackingType as any,
         expiryDays: form.expiryDays ? parseInt(form.expiryDays) : undefined,
         digitalUrl: form.digitalUrl || undefined,
         maxDownloads: form.maxDownloads ? parseInt(form.maxDownloads) : undefined,
         subscriptionInterval: form.subscriptionInterval || undefined,
         subscriptionTrialDays: form.subscriptionTrialDays ? parseInt(form.subscriptionTrialDays) : undefined,
+        // International fields
+        gtin: form.gtin || undefined,
+        mpn: form.mpn || undefined,
+        isbn: form.isbn || undefined,
+        upc: form.upc || undefined,
+        ean: form.ean || undefined,
+        asin: form.asin || undefined,
+        unspsc: form.unspsc || undefined,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        condition: form.condition as any || undefined,
+        manufacturer: form.manufacturer || undefined,
+        countryOfOrigin: form.countryOfOrigin || undefined,
+        weightGrams: form.weightGrams ? parseFloat(form.weightGrams) : undefined,
+        lengthMm: form.lengthMm ? parseFloat(form.lengthMm) : undefined,
+        widthMm: form.widthMm ? parseFloat(form.widthMm) : undefined,
+        heightMm: form.heightMm ? parseFloat(form.heightMm) : undefined,
+        costPrice: form.costPrice ? parseFloat(form.costPrice) : undefined,
+        wholesalePrice: form.wholesalePrice ? parseFloat(form.wholesalePrice) : undefined,
+        msrp: form.msrp ? parseFloat(form.msrp) : undefined,
+        mapPrice: form.mapPrice ? parseFloat(form.mapPrice) : undefined,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        warrantyType: form.warrantyType as any || undefined,
+        warrantyDurationMonths: form.warrantyDurationMonths ? parseInt(form.warrantyDurationMonths) : undefined,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        returnPolicy: form.returnPolicy as any || undefined,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ageRestriction: form.ageRestriction as any || undefined,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        safetyClass: form.safetyClass as any || undefined,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        hazardClass: form.hazardClass as any || undefined,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        energyRating: form.energyRating as any || undefined,
+        ingredients: form.ingredients || undefined,
+        allergens: form.allergens.length ? form.allergens : [],
+        dietaryFlags: form.dietaryFlags.length ? form.dietaryFlags : [],
+        halalCertified: form.halalCertified,
+        kosherCertified: form.kosherCertified,
+        glutenFree: form.glutenFree,
+        veganFriendly: form.veganFriendly,
+        organicCertified: form.organicCertified,
+        activeIngredient: form.activeIngredient || undefined,
+        dosageForm: form.dosageForm || undefined,
+        strength: form.strength || undefined,
+        prescriptionRequired: form.prescriptionRequired,
+        genericName: form.genericName || undefined,
+        vehicleMake: form.vehicleMake || undefined,
+        vehicleModel: form.vehicleModel || undefined,
+        vehicleYear: form.vehicleYear ? parseInt(form.vehicleYear) : undefined,
+        vehicleFuelType: form.vehicleFuelType || undefined,
+        powerConsumption: form.powerConsumption || undefined,
+        voltage: form.voltage || undefined,
+        batteryType: form.batteryType || undefined,
+        batteryCapacity: form.batteryCapacity || undefined,
+        connectivity: form.connectivity.length ? form.connectivity : [],
+        displaySize: form.displaySize || undefined,
+        processorType: form.processorType || undefined,
+        ramSize: form.ramSize || undefined,
+        storageSize: form.storageSize || undefined,
+        operatingSystem: form.operatingSystem || undefined,
+        material: form.material || undefined,
+        fitType: form.fitType || undefined,
+        gender: form.gender || undefined,
+        season: form.season || undefined,
+        colorFamily: form.colorFamily || undefined,
+        careInstructions: form.careInstructions.length ? form.careInstructions : [],
+        shippable: form.shippable,
+        freeShipping: form.freeShipping,
+        shipsFrom: form.shipsFrom || undefined,
+        deliveryLeadTimeDays: form.deliveryLeadTimeDays ? parseInt(form.deliveryLeadTimeDays) : undefined,
+        coldChainRequired: form.coldChainRequired,
+        dangerousGoods: form.dangerousGoods,
+        lithiumBattery: form.lithiumBattery,
+        oversized: form.oversized,
+        metaTitle: form.metaTitle || undefined,
+        metaDescription: form.metaDescription || undefined,
+        videoUrl: form.videoUrl || undefined,
+        googleProductCategory: form.googleProductCategory || undefined,
       });
 
       // If variants were configured, create them
@@ -207,15 +332,15 @@ export default function NewProductPage() {
         }
 
         // Generate variants
-        const result = await generateVariants(product.id);
+        const _result = await generateVariants(product.id);
 
         // Fetch generated variants and update prices/stock
         const { getVariantsForProduct } = await import("@/server/actions/variant-actions");
         const generated = await getVariantsForProduct(product.id);
 
         for (const row of variantRows) {
-          const variant = generated.find((v: any) => {
-            const labels = v.options.map((o: any) => o.optionValue.value);
+          const variant = generated.find((v) => {
+            const labels = v.options.map((o) => o.optionValue.value);
             return JSON.stringify(labels.sort()) === JSON.stringify(row.options.sort());
           });
 
@@ -228,6 +353,7 @@ export default function NewProductPage() {
               stock: parseInt(row.stock) || 0,
               sku: row.sku || undefined,
               comparePrice: row.comparePrice ? parseFloat(row.comparePrice) : undefined,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion needed for dynamic data
               discountType: dt as any,
               discountValue: row.discountValue ? parseFloat(row.discountValue) : undefined,
             });
@@ -239,7 +365,7 @@ export default function NewProductPage() {
 
       toast.success("Product created");
       router.push("/admin/products");
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
     finally { setLoading(false); }
   };
 
@@ -285,7 +411,7 @@ export default function NewProductPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Discount Type</Label>
-              <Select value={form.discountType} onValueChange={(v) => setForm({ ...form, discountType: v || "NONE" })}>
+              <Select value={form.discountType} onValueChange={(v) => { if (v) setForm({ ...form, discountType: v || "NONE" }); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="NONE">None</SelectItem>
@@ -325,7 +451,7 @@ export default function NewProductPage() {
           <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-xs font-semibold text-blue-700 mb-1">💰 Tax Estimate ({form.taxCategory.toLowerCase()})</p>
             <p className="text-sm text-blue-900">
-              Price: ₹{parseFloat(form.price).toLocaleString()}
+              Price: ₹{parseFloat(form.price).toLocaleString("en-IN")}
               {form.taxCategory !== "BOOKS" && form.taxCategory !== "ALCOHOL" && (
                 <>
                   {" "}→ Tax incl.: ₹{(parseFloat(form.price) * 1.18).toFixed(2)} (est. 18% GST)
@@ -346,7 +472,7 @@ export default function NewProductPage() {
             <Select value={form.categoryId} onValueChange={(v) => v && setForm({ ...form, categoryId: v })}>
               <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
               <SelectContent>
-                {categories.map((c: any) => (
+                {categories.map((c) => (
                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
               </SelectContent>
@@ -358,7 +484,7 @@ export default function NewProductPage() {
               <SelectTrigger><SelectValue placeholder="Select brand" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No brand</SelectItem>
-                {brands.map((b: any) => (
+                {filteredBrands.map((b) => (
                   <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                 ))}
               </SelectContent>
@@ -375,7 +501,8 @@ export default function NewProductPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Product Type</Label>
-              <Select value={form.productType} onValueChange={(v) => setForm({ ...form, productType: v as any })}>
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion needed for dynamic data
+              <Select value={form.productType} onValueChange={(v) => { if (v) setForm({ ...form, productType: v as any }); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="PHYSICAL">Physical</SelectItem>
@@ -389,7 +516,8 @@ export default function NewProductPage() {
             </div>
             <div>
               <Label>Tax Category</Label>
-              <Select value={form.taxCategory} onValueChange={(v) => setForm({ ...form, taxCategory: v as any })}>
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion needed for dynamic data
+              <Select value={form.taxCategory} onValueChange={(v) => { if (v) setForm({ ...form, taxCategory: v as any }); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="STANDARD">Standard</SelectItem>
@@ -405,11 +533,12 @@ export default function NewProductPage() {
             </div>
             <div>
               <Label>Unit of Measure</Label>
-              <Select value={form.uom} onValueChange={(v) => setForm({ ...form, uom: v as any })}>
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion needed for dynamic data
+              <Select value={form.uom} onValueChange={(v) => { if (v) setForm({ ...form, uom: v as any }); }}>
                 <SelectTrigger><SelectValue placeholder="Select UOM" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
-                  {uoms.map((u: any) => (
+                  {uoms.map((u) => (
                     <SelectItem key={u.code} value={u.code}>{u.name} ({u.symbol})</SelectItem>
                   ))}
                 </SelectContent>
@@ -417,7 +546,8 @@ export default function NewProductPage() {
             </div>
             <div>
               <Label>Freight Class</Label>
-              <Select value={form.freightClass} onValueChange={(v) => setForm({ ...form, freightClass: v as any })}>
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion needed for dynamic data
+              <Select value={form.freightClass} onValueChange={(v) => { if (v) setForm({ ...form, freightClass: v as any }); }}>
                 <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
@@ -432,7 +562,8 @@ export default function NewProductPage() {
             </div>
             <div>
               <Label>Tracking Type</Label>
-              <Select value={form.trackingType} onValueChange={(v) => setForm({ ...form, trackingType: v as any })}>
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion needed for dynamic data
+              <Select value={form.trackingType} onValueChange={(v) => { if (v) setForm({ ...form, trackingType: v as any }); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="NONE">None</SelectItem>
@@ -457,7 +588,8 @@ export default function NewProductPage() {
             <div className="grid grid-cols-3 gap-4 mt-4 p-3 bg-green-50 rounded-lg">
               <div>
                 <Label>Interval</Label>
-                <Select value={form.subscriptionInterval} onValueChange={(v) => setForm({ ...form, subscriptionInterval: v as any })}>
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion needed for dynamic data
+                <Select value={form.subscriptionInterval} onValueChange={(v) => { if (v) setForm({ ...form, subscriptionInterval: v as any }); }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="day">Day</SelectItem>
@@ -514,6 +646,255 @@ export default function NewProductPage() {
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={form.isFeatured} onChange={(e) => setForm({ ...form, isFeatured: e.target.checked })} /> Featured
           </label>
+        </div>
+
+        {/* ── Advanced International Fields (Tabbed) ─────────────────── */}
+        <div className="border-t pt-4">
+          <h3 className="text-sm font-semibold mb-3">Advanced Product Details</h3>
+          <Tabs defaultValue="identification" className="w-full">
+            <TabsList className="flex flex-wrap w-full">
+              <TabsTrigger value="identification">IDs</TabsTrigger>
+              <TabsTrigger value="physical">Physical</TabsTrigger>
+              <TabsTrigger value="pricing">Pricing</TabsTrigger>
+              <TabsTrigger value="compliance">Compliance</TabsTrigger>
+              <TabsTrigger value="logistics">Logistics</TabsTrigger>
+              <TabsTrigger value="food">Food</TabsTrigger>
+              <TabsTrigger value="pharma">Pharma</TabsTrigger>
+              <TabsTrigger value="electronics">Electronics</TabsTrigger>
+              <TabsTrigger value="fashion">Fashion</TabsTrigger>
+              <TabsTrigger value="automotive">Automotive</TabsTrigger>
+              <TabsTrigger value="seo">SEO</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="identification" className="space-y-3 pt-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div><Label>GTIN</Label><Input value={form.gtin} onChange={(e) => setForm({ ...form, gtin: e.target.value })} placeholder="Global Trade Item Number" /></div>
+                <div><Label>MPN</Label><Input value={form.mpn} onChange={(e) => setForm({ ...form, mpn: e.target.value })} placeholder="Manufacturer Part Number" /></div>
+                <div><Label>ISBN</Label><Input value={form.isbn} onChange={(e) => setForm({ ...form, isbn: e.target.value })} /></div>
+                <div><Label>UPC</Label><Input value={form.upc} onChange={(e) => setForm({ ...form, upc: e.target.value })} /></div>
+                <div><Label>EAN</Label><Input value={form.ean} onChange={(e) => setForm({ ...form, ean: e.target.value })} /></div>
+                <div><Label>ASIN</Label><Input value={form.asin} onChange={(e) => setForm({ ...form, asin: e.target.value })} /></div>
+                <div><Label>UNSPSC</Label><Input value={form.unspsc} onChange={(e) => setForm({ ...form, unspsc: e.target.value })} /></div>
+                <div><Label>Manufacturer</Label><Input value={form.manufacturer} onChange={(e) => setForm({ ...form, manufacturer: e.target.value })} /></div>
+                <div><Label>Country of Origin</Label><Input value={form.countryOfOrigin} onChange={(e) => setForm({ ...form, countryOfOrigin: e.target.value })} placeholder="ISO code e.g. IN" /></div>
+              </div>
+              <div>
+                <Label>Condition</Label>
+                <Select value={form.condition} onValueChange={(v) => v && setForm({ ...form, condition: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NEW">New</SelectItem>
+                    <SelectItem value="LIKE_NEW">Like New</SelectItem>
+                    <SelectItem value="OPEN_BOX">Open Box</SelectItem>
+                    <SelectItem value="REFURBISHED">Refurbished</SelectItem>
+                    <SelectItem value="CERTIFIED_REFURBISHED">Certified Refurbished</SelectItem>
+                    <SelectItem value="USED_EXCELLENT">Used - Excellent</SelectItem>
+                    <SelectItem value="USED_GOOD">Used - Good</SelectItem>
+                    <SelectItem value="USED_FAIR">Used - Fair</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="physical" className="space-y-3 pt-3">
+              <div className="grid grid-cols-4 gap-3">
+                <div><Label>Weight (g)</Label><Input type="number" value={form.weightGrams} onChange={(e) => setForm({ ...form, weightGrams: e.target.value })} /></div>
+                <div><Label>Length (mm)</Label><Input type="number" value={form.lengthMm} onChange={(e) => setForm({ ...form, lengthMm: e.target.value })} /></div>
+                <div><Label>Width (mm)</Label><Input type="number" value={form.widthMm} onChange={(e) => setForm({ ...form, widthMm: e.target.value })} /></div>
+                <div><Label>Height (mm)</Label><Input type="number" value={form.heightMm} onChange={(e) => setForm({ ...form, heightMm: e.target.value })} /></div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="pricing" className="space-y-3 pt-3">
+              <div className="grid grid-cols-4 gap-3">
+                <div><Label>Cost Price</Label><Input type="number" value={form.costPrice} onChange={(e) => setForm({ ...form, costPrice: e.target.value })} /></div>
+                <div><Label>Wholesale Price</Label><Input type="number" value={form.wholesalePrice} onChange={(e) => setForm({ ...form, wholesalePrice: e.target.value })} /></div>
+                <div><Label>MSRP</Label><Input type="number" value={form.msrp} onChange={(e) => setForm({ ...form, msrp: e.target.value })} /></div>
+                <div><Label>MAP Price</Label><Input type="number" value={form.mapPrice} onChange={(e) => setForm({ ...form, mapPrice: e.target.value })} /></div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="compliance" className="space-y-3 pt-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label>Age Restriction</Label>
+                  <Select value={form.ageRestriction} onValueChange={(v) => v && setForm({ ...form, ageRestriction: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NONE">None</SelectItem>
+                      <SelectItem value="AGE_12_PLUS">12+</SelectItem>
+                      <SelectItem value="AGE_16_PLUS">16+</SelectItem>
+                      <SelectItem value="AGE_18_PLUS">18+</SelectItem>
+                      <SelectItem value="AGE_21_PLUS">21+</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Safety Class</Label>
+                  <Select value={form.safetyClass} onValueChange={(v) => v && setForm({ ...form, safetyClass: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="GENERAL">General</SelectItem>
+                      <SelectItem value="CE_MARKED">CE Marked</SelectItem>
+                      <SelectItem value="FCC_APPROVED">FCC Approved</SelectItem>
+                      <SelectItem value="UL_LISTED">UL Listed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Hazard Class</Label>
+                  <Select value={form.hazardClass} onValueChange={(v) => v && setForm({ ...form, hazardClass: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NONE">None</SelectItem>
+                      <SelectItem value="CLASS_3_FLAMMABLE_LIQUIDS">Flammable Liquids</SelectItem>
+                      <SelectItem value="CLASS_6_TOXINS">Toxins</SelectItem>
+                      <SelectItem value="CLASS_8_CORROSIVES">Corrosives</SelectItem>
+                      <SelectItem value="CLASS_9_MISC_DANGEROUS">Misc Dangerous</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label>Warranty</Label>
+                  <Select value={form.warrantyType} onValueChange={(v) => v && setForm({ ...form, warrantyType: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NONE">None</SelectItem>
+                      <SelectItem value="MANUFACTURER">Manufacturer</SelectItem>
+                      <SelectItem value="SELLER">Seller</SelectItem>
+                      <SelectItem value="EXTENDED">Extended</SelectItem>
+                      <SelectItem value="LIFETIME">Lifetime</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Warranty (months)</Label><Input type="number" value={form.warrantyDurationMonths} onChange={(e) => setForm({ ...form, warrantyDurationMonths: e.target.value })} /></div>
+                <div>
+                  <Label>Return Policy</Label>
+                  <Select value={form.returnPolicy} onValueChange={(v) => v && setForm({ ...form, returnPolicy: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NO_RETURN">No Return</SelectItem>
+                      <SelectItem value="DAYS_7">7 Days</SelectItem>
+                      <SelectItem value="DAYS_14">14 Days</SelectItem>
+                      <SelectItem value="DAYS_30">30 Days</SelectItem>
+                      <SelectItem value="DAYS_90">90 Days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label>Energy Rating</Label>
+                <Select value={form.energyRating} onValueChange={(v) => v && setForm({ ...form, energyRating: v })}>
+                  <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NOT_RATED">Not Rated</SelectItem>
+                    <SelectItem value="A_PLUS_PLUS_PLUS">A+++</SelectItem>
+                    <SelectItem value="A_PLUS_PLUS">A++</SelectItem>
+                    <SelectItem value="A_PLUS">A+</SelectItem>
+                    <SelectItem value="A">A</SelectItem>
+                    <SelectItem value="B">B</SelectItem>
+                    <SelectItem value="C">C</SelectItem>
+                    <SelectItem value="ENERGY_STAR">Energy Star</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="logistics" className="space-y-3 pt-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div><Label>Ships From</Label><Input value={form.shipsFrom} onChange={(e) => setForm({ ...form, shipsFrom: e.target.value })} placeholder="Warehouse/Country" /></div>
+                <div><Label>Lead Time (days)</Label><Input type="number" value={form.deliveryLeadTimeDays} onChange={(e) => setForm({ ...form, deliveryLeadTimeDays: e.target.value })} /></div>
+              </div>
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center gap-2"><input type="checkbox" checked={form.shippable} onChange={(e) => setForm({ ...form, shippable: e.target.checked })} /> Shippable</label>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={form.freeShipping} onChange={(e) => setForm({ ...form, freeShipping: e.target.checked })} /> Free Shipping</label>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={form.oversized} onChange={(e) => setForm({ ...form, oversized: e.target.checked })} /> Oversized</label>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={form.coldChainRequired} onChange={(e) => setForm({ ...form, coldChainRequired: e.target.checked })} /> Cold Chain</label>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={form.dangerousGoods} onChange={(e) => setForm({ ...form, dangerousGoods: e.target.checked })} /> Dangerous Goods</label>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={form.lithiumBattery} onChange={(e) => setForm({ ...form, lithiumBattery: e.target.checked })} /> Lithium Battery</label>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="food" className="space-y-3 pt-3">
+              <div><Label>Ingredients</Label><Textarea value={form.ingredients} onChange={(e) => setForm({ ...form, ingredients: e.target.value })} rows={2} /></div>
+              <div><Label>Allergens (comma-separated)</Label><Input value={form.allergens.join(", ")} onChange={(e) => setForm({ ...form, allergens: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })} placeholder="gluten, nuts, dairy" /></div>
+              <div><Label>Dietary Flags (comma-separated)</Label><Input value={form.dietaryFlags.join(", ")} onChange={(e) => setForm({ ...form, dietaryFlags: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })} placeholder="vegan, keto, gluten-free" /></div>
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center gap-2"><input type="checkbox" checked={form.veganFriendly} onChange={(e) => setForm({ ...form, veganFriendly: e.target.checked })} /> Vegan</label>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={form.organicCertified} onChange={(e) => setForm({ ...form, organicCertified: e.target.checked })} /> Organic</label>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={form.glutenFree} onChange={(e) => setForm({ ...form, glutenFree: e.target.checked })} /> Gluten Free</label>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={form.halalCertified} onChange={(e) => setForm({ ...form, halalCertified: e.target.checked })} /> Halal</label>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={form.kosherCertified} onChange={(e) => setForm({ ...form, kosherCertified: e.target.checked })} /> Kosher</label>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="pharma" className="space-y-3 pt-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div><Label>Active Ingredient</Label><Input value={form.activeIngredient} onChange={(e) => setForm({ ...form, activeIngredient: e.target.value })} /></div>
+                <div><Label>Dosage Form</Label><Input value={form.dosageForm} onChange={(e) => setForm({ ...form, dosageForm: e.target.value })} placeholder="tablet, capsule, syrup" /></div>
+                <div><Label>Strength</Label><Input value={form.strength} onChange={(e) => setForm({ ...form, strength: e.target.value })} placeholder="500mg" /></div>
+                <div><Label>Generic Name</Label><Input value={form.genericName} onChange={(e) => setForm({ ...form, genericName: e.target.value })} /></div>
+              </div>
+              <label className="flex items-center gap-2"><input type="checkbox" checked={form.prescriptionRequired} onChange={(e) => setForm({ ...form, prescriptionRequired: e.target.checked })} /> Prescription Required</label>
+            </TabsContent>
+
+            <TabsContent value="electronics" className="space-y-3 pt-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div><Label>Power</Label><Input value={form.powerConsumption} onChange={(e) => setForm({ ...form, powerConsumption: e.target.value })} placeholder="65W" /></div>
+                <div><Label>Voltage</Label><Input value={form.voltage} onChange={(e) => setForm({ ...form, voltage: e.target.value })} placeholder="100-240V" /></div>
+                <div><Label>Battery Type</Label><Input value={form.batteryType} onChange={(e) => setForm({ ...form, batteryType: e.target.value })} placeholder="Li-ion" /></div>
+                <div><Label>Battery Capacity</Label><Input value={form.batteryCapacity} onChange={(e) => setForm({ ...form, batteryCapacity: e.target.value })} placeholder="5000mAh" /></div>
+                <div><Label>Display Size</Label><Input value={form.displaySize} onChange={(e) => setForm({ ...form, displaySize: e.target.value })} placeholder="6.7 inches" /></div>
+                <div><Label>Processor</Label><Input value={form.processorType} onChange={(e) => setForm({ ...form, processorType: e.target.value })} /></div>
+                <div><Label>RAM</Label><Input value={form.ramSize} onChange={(e) => setForm({ ...form, ramSize: e.target.value })} placeholder="16GB" /></div>
+                <div><Label>Storage</Label><Input value={form.storageSize} onChange={(e) => setForm({ ...form, storageSize: e.target.value })} placeholder="512GB" /></div>
+                <div><Label>OS</Label><Input value={form.operatingSystem} onChange={(e) => setForm({ ...form, operatingSystem: e.target.value })} /></div>
+              </div>
+              <div><Label>Connectivity (comma-separated)</Label><Input value={form.connectivity.join(", ")} onChange={(e) => setForm({ ...form, connectivity: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })} placeholder="WiFi 6, Bluetooth 5.3, USB-C" /></div>
+            </TabsContent>
+
+            <TabsContent value="fashion" className="space-y-3 pt-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div><Label>Material</Label><Input value={form.material} onChange={(e) => setForm({ ...form, material: e.target.value })} placeholder="100% cotton" /></div>
+                <div><Label>Fit Type</Label><Input value={form.fitType} onChange={(e) => setForm({ ...form, fitType: e.target.value })} placeholder="regular, slim, relaxed" /></div>
+                <div>
+                  <Label>Gender</Label>
+                  <Select value={form.gender} onValueChange={(v) => v && setForm({ ...form, gender: v })}>
+                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="men">Men</SelectItem>
+                      <SelectItem value="women">Women</SelectItem>
+                      <SelectItem value="unisex">Unisex</SelectItem>
+                      <SelectItem value="kids">Kids</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Season</Label><Input value={form.season} onChange={(e) => setForm({ ...form, season: e.target.value })} placeholder="summer, winter, all-season" /></div>
+                <div><Label>Color Family</Label><Input value={form.colorFamily} onChange={(e) => setForm({ ...form, colorFamily: e.target.value })} /></div>
+              </div>
+              <div><Label>Care Instructions (comma-separated)</Label><Input value={form.careInstructions.join(", ")} onChange={(e) => setForm({ ...form, careInstructions: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })} placeholder="Machine wash cold, Do not bleach" /></div>
+            </TabsContent>
+
+            <TabsContent value="automotive" className="space-y-3 pt-3">
+              <div className="grid grid-cols-4 gap-3">
+                <div><Label>Make</Label><Input value={form.vehicleMake} onChange={(e) => setForm({ ...form, vehicleMake: e.target.value })} /></div>
+                <div><Label>Model</Label><Input value={form.vehicleModel} onChange={(e) => setForm({ ...form, vehicleModel: e.target.value })} /></div>
+                <div><Label>Year</Label><Input type="number" value={form.vehicleYear} onChange={(e) => setForm({ ...form, vehicleYear: e.target.value })} /></div>
+                <div><Label>Fuel Type</Label><Input value={form.vehicleFuelType} onChange={(e) => setForm({ ...form, vehicleFuelType: e.target.value })} placeholder="petrol, diesel, electric" /></div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="seo" className="space-y-3 pt-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Meta Title</Label><Input value={form.metaTitle} onChange={(e) => setForm({ ...form, metaTitle: e.target.value })} /></div>
+                <div><Label>Google Product Category</Label><Input value={form.googleProductCategory} onChange={(e) => setForm({ ...form, googleProductCategory: e.target.value })} /></div>
+              </div>
+              <div><Label>Meta Description</Label><Textarea value={form.metaDescription} onChange={(e) => setForm({ ...form, metaDescription: e.target.value })} rows={2} /></div>
+              <div><Label>Video URL</Label><Input value={form.videoUrl} onChange={(e) => setForm({ ...form, videoUrl: e.target.value })} placeholder="https://youtube.com/..." /></div>
+            </TabsContent>
+          </Tabs>
         </div>
 
         <Button onClick={handleSubmit} disabled={loading}>
@@ -644,14 +1025,14 @@ export default function NewProductPage() {
                             {isEditing ? (
                               <Input value={v.price} onChange={(e) => setVariantRows(prev => prev.map(r => r.id === v.id ? { ...r, price: e.target.value } : r))} className="h-8 w-20 ml-auto" placeholder="Price" type="number" />
                             ) : (
-                              <span>₹{parseFloat(v.price).toLocaleString()}</span>
+                              <span>₹{parseFloat(v.price).toLocaleString("en-IN")}</span>
                             )}
                           </td>
                           <td className="py-2 px-3 text-right">
                             {isEditing ? (
                               <Input value={v.comparePrice} onChange={(e) => setVariantRows(prev => prev.map(r => r.id === v.id ? { ...r, comparePrice: e.target.value } : r))} className="h-8 w-20 ml-auto" placeholder="Compare" type="number" />
                             ) : (
-                              <span className="text-xs text-gray-500">{v.comparePrice ? `₹${parseFloat(v.comparePrice).toLocaleString()}` : "—"}</span>
+                              <span className="text-xs text-gray-500">{v.comparePrice ? `₹${parseFloat(v.comparePrice).toLocaleString("en-IN")}` : "—"}</span>
                             )}
                           </td>
                           <td className="py-2 px-3 text-right">

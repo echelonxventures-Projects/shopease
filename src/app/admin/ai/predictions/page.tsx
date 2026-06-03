@@ -64,7 +64,7 @@ export default async function PredictionsPage() {
           <table className="w-full text-sm">
             <thead><tr className="border-b"><th className="text-left p-2">Type</th><th className="text-left p-2">Score</th><th className="text-left p-2">Action</th></tr></thead>
             <tbody>
-              {recentFraud.map((f: any) => (
+              {recentFraud.map((f) => (
                 <tr key={f.id} className="border-b last:border-0">
                   <td className="p-2">{f.type}</td>
                   <td className="p-2">
@@ -99,7 +99,7 @@ export default async function PredictionsPage() {
           <span className="text-blue-500">👥</span> Customer Segmentation
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {segments.map((s: any) => (
+          {segments.map((s) => (
             <div key={s.segment} className="border rounded-lg p-3">
               <div className="font-medium text-sm">{s.segment.replace(/_/g, " ")}</div>
               <div className="text-xs text-gray-500">{s._count} users · {(s._avg?.confidence || 0).toFixed(2)} conf.</div>
@@ -118,7 +118,7 @@ export default async function PredictionsPage() {
           <div><div className="text-sm text-gray-500">Total Predictions</div><div className="text-2xl font-bold">{pricingCount}</div></div>
         </div>
         <div className="flex gap-4">
-          {pricingActions.map((p: any) => (
+          {pricingActions.map((p) => (
             <span key={p.suggestedAction} className={`px-3 py-1 rounded-full text-sm font-medium ${
               p.suggestedAction === "INCREASE" ? "bg-green-100 text-green-700" :
               p.suggestedAction === "DECREASE" ? "bg-red-100 text-red-700" :

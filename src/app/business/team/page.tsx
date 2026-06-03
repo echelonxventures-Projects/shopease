@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Users, Mail, Trash2, Shield, UserPlus } from "lucide-react";
+import { Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 const ROLES = [
@@ -178,7 +178,7 @@ export default function BusinessTeamPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm text-gray-500">
-                    {new Date(member.createdAt).toLocaleDateString()}
+                    {new Date(member.createdAt).toLocaleDateString("en-IN")}
                   </TableCell>
                   <TableCell>
                     <Button variant="ghost" size="sm" onClick={() => handleRemove(member.userId)}>

@@ -5,7 +5,9 @@ import { listDynamicPriceRules, createDynamicPriceRule, updateDynamicPriceRule, 
 import { toast } from "sonner";
 
 export default function DynamicPricingPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [rules, setRules] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -36,15 +38,16 @@ export default function DynamicPricingPage() {
       toast.success("Created");
       setShowForm(false); setForm({ productId: "", basePrice: "", minPrice: "", maxPrice: "", demandMultiplier: "1", stockDiscount: "" });
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete?")) return;
     try { await deleteDynamicPriceRule(id); toast.success("Deleted"); fetch(); }
-    catch (err: any) { toast.error(err.message); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex type from external source
   const handleEdit = async (rule: any) => {
     const newMult = prompt("Demand multiplier:", rule.demandMultiplier);
     if (newMult === null) return;
@@ -56,7 +59,7 @@ export default function DynamicPricingPage() {
         stockDiscount: parseFloat(newStock),
       });
       toast.success("Updated"); fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   return (
@@ -131,7 +134,7 @@ export default function DynamicPricingPage() {
                     <div>{r.product?.name}</div>
                     <div className="text-xs text-gray-500">Stock: {r.product?.stock}</div>
                   </td>
-                  <td className="px-4 py-3 text-sm">₹{Number(r.basePrice).toLocaleString()}</td>
+                  <td className="px-4 py-3 text-sm">₹{Number(r.basePrice).toLocaleString("en-IN")}</td>
                   <td className="px-4 py-3 text-sm">
                     {r.minPrice ? `₹${Number(r.minPrice)}` : "-"} — {r.maxPrice ? `₹${Number(r.maxPrice)}` : "-"}
                   </td>

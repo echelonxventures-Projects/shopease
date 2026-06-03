@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { getAllUoms, getUomConversions } from "@/server/actions/product-catalog-actions";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+
 
 export default function UomPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [uoms, setUoms] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [conversions, setConversions] = useState<any[]>([]);
 
   useEffect(() => {
@@ -34,7 +36,7 @@ export default function UomPage() {
               {units.length} unit{units.length > 1 ? "s" : ""}
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {units.map((u: any) => (
+              {units.map((u) => (
                 <div key={u.code} className="border rounded-lg p-3 flex justify-between items-center">
                   <div>
                     <div className="font-semibold">{u.name}</div>
@@ -52,7 +54,7 @@ export default function UomPage() {
       <div className="bg-white rounded-lg shadow p-6 mt-6">
         <h2 className="text-lg font-bold mb-3">Conversion Rules ({conversions.length})</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {conversions.map((c: any) => (
+          {conversions.map((c) => (
             <div key={`${c.fromUomId}-${c.toUomId}`} className="border rounded-lg p-3 text-sm">
               <span className="font-semibold">{c.fromUom?.name} ({c.fromUom?.code})</span>
               <span className="mx-2 text-gray-400">→</span>

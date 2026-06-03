@@ -127,6 +127,7 @@ model Region {
   walletTransactions WalletTransaction[]
   deliveryZones    DeliveryZone[]
   taxCategoryRules TaxCategoryRule[]
+  sites            Site[]
 
   @@index([code])
   @@index([isActive])
@@ -214,6 +215,8 @@ model User {
   name            String?
   phone           String?
   role            UserRole @default(CUSTOMER)
+  roleId          String?
+  dynamicRole     Role?    @relation(fields: [roleId], references: [id])
   locale          String?  @default("en")
   regionId        String?
   region          Region?  @relation(fields: [regionId], references: [id])
@@ -265,18 +268,36 @@ model User {
   apiKeys             ApiKey[]
   aiSegment           String?
   aiPreferences       Json?
+  metadata            Json?
+  platforms           String[]  @default([]) // Tags: "streaming", "trading", "ecommerce", etc.
   businessProfiles    BusinessUser[]
   giftCardPurchases   GiftCardOrder[]  @relation("GiftCardBuyer")
+  siteAdmins          SiteAdmin[]
 
   @@index([email])
   @@index([role])
+  @@index([phone])
 }
 
 enum UserRole {
   CUSTOMER
   ADMIN
+  SUPER_ADMIN
   CUSTOMER_CARE
   SUPPORT
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  displayName String
+  description String?
+  isSystem    Boolean  @default(false)
+  permissions String[]
+  routes      String[]   // allowed route prefixes e.g. ["/admin", "/support"]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  users       User[]
 }
 
 model Address {
@@ -326,6 +347,74 @@ enum ProductType {
   SERVICE
   BUNDLE
   COMBO
+  FOOD
+  BEVERAGE
+  PHARMA
+  COSMETIC
+  CHEMICAL
+  HAZARDOUS
+  AUTOMOTIVE
+  AUTOMOTIVE_PART
+  REAL_ESTATE
+  RENTAL
+  LIVESTOCK
+  PLANT
+  SEED
+  FUEL
+  GAS
+  RAW_MATERIAL
+  TEXTILE
+  JEWELRY
+  PRECIOUS_METAL
+  ARTWORK
+  ANTIQUE
+  COLLECTIBLE
+  WEAPON
+  AMMUNITION
+  EXPLOSIVE
+  MEDICAL_DEVICE
+  INDUSTRIAL_EQUIPMENT
+  MACHINERY
+  SOFTWARE_LICENSE
+  SAAS
+  NFT
+  VIRTUAL_GOOD
+  GIFT_CARD
+  VOUCHER
+  TICKET
+  INSURANCE
+  FINANCIAL_PRODUCT
+  COURSE
+  EBOOK
+  AUDIOBOOK
+  MUSIC
+  VIDEO
+  GAME
+  APP
+  SPARE_PART
+  REFURBISHED
+  USED
+  HANDMADE
+  CUSTOM_MADE
+  MADE_TO_ORDER
+  PERISHABLE
+  FROZEN
+  REFRIGERATED
+  LIVE_ANIMAL
+  PET_SUPPLY
+  TOBACCO
+  ALCOHOL
+  CANNABIS
+  ADULT
+  FIREARM_ACCESSORY
+  DRONE
+  SATELLITE_EQUIPMENT
+  MARINE
+  AVIATION
+  AGRICULTURAL
+  CONSTRUCTION_MATERIAL
+  ENERGY
+  WASTE_RECYCLED
 }
 
 enum UOMCategory {
@@ -379,6 +468,37 @@ enum FreightClass {
   HAZARDOUS
   PERISHABLE
   REFRIGERATED
+  FROZEN
+  LIVE_CARGO
+  HIGH_VALUE
+  BULK
+  LIQUID
+  GAS
+  RADIOACTIVE
+  EXPLOSIVE
+  FLAMMABLE
+  CORROSIVE
+  TOXIC
+  INFECTIOUS
+  MAGNETIC
+  TEMPERATURE_CONTROLLED
+  HUMIDITY_CONTROLLED
+  STACKABLE
+  NON_STACKABLE
+  FLAT_PACK
+  HANGING
+  ROLL
+  DRUM
+  PALLET
+  CONTAINER
+  ENVELOPE
+  DOCUMENT
+  SMALL_PARCEL
+  HEAVY_FREIGHT
+  AIR_ONLY
+  SEA_ONLY
+  GROUND_ONLY
+  NO_FLY
 }
 
 enum TaxCategory {
@@ -390,12 +510,225 @@ enum TaxCategory {
   LUXURY
   ALCOHOL
   TOBACCO
+  ZERO_RATED
+  EXEMPT
+  REDUCED
+  SUPER_REDUCED
+  DIGITAL_SERVICES
+  FINANCIAL_SERVICES
+  INSURANCE
+  REAL_ESTATE
+  EDUCATION
+  HEALTHCARE
+  TRANSPORT
+  ENERGY
+  WATER
+  AGRICULTURE
+  PRECIOUS_METALS
+  SECOND_HAND
+  ART
+  CHILDREN_ITEMS
+  DISABILITY_AIDS
+  ENVIRONMENTAL
+  CARBON_TAX
+  EXCISE
+  CUSTOMS_DUTY
+  ANTI_DUMPING
+  COUNTERVAILING
+  CESS
+  SURCHARGE
 }
 
 enum ProductTrackingType {
   NONE
   SERIAL
   LOT
+  BATCH
+  IMEI
+  VIN
+  MAC_ADDRESS
+}
+
+enum ProductCondition {
+  NEW
+  LIKE_NEW
+  OPEN_BOX
+  REFURBISHED
+  CERTIFIED_REFURBISHED
+  USED_EXCELLENT
+  USED_GOOD
+  USED_FAIR
+  USED_POOR
+  FOR_PARTS
+  DAMAGED
+  EXPIRED
+  SALVAGE
+}
+
+enum AgeRestriction {
+  NONE
+  AGE_3_PLUS
+  AGE_6_PLUS
+  AGE_12_PLUS
+  AGE_13_PLUS
+  AGE_16_PLUS
+  AGE_18_PLUS
+  AGE_21_PLUS
+  AGE_25_PLUS
+}
+
+enum EnergyRating {
+  A_PLUS_PLUS_PLUS
+  A_PLUS_PLUS
+  A_PLUS
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  NOT_RATED
+  ENERGY_STAR
+  ENERGY_STAR_MOST_EFFICIENT
+}
+
+enum SafetyClass {
+  GENERAL
+  CLASS_I
+  CLASS_II
+  CLASS_III
+  CLASS_IV
+  IP20
+  IP44
+  IP54
+  IP65
+  IP67
+  IP68
+  ATEX_ZONE_0
+  ATEX_ZONE_1
+  ATEX_ZONE_2
+  UL_LISTED
+  CE_MARKED
+  FCC_APPROVED
+  CSA_CERTIFIED
+  TUV_CERTIFIED
+}
+
+enum HazardClass {
+  NONE
+  CLASS_1_EXPLOSIVES
+  CLASS_2_GASES
+  CLASS_3_FLAMMABLE_LIQUIDS
+  CLASS_4_FLAMMABLE_SOLIDS
+  CLASS_5_OXIDIZERS
+  CLASS_6_TOXINS
+  CLASS_7_RADIOACTIVE
+  CLASS_8_CORROSIVES
+  CLASS_9_MISC_DANGEROUS
+  ORM_D
+  LIMITED_QUANTITY
+  EXCEPTED_QUANTITY
+}
+
+enum WarrantyType {
+  NONE
+  MANUFACTURER
+  SELLER
+  EXTENDED
+  LIFETIME
+  LIMITED_LIFETIME
+  ACCIDENTAL_DAMAGE
+  INTERNATIONAL
+}
+
+enum ReturnPolicy {
+  NO_RETURN
+  DAYS_7
+  DAYS_14
+  DAYS_30
+  DAYS_60
+  DAYS_90
+  DAYS_180
+  DAYS_365
+  LIFETIME
+  EXCHANGE_ONLY
+  STORE_CREDIT_ONLY
+  MANUFACTURER_ONLY
+}
+
+enum SustainabilityCert {
+  NONE
+  FSC
+  PEFC
+  RAINFOREST_ALLIANCE
+  FAIR_TRADE
+  ORGANIC_USDA
+  ORGANIC_EU
+  ORGANIC_INDIA
+  ORGANIC_JAS
+  B_CORP
+  CRADLE_TO_CRADLE
+  ENERGY_STAR
+  EPEAT
+  EU_ECOLABEL
+  BLUE_ANGEL
+  NORDIC_SWAN
+  GREEN_SEAL
+  CARBON_NEUTRAL
+  CARBON_NEGATIVE
+  PLASTIC_FREE
+  VEGAN
+  CRUELTY_FREE
+  OEKO_TEX
+  GOTS
+  RECYCLED_CONTENT
+  BIODEGRADABLE
+  COMPOSTABLE
+  ZERO_WASTE
+}
+
+enum ComplianceStandard {
+  NONE
+  CE
+  FCC
+  UL
+  CSA
+  TUV
+  ROHS
+  REACH
+  WEEE
+  CPSIA
+  PROP_65
+  FDA_APPROVED
+  EMA_APPROVED
+  WHO_GMP
+  ISO_9001
+  ISO_14001
+  ISO_22000
+  ISO_13485
+  HACCP
+  GMP
+  BIS
+  BRC
+  IFS
+  SQF
+  HALAL
+  KOSHER
+  FSSAI
+  USDA
+  EPA
+  DOT
+  IATA
+  IMO
+  ICAO
+  ITAR
+  EAR
+  DUAL_USE
+  CONFLICT_MINERALS
+  KIMBERLEY_PROCESS
+  CITES
+  BASEL_CONVENTION
 }
 
 // ===================== PRODUCTS & CATALOG =====================
@@ -414,6 +747,8 @@ model Category {
   position    Int       @default(0)
   isActive    Boolean   @default(true)
   siteCategories SiteCategory[]
+  brandCategories BrandCategory[]
+  paymentGateways PaymentGatewayCategory[]
 
   @@index([slug])
 }
@@ -425,10 +760,26 @@ model Brand {
   logo        String?
   description String?
   isActive    Boolean  @default(true)
+  ownerId            String?
+  registrationStatus String  @default("NONE") // NONE | PENDING | APPROVED | REJECTED
+  registeredAt       DateTime?
   products    Product[]
   translations BrandTranslation[]
   brandStories BrandStory[]
   siteBrands   SiteBrand[]
+  brandCategories BrandCategory[]
+}
+
+model BrandCategory {
+  id         String   @id @default(cuid())
+  brandId    String
+  brand      Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([brandId, categoryId])
+  @@index([categoryId])
 }
 
 model Product {
@@ -481,6 +832,430 @@ model Product {
   subscriptionTrialDays     Int?
   bundleItems               Json?
   tierPricing               Json?
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // INTERNATIONAL STANDARD FIELDS (GS1, UNSPSC, ISO, WCO, OECD, FDA, EU)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // ── Identification & Classification ──────────────────────────────────────
+  gtin                      String?   // GS1 Global Trade Item Number (EAN/UPC/ISBN)
+  gtin14                    String?   // 14-digit GTIN for case/pallet
+  mpn                       String?   // Manufacturer Part Number
+  isbn                      String?   // International Standard Book Number
+  issn                      String?   // International Standard Serial Number
+  upc                       String?   // Universal Product Code
+  ean                       String?   // European Article Number
+  jan                       String?   // Japanese Article Number
+  asin                      String?   // Amazon Standard Identification Number
+  unspsc                    String?   // United Nations Standard Products & Services Code
+  naicsCode                 String?   // North American Industry Classification
+  sitcCode                  String?   // Standard International Trade Classification
+  eccnCode                  String?   // Export Control Classification Number
+  scheduleBCode             String?   // US Schedule B export code
+  taricCode                 String?   // EU TARIC code
+  htsCode                   String?   // Harmonized Tariff Schedule (import)
+  casNumber                 String?   // Chemical Abstracts Service number
+  ndc                       String?   // National Drug Code (pharma)
+  atcCode                   String?   // Anatomical Therapeutic Chemical code
+  gmdn                      String?   // Global Medical Device Nomenclature
+  udiCode                   String?   // Unique Device Identification (medical)
+  vinNumber                 String?   // Vehicle Identification Number
+  imeiNumber                String?   // International Mobile Equipment Identity
+  fccId                     String?   // FCC Registration ID
+
+  // ── Condition & Lifecycle ────────────────────────────────────────────────
+  condition                 ProductCondition @default(NEW)
+  conditionNote             String?
+  manufactureDate           DateTime?
+  expiryDate                DateTime?
+  bestBeforeDate            DateTime?
+  harvestDate               DateTime?
+  vintageYear               Int?
+  modelYear                 Int?
+  firstAvailableDate        DateTime?
+  discontinuedDate          DateTime?
+  endOfLifeDate             DateTime?
+  endOfSupportDate          DateTime?
+
+  // ── Manufacturer & Origin ────────────────────────────────────────────────
+  manufacturer              String?
+  manufacturerUrl           String?
+  countryOfOrigin           String?   // ISO 3166-1 alpha-2
+  countryOfManufacture      String?
+  regionOfOrigin            String?   // e.g. "Champagne", "Darjeeling"
+  assembledIn               String?
+  designedIn                String?
+  madeInLabel               String?   // "Made in India", "Assembled in USA"
+  factoryId                 String?   // Factory/facility identifier
+  plantCode                 String?
+
+  // ── Physical Attributes ──────────────────────────────────────────────────
+  weightGrams               Decimal?  // Net weight in grams
+  grossWeightGrams          Decimal?  // Gross weight including packaging
+  tareWeightGrams           Decimal?  // Packaging weight only
+  lengthMm                  Decimal?  // Length in millimeters
+  widthMm                   Decimal?  // Width in millimeters
+  heightMm                  Decimal?  // Height in millimeters
+  volumeMl                  Decimal?  // Volume in milliliters
+  volumeCbm                 Decimal?  // Volume in cubic meters (shipping)
+  diameterMm                Decimal?
+  thicknessMm               Decimal?
+  netContent                String?   // "500ml", "1kg", "12 pieces"
+  netContentValue           Decimal?
+  netContentUnit            String?   // ml, g, kg, pieces, etc.
+  drainedWeight             Decimal?  // For canned/jarred products
+  servingSize               String?
+  servingsPerContainer      Int?
+  packageType               String?   // bottle, box, blister, sachet, etc.
+  packageMaterial           String?   // glass, plastic, cardboard, etc.
+  packagingLevels           Int?      // 1=unit, 2=inner, 3=case, 4=pallet
+  unitsPerPack              Int?
+  packsPerCase              Int?
+  casesPerPallet            Int?
+  palletTi                  Int?      // Pallet tier (layers)
+  palletHi                  Int?      // Pallet high (units per layer)
+
+  // ── Pricing & Trade ──────────────────────────────────────────────────────
+  costPrice                 Decimal?  // Landed cost
+  wholesalePrice            Decimal?
+  tradePrice                Decimal?
+  mapPrice                  Decimal?  // Minimum Advertised Price
+  msrp                      Decimal?  // Manufacturer's Suggested Retail Price
+  dutyCost                  Decimal?
+  dutyRate                  Decimal?  // Duty percentage
+  vatRate                   Decimal?  // VAT/GST rate override
+  exciseDuty                Decimal?
+  antiDumpingDuty           Decimal?
+  countervailingDuty        Decimal?
+  pricePerUnit              Decimal?  // Price per kg/liter for comparison
+  pricePerUnitLabel         String?   // "per kg", "per 100ml"
+  depositAmount             Decimal?  // Bottle/container deposit
+  currencyCode              String?   // ISO 4217 base currency
+
+  // ── Compliance & Regulatory ──────────────────────────────────────────────
+  complianceStandards       ComplianceStandard[] @default([])
+  certifications            String[]  // Free-text certifications
+  regulatoryApprovals       String[]  // FDA, CE, BIS approval numbers
+  licenseRequired           Boolean   @default(false)
+  licenseType               String?   // "firearms", "pharmacy", "alcohol"
+  importPermitRequired      Boolean   @default(false)
+  exportRestricted          Boolean   @default(false)
+  sanctionedCountries       String[]  // ISO codes where product cannot be sold
+  embargoed                 Boolean   @default(false)
+  controlledSubstance       Boolean   @default(false)
+  scheduleClass             String?   // Drug schedule (I-V)
+  prescriptionRequired      Boolean   @default(false)
+  otcClassification         String?   // OTC drug classification
+  recallStatus              String?   // NONE, VOLUNTARY, MANDATORY
+  recallDate                DateTime?
+  recallReason              String?
+
+  // ── Safety & Hazards ─────────────────────────────────────────────────────
+  safetyClass               SafetyClass     @default(GENERAL)
+  hazardClass               HazardClass     @default(NONE)
+  hazardStatements          String[]  // H-statements (GHS)
+  precautionaryStatements   String[]  // P-statements (GHS)
+  signalWord                String?   // "Danger" or "Warning"
+  ghsPictograms             String[]  // GHS pictogram codes
+  unNumber                  String?   // UN dangerous goods number
+  packingGroup              String?   // I, II, or III
+  flashPoint                String?   // Flash point temperature
+  autoIgnitionTemp          String?
+  flammabilityRating        Int?      // 0-4 NFPA
+  healthRating              Int?      // 0-4 NFPA
+  reactivityRating          Int?      // 0-4 NFPA
+  sdsUrl                    String?   // Safety Data Sheet URL
+  msdsUrl                   String?   // Material Safety Data Sheet
+  emergencyPhone            String?
+  firstAidInstructions      String?   @db.Text
+  storageInstructions       String?   @db.Text
+  disposalInstructions      String?   @db.Text
+  childResistantPackaging   Boolean   @default(false)
+  tamperEvident             Boolean   @default(false)
+
+  // ── Age & Access Restrictions ────────────────────────────────────────────
+  ageRestriction            AgeRestriction @default(NONE)
+  ageVerificationRequired   Boolean   @default(false)
+  adultOnly                 Boolean   @default(false)
+  restrictedRegions         String[]  // ISO codes where restricted
+  geoRestrictions           Json?     // Complex geo-fencing rules
+
+  // ── Warranty & Returns ───────────────────────────────────────────────────
+  warrantyType              WarrantyType   @default(NONE)
+  warrantyDurationMonths    Int?
+  warrantyDescription       String?
+  warrantyUrl               String?
+  extendedWarrantyAvailable Boolean   @default(false)
+  extendedWarrantyPrice     Decimal?
+  returnPolicy              ReturnPolicy   @default(DAYS_30)
+  returnShippingPaidBy      String?   // "seller", "buyer"
+  restockingFeePercent      Decimal?
+  nonReturnable             Boolean   @default(false)
+  finalSale                 Boolean   @default(false)
+
+  // ── Sustainability & Environment ─────────────────────────────────────────
+  sustainabilityCerts       SustainabilityCert[] @default([])
+  carbonFootprintKg         Decimal?  // CO2 equivalent in kg
+  waterFootprintL           Decimal?  // Water usage in liters
+  recyclablePercent         Decimal?  // % of product that's recyclable
+  recycledContentPercent    Decimal?  // % made from recycled materials
+  biodegradable             Boolean   @default(false)
+  compostable               Boolean   @default(false)
+  plasticFree               Boolean   @default(false)
+  veganFriendly             Boolean   @default(false)
+  crueltyFree               Boolean   @default(false)
+  organicCertified          Boolean   @default(false)
+  fairTradeCertified        Boolean   @default(false)
+  energyRating              EnergyRating @default(NOT_RATED)
+  annualEnergyKwh           Decimal?
+  standbyPowerW             Decimal?
+  noiseLevel                Decimal?  // dB(A)
+  repairabilityScore        Decimal?  // EU repairability index (0-10)
+  expectedLifespanYears     Decimal?
+  eprCategory               String?   // Extended Producer Responsibility
+
+  // ── Logistics & Shipping ─────────────────────────────────────────────────
+  shippable                 Boolean   @default(true)
+  freeShipping              Boolean   @default(false)
+  shipsFrom                 String?   // Warehouse/country
+  shipsWithin               String?   // "1-2 business days"
+  deliveryLeadTimeDays      Int?
+  maxDeliveryDays           Int?
+  shippingRestrictions      String[]  // "no-air", "ground-only", etc.
+  oversized                 Boolean   @default(false)
+  requiresSpecialHandling   Boolean   @default(false)
+  stackable                 Boolean   @default(true)
+  orientationSensitive      Boolean   @default(false)
+  temperatureMin            Decimal?  // Min storage temp °C
+  temperatureMax            Decimal?  // Max storage temp °C
+  humidityMin               Decimal?  // Min humidity %
+  humidityMax               Decimal?  // Max humidity %
+  shelfLifeDays             Int?
+  coldChainRequired         Boolean   @default(false)
+  dangerousGoods            Boolean   @default(false)
+  lithiumBattery            Boolean   @default(false)
+  lithiumBatteryType        String?   // "contained", "packed", "standalone"
+  lithiumBatteryWh          Decimal?  // Watt-hours
+  magneticMaterial          Boolean   @default(false)
+  customsDescription        String?   // Plain-language customs description
+  exportValue               Decimal?  // Declared export value
+  insuranceRequired         Boolean   @default(false)
+
+  // ── Digital & Software ───────────────────────────────────────────────────
+  digitalDeliveryMethod     String?   // "download", "email", "stream", "api"
+  fileFormat                String?   // "PDF", "MP4", "ZIP", etc.
+  fileSize                  String?   // "2.5 GB"
+  drmProtected              Boolean   @default(false)
+  licenseModel              String?   // "perpetual", "subscription", "per-seat"
+  maxActivations            Int?
+  platformCompatibility     String[]  // "Windows", "macOS", "iOS", "Android"
+  systemRequirements        String?   @db.Text
+  apiEndpoint               String?
+  sdkAvailable              Boolean   @default(false)
+  openSource                Boolean   @default(false)
+  sourceCodeUrl             String?
+
+  // ── Food & Beverage ──────────────────────────────────────────────────────
+  ingredients               String?   @db.Text
+  allergens                 String[]  // "gluten", "nuts", "dairy", etc.
+  mayContain               String[]  // Cross-contamination warnings
+  nutritionFacts            Json?     // Structured nutrition data
+  caloriesPer100g           Decimal?
+  sugarPer100g              Decimal?
+  fatPer100g                Decimal?
+  proteinPer100g            Decimal?
+  sodiumPer100g             Decimal?
+  fiberPer100g              Decimal?
+  dietaryFlags              String[]  // "vegan", "keto", "gluten-free", etc.
+  alcoholByVolume           Decimal?  // ABV %
+  caffeineContent           Decimal?  // mg per serving
+  organicPercentage         Decimal?
+  gmoFree                   Boolean   @default(false)
+  additiveFree              Boolean   @default(false)
+  preservativeFree          Boolean   @default(false)
+  artificialColorFree       Boolean   @default(false)
+  sugarFree                 Boolean   @default(false)
+  lactoseFree               Boolean   @default(false)
+  glutenFree                Boolean   @default(false)
+  nutFree                   Boolean   @default(false)
+  soyFree                   Boolean   @default(false)
+  halalCertified            Boolean   @default(false)
+  kosherCertified           Boolean   @default(false)
+  jainFriendly              Boolean   @default(false)
+  storageConditions         String?   // "Store in cool dry place"
+  preparationInstructions   String?   @db.Text
+  servingSuggestion         String?
+
+  // ── Pharma & Health ──────────────────────────────────────────────────────
+  activeIngredient          String?
+  dosageForm                String?   // tablet, capsule, syrup, injection
+  strength                  String?   // "500mg", "10ml"
+  routeOfAdministration     String?   // oral, topical, intravenous
+  indicationsForUse         String?   @db.Text
+  contraindications         String?   @db.Text
+  sideEffects               String?   @db.Text
+  drugInteractions          String?   @db.Text
+  pregnancyCategory         String?   // A, B, C, D, X
+  pediatricUse              Boolean   @default(false)
+  geriatricUse              Boolean   @default(false)
+  therapeuticClass          String?
+  pharmacologicalClass      String?
+  bioequivalent             Boolean   @default(false)
+  genericName               String?
+  brandedGeneric            Boolean   @default(false)
+  biologicProduct           Boolean   @default(false)
+  biosimilar                Boolean   @default(false)
+  orphanDrug                Boolean   @default(false)
+  controlledRelease         Boolean   @default(false)
+  refrigerationRequired     Boolean   @default(false)
+  lightSensitive            Boolean   @default(false)
+  moistureSensitive         Boolean   @default(false)
+
+  // ── Automotive & Vehicles ────────────────────────────────────────────────
+  vehicleMake               String?
+  vehicleModel              String?
+  vehicleYear               Int?
+  vehicleEngine             String?
+  vehicleTransmission       String?   // "automatic", "manual", "CVT"
+  vehicleFuelType           String?   // "petrol", "diesel", "electric", "hybrid"
+  vehicleDriveType          String?   // "FWD", "RWD", "AWD", "4WD"
+  vehicleMileage            Int?      // Odometer reading
+  vehicleColor              String?
+  vehicleVin                String?
+  vehicleRegistration       String?
+  emissionStandard          String?   // "Euro 6", "BS-VI", "EPA Tier 3"
+  fuelEfficiency            String?   // "15 km/l", "30 mpg"
+  co2Emissions              Decimal?  // g/km
+  batteryCapacityKwh        Decimal?  // For EVs
+  rangeKm                   Decimal?  // EV range
+  towingCapacityKg          Decimal?
+  seatingCapacity           Int?
+  oem                       Boolean   @default(false)  // Original Equipment Manufacturer
+  aftermarket               Boolean   @default(false)
+  fitmentData               Json?     // Vehicle compatibility data
+
+  // ── Real Estate & Property ───────────────────────────────────────────────
+  propertyType              String?   // "apartment", "house", "land", "commercial"
+  propertyArea              Decimal?  // Square meters/feet
+  propertyAreaUnit          String?   // "sqm", "sqft", "acres", "hectares"
+  bedrooms                  Int?
+  bathrooms                 Int?
+  floors                    Int?
+  yearBuilt                 Int?
+  lotSize                   Decimal?
+  lotSizeUnit               String?
+  zoning                    String?   // "residential", "commercial", "industrial"
+  propertyTax               Decimal?
+  hoaFee                    Decimal?
+  furnished                 String?   // "furnished", "semi", "unfurnished"
+  parkingSpaces             Int?
+  garageSpaces              Int?
+  propertyFeatures          String[]  // "pool", "garden", "elevator", etc.
+  energyCertificate         String?
+  floodZone                 Boolean   @default(false)
+  latitude                  Decimal?
+  longitude                 Decimal?
+
+  // ── Jewelry & Precious Items ─────────────────────────────────────────────
+  metalType                 String?   // "gold", "silver", "platinum"
+  metalPurity               String?   // "24K", "925", "950"
+  gemstoneType              String?
+  gemstoneCarat             Decimal?
+  gemstoneClarity           String?
+  gemstoneColor             String?
+  gemstoneCut               String?
+  gemstoneCertification     String?   // GIA, AGS, IGI
+  hallmarkNumber            String?
+  assayOffice               String?
+
+  // ── Textiles & Fashion ───────────────────────────────────────────────────
+  material                  String?   // "100% cotton", "polyester blend"
+  fabricWeight              String?   // "180 GSM"
+  careInstructions          String[]  // "Machine wash cold", "Do not bleach"
+  sizeChart                 Json?     // Size mapping table
+  fitType                   String?   // "regular", "slim", "relaxed"
+  gender                    String?   // "men", "women", "unisex", "kids"
+  ageGroup                  String?   // "adult", "teen", "child", "infant"
+  season                    String?   // "summer", "winter", "all-season"
+  colorFamily               String?   // "red", "blue", "neutral"
+  pattern                   String?   // "solid", "striped", "floral"
+  closure                   String?   // "zipper", "button", "velcro"
+  collarType                String?
+  sleeveLength              String?
+  hemLength                 String?
+
+  // ── Electronics & Technical ──────────────────────────────────────────────
+  powerConsumption          String?   // "65W", "100-240V"
+  voltage                   String?   // "110V", "220V", "dual"
+  frequency                 String?   // "50Hz", "60Hz"
+  plugType                  String?   // "Type A", "Type C", "Type G"
+  batteryType               String?   // "Li-ion", "NiMH", "AA"
+  batteryCapacity           String?   // "5000mAh", "72Wh"
+  batteryLife               String?   // "10 hours", "2 years"
+  connectivity              String[]  // "WiFi", "Bluetooth 5.0", "USB-C"
+  wirelessStandard          String?   // "WiFi 6E", "5G"
+  displaySize               String?   // "6.7 inches", "27 inches"
+  displayResolution         String?   // "3840x2160", "2560x1440"
+  displayType               String?   // "OLED", "IPS", "VA"
+  processorType             String?
+  ramSize                   String?   // "16GB"
+  storageSize               String?   // "512GB SSD"
+  operatingSystem           String?
+  waterResistance           String?   // "IP68", "5ATM"
+  dustResistance            String?
+  shockResistance           Boolean   @default(false)
+  operatingTempMin          Decimal?  // °C
+  operatingTempMax          Decimal?  // °C
+  certificationMarks        String[]  // "CE", "FCC", "BIS", "VCCI"
+
+  // ── Services & Subscriptions ─────────────────────────────────────────────
+  serviceArea               String?   // Geographic coverage
+  serviceHours              String?   // "Mon-Fri 9-5"
+  responseTimeSla           String?   // "4 hours", "next business day"
+  serviceLevel              String?   // "basic", "premium", "enterprise"
+  contractTermMonths        Int?
+  autoRenew                 Boolean   @default(false)
+  cancellationPolicy        String?
+  setupFee                  Decimal?
+  recurringFee              Decimal?
+  usageBasedPricing         Boolean   @default(false)
+  freeTrialDays             Int?
+  maxUsers                  Int?
+  storageQuota              String?   // "100GB", "unlimited"
+  apiCallsPerMonth          Int?
+  slaUptime                 Decimal?  // 99.9%
+
+  // ── Custom & Configurable ────────────────────────────────────────────────
+  customizable              Boolean   @default(false)
+  personalizationOptions    Json?     // Engraving, monogram, color choices
+  madeToOrderLeadDays       Int?
+  minOrderQuantity          Int?      @default(1)
+  maxOrderQuantity          Int?
+  bulkDiscountTiers         Json?     // [{qty: 10, discount: 5}, ...]
+  sampleAvailable           Boolean   @default(false)
+  samplePrice               Decimal?
+  preOrderAvailable         Boolean   @default(false)
+  preOrderDate              DateTime?
+  backOrderAllowed          Boolean   @default(false)
+  limitedEdition            Boolean   @default(false)
+  editionSize               Int?      // Total units in limited run
+  editionNumber             String?   // "42/500"
+
+  // ── SEO & Marketing ──────────────────────────────────────────────────────
+  metaTitle                 String?
+  metaDescription           String?
+  metaKeywords              String[]
+  canonicalUrl              String?
+  googleProductCategory     String?   // Google taxonomy ID
+  facebookProductCategory   String?
+  searchTerms               String[]  // Backend search keywords
+  promotionText             String?
+  badgeText                 String?   // "Bestseller", "New Arrival"
+  videoUrl                  String?
+  video360Url               String?
+  arModelUrl                String?   // Augmented Reality 3D model
+  sizeguideUrl              String?
+  documentUrls              String[]  // Manuals, datasheets, brochures
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -538,6 +1313,12 @@ model Product {
   @@index([isActive, isFeatured])
   @@index([masterStatus])
   @@index([masterCategory])
+  @@index([price])
+  @@index([avgRating])
+  @@index([createdAt])
+  @@index([stock, isActive])
+  @@index([brandId, categoryId])
+  @@index([sku])
 }
 
 model ProductOptionType {
@@ -591,6 +1372,28 @@ model ProductVariant {
   hsCode        String?
   trackingType  ProductTrackingType @default(NONE)
   expiryDays    Int?
+
+  // International variant fields
+  gtin              String?
+  mpn               String?
+  condition         ProductCondition @default(NEW)
+  costPrice         Decimal?
+  wholesalePrice    Decimal?
+  mapPrice          Decimal?
+  weightGrams       Decimal?
+  lengthMm          Decimal?
+  widthMm           Decimal?
+  heightMm          Decimal?
+  color             String?
+  colorHex          String?
+  size              String?
+  material          String?
+  packSize          Int?
+  minOrderQty       Int?       @default(1)
+  maxOrderQty       Int?
+  leadTimeDays      Int?
+  countryOfOrigin   String?
+
   options       VariantOptionValue[]
   cartItems     CartItem[]
   wishlistItems WishlistItem[]
@@ -601,6 +1404,7 @@ model ProductVariant {
   @@unique([productId, sku])
   @@index([productId])
   @@index([sku])
+  @@index([gtin])
   @@map("product_variants")
 }
 
@@ -626,6 +1430,7 @@ model Inventory {
   locationId String?
   location   Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
   quantity   Int      @default(0)
+  reserved   Int      @default(0)
   lowStock   Int      @default(5)
   avgCost    Decimal  @default(0)
   updatedAt  DateTime @default(now())
@@ -971,6 +1776,8 @@ model CartItem {
   updatedAt DateTime @updatedAt
 
   @@unique([userId, productId, variantId])
+  @@index([userId])
+  @@index([productId])
 }
 
 // ===================== ORDERS =====================
@@ -995,6 +1802,7 @@ model Order {
   notes           String?
   couponCode      String?
   orderNotes      String?        // Customer order notes/instructions
+  metadata        Json?          // picking/packing workflow + substitution state
   isGift          Boolean        @default(false)
   giftMessage     String?
   giftWrapFee     Decimal        @default(0)
@@ -1006,6 +1814,7 @@ model Order {
   isGuestOrder    Boolean        @default(false)
   guestEmail      String?
   shareToken      String?        @unique
+  idempotencyKey  String?        @unique  // Prevents double-submit
   regionId        String?
   region          Region?       @relation(fields: [regionId], references: [id])
   currency        String        @default("INR")
@@ -1024,15 +1833,22 @@ model Order {
   splitPayment    SplitPayment?
   returnRequests  ReturnRequest[]
   b2bOrder        B2BOrder?
+  deliveryFeedback DeliveryFeedback?
 
   @@index([userId, status])
   @@index([orderNumber])
+  @@index([status, createdAt])
+  @@index([createdAt])
+  @@index([paymentStatus])
+  @@index([siteId, status])
+  @@index([regionId, createdAt])
 }
 
 enum OrderStatus {
   PENDING
   CONFIRMED
   PROCESSING
+  PACKED
   SHIPPED
   OUT_FOR_DELIVERY
   DELIVERED
@@ -1077,6 +1893,8 @@ model Refund {
   amount    Decimal
   reason    String
   status    RefundStatus  @default(PENDING)
+  method    String?
+  processedAt DateTime?
   adminNote String?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
@@ -1105,6 +1923,8 @@ model Review {
   comment     String?
   images      String[]
   isVerified  Boolean  @default(false)
+  status      String   @default("PENDING") // PENDING | APPROVED | REJECTED | FLAGGED
+  moderationNote String?
   siteId      String?
   site        Site?    @relation(fields: [siteId], references: [id])
   helpfulVotes    Int      @default(0)
@@ -1114,6 +1934,7 @@ model Review {
 
   @@unique([userId, productId, variantId])
   @@index([productId, rating])
+  @@index([status])
 }
 
 model ReviewVote {
@@ -2110,6 +2931,7 @@ model ReferralReward {
 
   @@index([referrerId])
   @@index([refereeId])
+  @@unique([referrerId, refereeId])
   @@map("referral_rewards")
 }
 
@@ -2283,6 +3105,7 @@ model CartSession {
   promoTriggered Boolean  @default(false)
 
   @@index([userId, lastActivity])
+  @@index([abandonedAt, lastActivity])
   @@map("cart_sessions")
 }
 
@@ -2516,6 +3339,10 @@ model PaymentGateway {
 
   regions                 PaymentGatewayRegion[]
   methods                 PaymentGatewayMethod[]
+  sites                   PaymentGatewaySite[]
+  categories              PaymentGatewayCategory[]
+  banks                   PaymentGatewayBank[]
+  commissions             PaymentGatewayCommission[]
   transactions            PaymentTransaction[]
   bankOffers              BankOffer[]
   paymentMethodPromotions PaymentMethodPromotion[]
@@ -2549,6 +3376,71 @@ model PaymentGatewayMethod {
 
   @@unique([gatewayId, method])
   @@index([gatewayId])
+}
+
+model PaymentGatewaySite {
+  id          String         @id @default(cuid())
+  gatewayId   String
+  gateway     PaymentGateway @relation(fields: [gatewayId], references: [id], onDelete: Cascade)
+  siteId      String
+  site        Site           @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  isActive    Boolean        @default(true)
+  isPrimary   Boolean        @default(false)
+  priority    Int            @default(0)
+  config      Json?
+
+  @@unique([gatewayId, siteId])
+  @@index([siteId, isActive])
+  @@map("payment_gateway_sites")
+}
+
+model PaymentGatewayCategory {
+  id          String         @id @default(cuid())
+  gatewayId   String
+  gateway     PaymentGateway @relation(fields: [gatewayId], references: [id], onDelete: Cascade)
+  categoryId  String
+  category    Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  isActive    Boolean        @default(true)
+  priority    Int            @default(0)
+
+  @@unique([gatewayId, categoryId])
+  @@index([categoryId])
+  @@map("payment_gateway_categories")
+}
+
+model PaymentGatewayBank {
+  id          String         @id @default(cuid())
+  gatewayId   String
+  gateway     PaymentGateway @relation(fields: [gatewayId], references: [id], onDelete: Cascade)
+  bankName    String
+  bankCode    String
+  ifscPrefix  String?
+  methods     String[]       // UPI, NETBANKING, CARD, etc.
+  isActive    Boolean        @default(true)
+  logo        String?
+
+  @@unique([gatewayId, bankCode])
+  @@index([gatewayId])
+  @@map("payment_gateway_banks")
+}
+
+model PaymentGatewayCommission {
+  id              String         @id @default(cuid())
+  gatewayId       String
+  gateway         PaymentGateway @relation(fields: [gatewayId], references: [id], onDelete: Cascade)
+  method          String?        // null = all methods
+  cardNetwork     String?        // VISA, MASTERCARD, etc.
+  type            String         @default("PERCENTAGE") // FLAT, PERCENTAGE, TIERED
+  flatAmount      Float?
+  percentage      Float?
+  tiers           Json?          // [{minAmount, maxAmount, rate}]
+  minCommission   Float?
+  maxCommission   Float?
+  currency        String         @default("INR")
+  isActive        Boolean        @default(true)
+
+  @@index([gatewayId])
+  @@map("payment_gateway_commissions")
 }
 
 enum PaymentMethodType {
@@ -2586,6 +3478,7 @@ model PaymentTransaction {
 
   @@index([orderId])
   @@index([provider, providerTxnId])
+  @@unique([provider, providerTxnId])
 }
 
 enum DiscountType {
@@ -2705,27 +3598,32 @@ model AuditLog {
   id          String   @id @default(cuid())
   userId      String?
   user        User?    @relation(fields: [userId], references: [id])
+  siteId      String?  // Scoped to site hierarchy — admins see their site + children
   action      String
   entityType  String
   entityId    String?
   details     Json?
+  metadata    Json?
   ipAddress   String?
   userAgent   String?
   createdAt   DateTime @default(now())
 
   @@index([userId])
+  @@index([siteId, createdAt])
   @@index([entityType, entityId])
   @@index([createdAt])
 }
 
 model SystemActivity {
   id           String           @id @default(cuid())
+  siteId       String?          // Scoped to site hierarchy
   activityType String
   details      String?
   severity     ActivitySeverity @default(INFO)
   source       String?
   createdAt    DateTime         @default(now())
 
+  @@index([siteId, activityType])
   @@index([activityType])
   @@index([createdAt])
 }
@@ -2744,6 +3642,8 @@ model SystemConfig {
   description String?
   category    String?
   updatedAt   DateTime @default(now())
+
+  @@index([category])
 }
 
 // ===================== NOTIFICATIONS =====================
@@ -2944,6 +3844,7 @@ model Wallet {
   balance     Decimal  @default(0)
   currency    String   @default("INR")
   isActive    Boolean  @default(true)
+  metadata    Json?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -3618,6 +4519,8 @@ model LiveChatSession {
 
   messages  LiveChatMessage[]
   @@index([userId, status])
+  @@index([status, createdAt])
+  @@index([agentId, status])
   @@map("live_chat_sessions")
 }
 
@@ -3683,6 +4586,7 @@ model WebhookDelivery {
   createdAt    DateTime @default(now())
 
   @@index([webhookId, status])
+  @@index([status, nextRetryAt])
   @@map("webhook_deliveries")
 }
 
@@ -3910,6 +4814,9 @@ model SellerOrder {
   createdAt       DateTime @default(now())
 
   @@index([sellerId, orderId])
+  @@index([sellerId, status])
+  @@index([orderId])
+  @@unique([orderId, productId])
   @@map("seller_orders")
 }
 
@@ -4108,6 +5015,8 @@ model FraudScore {
 
   @@index([userId, type])
   @@index([score])
+  @@index([action, createdAt])
+  @@index([orderId])
 }
 
 model ChurnPrediction {
@@ -4241,6 +5150,28 @@ model Site {
   status        SiteStatus @default(PENDING)   // PENDING | ACTIVE | SUSPENDED
   isDefault     Boolean    @default(false)     // fallback site (current platform)
 
+  // ── Recursive White-Label SaaS ─────────────────────────────────────────────
+  // Each site can sell sub-sites (infinite depth). A child site inherits from parent.
+  parentSiteId   String?
+  parentSite     Site?      @relation("SiteHierarchy", fields: [parentSiteId], references: [id])
+  childSites     Site[]     @relation("SiteHierarchy")
+  tier           Int        @default(0)        // 0 = root platform, 1 = first reseller, 2 = sub-reseller, etc.
+
+  // What type of platform this site runs (can be multiple)
+  platformTypes  String[]   @default([])       // ["ecommerce", "streaming", "trading", "lms", "saas", ...]
+  // Infinite configurable options per platform type
+  platformOptions Json?     // { "streaming": {"maxPlans": 5, "allowLive": true}, "ecommerce": {"maxProducts": 1000} }
+
+  // Per-site analytics & tracking config
+  analyticsConfig Json?     // { "ga4": "G-XXX", "mixpanel": "xxx", "custom": {...} }
+
+  // Can this site resell/provision child sites?
+  canResell      Boolean    @default(false)
+  // Which platform types can this site sell to children?
+  resellableTypes String[]  @default([])       // ["ecommerce", "streaming", "trading"]
+  // Max child sites this site can provision (-1 = unlimited)
+  maxChildSites  Int        @default(-1)
+
   // Branding
   logo           String?
   favicon        String?
@@ -4248,6 +5179,18 @@ model Site {
   secondaryColor String     @default("#f59e0b")
   fontFamily     String     @default("sans")
   theme          Json?
+
+  // Region & Localization
+  regionId         String?
+  region           Region?    @relation(fields: [regionId], references: [id])
+  defaultCurrency  String?
+  defaultLocale    String?
+  supportedLocales String[]   @default([])
+
+  // Contact / ownership
+  contactEmail   String?
+  contactPhone   String?
+  contactAddress String?
 
   // Settings
   settings       Json?    // {taxInclusive, currency, timezone, maintenanceMode}
@@ -4266,6 +5209,11 @@ model Site {
   menus          SiteMenu[]
   pages          SitePage[]
   domains        SiteDomain[]
+  siteAdmins     SiteAdmin[]
+  paymentGateways PaymentGatewaySite[]
+  sitePlans      SitePlan[]     @relation("SiteSellsPlans")
+  subscription   SitePlan?      @relation("SiteSubscribedPlan", fields: [subscribedPlanId], references: [id])
+  subscribedPlanId String?
 
   // FK to existing data
   orders         Order[]
@@ -4278,7 +5226,150 @@ model Site {
   @@index([slug])
   @@index([status])
   @@index([isDefault])
+  @@index([regionId])
+  @@index([parentSiteId])
+  @@index([tier])
   @@map("sites")
+}
+
+// ── Site Plans: Sellable platform subscriptions with infinite options ─────────
+// Each site that canResell defines plans that child sites subscribe to.
+model SitePlan {
+  id              String   @id @default(cuid())
+  siteId          String                       // The site selling this plan
+  site            Site     @relation("SiteSellsPlans", fields: [siteId], references: [id], onDelete: Cascade)
+  name            String                       // "Starter Ecommerce", "Pro Streaming"
+  slug            String
+  description     String?
+  platformType    String                       // "ecommerce", "streaming", "trading", etc.
+  price           Float
+  currency        String   @default("INR")
+  interval        String   @default("MONTHLY") // MONTHLY, QUARTERLY, YEARLY, LIFETIME
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  trialDays       Int      @default(0)
+
+  // Infinite configurable options — anything the seller wants to offer
+  options         Json?    // {"maxProducts": 500, "customDomain": true, "maxUsers": 10, "storage": "50GB", "support": "24/7", ...}
+  // What features/modules are included
+  includedModules String[] @default([])        // ["ecommerce", "analytics", "email"]
+  // Limits for the child site
+  limits          Json?    // {"maxOrders": 1000, "maxBandwidth": "100GB", "maxChildSites": 5, ...}
+
+  // Sites subscribed to this plan
+  subscribers     Site[]   @relation("SiteSubscribedPlan")
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([siteId, slug])
+  @@index([siteId, isActive, sortOrder])
+  @@index([platformType])
+  @@map("site_plans")
+}
+
+// ── MLM Revenue Share: Multi-level hierarchical revenue distribution ─────────
+// Each site defines what % it takes from child revenue, and how deep the chain goes.
+// Revenue flows upward: child pays parent, parent pays grandparent, etc.
+model RevenueShareConfig {
+  id              String   @id @default(cuid())
+  siteId          String   @unique  // The site that configures this
+  enabled         Boolean  @default(true)
+  maxDepth        Int      @default(-1)  // -1 = unlimited levels
+  // Per-level percentages (index 0 = direct parent, 1 = grandparent, etc.)
+  // If levels exceed array length, last value repeats forever (for unlimited depth)
+  levelPercentages Float[] @default([20, 10, 5, 2, 1])
+  repeatLastLevel  Boolean @default(true) // If true, last % repeats for all deeper levels
+  // Override rules per platform type — supports infinite types
+  // { "streaming": [25, 12, 6], "trading": [15, 8, 3], "lms": [30, 15], "custom_xyz": [10, 5] }
+  platformOverrides Json?
+  // Revenue types that trigger sharing — infinite configurable types
+  // ["order", "subscription", "ad_revenue", "commission", "tip", "donation", "license", "api_usage", ...]
+  revenueTypes     String[] @default(["order", "subscription"])
+  // Per revenue-type percentage overrides
+  // { "subscription": [30, 15, 7], "ad_revenue": [10, 5, 2], "tip": [5, 2] }
+  revenueTypeOverrides Json?
+  // ── Payout Configuration (fully configurable) ──────────────────────────────
+  minPayout       Float    @default(100)
+  currency        String   @default("INR")
+  payoutInterval  String   @default("MONTHLY") // DAILY, WEEKLY, BIWEEKLY, MONTHLY, QUARTERLY, ON_DEMAND, INSTANT
+  payoutMethods   String[] @default(["bank_transfer", "wallet", "upi"]) // Infinite payout methods
+  autoApprove     Boolean  @default(false)  // Auto-approve payouts below threshold
+  autoApproveMax  Float    @default(10000)  // Auto-approve up to this amount
+  holdDays        Int      @default(7)      // Hold period before payout eligible
+  // ── Bonus & Incentive Rules (infinite configurable) ────────────────────────
+  // { "milestone_10_children": {"bonus": 5000}, "monthly_target_100k": {"bonusPercent": 2}, ... }
+  bonusRules      Json?
+  // ── Caps & Limits ──────────────────────────────────────────────────────────
+  maxSharePerTransaction Float? // Cap per single transaction (null = no cap)
+  maxMonthlyEarning      Float? // Monthly earning cap (null = no cap)
+  // ── Extra configurable options (infinite) ──────────────────────────────────
+  options         Json?    // Any additional config: {"clawbackDays": 30, "taxDeduction": 10, "referralBonus": 500, ...}
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("revenue_share_configs")
+}
+
+// Individual revenue share transactions (ledger)
+model RevenueShareLedger {
+  id              String   @id @default(cuid())
+  // Who earned
+  beneficiarySiteId String  // The site receiving the share
+  // Source of revenue
+  sourceSiteId    String   // The site that generated the revenue
+  sourceOrderId   String?  // Optional: linked to a specific order
+  sourcePlanId    String?  // Optional: linked to a subscription payment
+  // Amount
+  grossAmount     Float    // Total revenue from source
+  sharePercent    Float    // % applied
+  shareAmount     Float    // Actual amount earned
+  level           Int      // 1 = direct child, 2 = grandchild, etc.
+  // Type & classification
+  revenueType     String   @default("order") // order, subscription, ad_revenue, commission, tip, custom...
+  platformType    String?  // ecommerce, streaming, trading, lms, custom...
+  // Status
+  status          String   @default("PENDING") // PENDING, HELD, APPROVED, PROCESSING, PAID, CANCELLED, CLAWED_BACK
+  heldUntil       DateTime? // Hold period end date
+  paidAt          DateTime?
+  payoutRef       String?  // Payment reference
+  payoutMethod    String?  // bank_transfer, wallet, upi, crypto, paypal...
+  // Metadata (infinite)
+  description     String?
+  metadata        Json?    // Any extra data: {"invoiceId": "...", "taxDeducted": 200, ...}
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([beneficiarySiteId, status])
+  @@index([beneficiarySiteId, revenueType])
+  @@index([sourceSiteId, createdAt])
+  @@index([status, heldUntil])
+  @@index([createdAt])
+  @@map("revenue_share_ledger")
+}
+
+// Aggregated payouts (summary per period)
+model RevenueSharePayout {
+  id              String   @id @default(cuid())
+  siteId          String   // Site receiving payout
+  period          String   // "2026-06", "2026-W22", "2026-06-01" (depends on interval)
+  totalEarned     Float    @default(0)
+  totalPaid       Float    @default(0)
+  pendingAmount   Float    @default(0)
+  status          String   @default("PENDING") // PENDING, PROCESSING, PAID, FAILED, CANCELLED
+  paidAt          DateTime?
+  payoutMethod    String?  // bank_transfer, wallet, upi, crypto, paypal...
+  payoutRef       String?
+  // Detailed breakdown (infinite)
+  breakdown       Json?    // { "level1": 5000, "level2": 2000, "byType": {"order": 4000, "subscription": 3000}, "byPlatform": {"streaming": 5000} }
+  // Extra metadata
+  metadata        Json?    // { "taxDeducted": 500, "processingFee": 50, "bonusAdded": 1000 }
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([siteId, period])
+  @@index([siteId, status])
+  @@map("revenue_share_payouts")
 }
 
 enum SiteStatus {
@@ -4301,6 +5392,21 @@ model SiteDomain {
 
   @@index([siteId])
   @@map("site_domains")
+}
+
+// Per-site admin access — links users to sites they can administer
+model SiteAdmin {
+  id          String   @id @default(cuid())
+  siteId      String
+  site        Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permissions String[] @default([])  // Granular permissions granted by master admin
+  createdAt   DateTime @default(now())
+
+  @@unique([siteId, userId])
+  @@index([userId])
+  @@map("site_admins")
 }
 
 // Per-tenant product override — links to shared Product
@@ -4415,4 +5521,1458 @@ model SitePage {
 
   @@unique([siteId, slug])
   @@map("site_pages")
+}
+
+// ===================== SEARCH ANALYTICS =====================
+
+model SearchAnalytics {
+  id               String   @id @default(cuid())
+  query            String
+  normalizedQuery  String   // lowercase, trimmed
+  resultCount      Int      @default(0)
+  clickedProductId String?
+  clickPosition    Int?
+  userId           String?
+  sessionId        String?
+  regionId         String?
+  siteId           String?
+  userAgent        String?
+  createdAt        DateTime @default(now())
+
+  @@index([normalizedQuery, createdAt])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([resultCount])
+  @@map("search_analytics")
+}
+
+// ===================== FRAUD RULES =====================
+
+model FraudRule {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  type      String   // VELOCITY, AMOUNT, DEVICE, LOCATION, IP_VELOCITY, CUSTOM
+  config    Json     // rule-specific configuration
+  weight    Float    @default(1.0)
+  enabled   Boolean  @default(true)
+  action    String   @default("FLAG") // FLAG, BLOCK, REVIEW
+  priority  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([type, enabled])
+  @@map("fraud_rules")
+}
+
+// ===================== PERFORMANCE METRICS =====================
+
+model PerformanceMetric {
+  id        String   @id @default(cuid())
+  page      String
+  metric    String   // LCP, FID, CLS, INP, FCP, TTFB
+  value     Float
+  rating    String   // good, needs_improvement, poor
+  userId    String?
+  sessionId String?
+  device    String?  // mobile, desktop, tablet
+  browser   String?
+  createdAt DateTime @default(now())
+
+  @@index([metric, createdAt])
+  @@index([page, metric])
+  @@index([rating])
+  @@map("performance_metrics")
+}
+
+// ===================== DELIVERY FEEDBACK =====================
+
+model DeliveryFeedback {
+  id              String   @id @default(cuid())
+  orderId         String   @unique
+  order           Order    @relation(fields: [orderId], references: [id])
+  deliveryAgentId String?
+  overallRating   Int      // 1-5
+  agentRating     Int?     // 1-5
+  timelinessRating Int?    // 1-5
+  handlingRating  Int?     // 1-5
+  comment         String?
+  tags            String[] // "on_time", "careful", "polite", etc.
+  isAnonymous     Boolean  @default(false)
+  userId          String?
+  createdAt       DateTime @default(now())
+
+  @@index([orderId])
+  @@index([deliveryAgentId])
+  @@index([overallRating])
+  @@map("delivery_feedbacks")
+}
+
+// ===================== REVIEW MODERATION =====================
+// Note: Add `status String @default("PENDING")` and `moderationNote String?` to existing Review model
+
+// ===================== SERVICES - BILL PAYMENTS =====================
+
+model BillPayment {
+  id             String   @id @default(cuid())
+  userId         String
+  billerId       String
+  consumerNumber String
+  amount         Float
+  billNumber     String?
+  status         String   @default("COMPLETED")
+  transactionId  String?
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+  @@map("bill_payments")
+}
+
+// ===================== SERVICES - RECHARGES =====================
+
+model Recharge {
+  id            String   @id @default(cuid())
+  userId        String
+  mobileNumber  String
+  operator      String
+  amount        Float
+  planId        String?
+  type          String   @default("PREPAID") // PREPAID | POSTPAID | DTH
+  status        String   @default("COMPLETED")
+  transactionId String?
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@map("recharges")
+}
+
+// ===================== SERVICES - INSURANCE =====================
+
+model InsurancePolicy {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // HEALTH | LIFE | VEHICLE | TRAVEL | HOME
+  provider    String
+  policyNumber String?
+  premium     Float
+  sumInsured  Float
+  startDate   DateTime
+  endDate     DateTime
+  status      String   @default("ACTIVE")
+  nominee     String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@map("insurance_policies")
+}
+
+// ===================== SERVICES - MUTUAL FUNDS =====================
+
+model MutualFundInvestment {
+  id        String   @id @default(cuid())
+  userId    String
+  fundId    String
+  fundName  String
+  amount    Float
+  units     Float
+  nav       Float
+  type      String   @default("LUMPSUM") // LUMPSUM | SIP
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("mutual_fund_investments")
+}
+
+// ===================== SERVICES - DIGITAL GOLD =====================
+
+model GoldHolding {
+  id        String   @id @default(cuid())
+  userId    String
+  grams     Float
+  buyPrice  Float
+  type      String   @default("BUY") // BUY | SELL
+  amount    Float
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("gold_holdings")
+}
+
+// ===================== SERVICES - MOVIE BOOKINGS =====================
+
+model MovieBooking {
+  id         String   @id @default(cuid())
+  userId     String
+  movieId    String
+  movieTitle String
+  cinema     String
+  showtime   String
+  seats      String[]
+  amount     Float
+  status     String   @default("CONFIRMED")
+  qrCode     String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@map("movie_bookings")
+}
+
+// ===================== SERVICES - TRAVEL BOOKINGS =====================
+
+model TravelBooking {
+  id         String   @id @default(cuid())
+  userId     String
+  type       String   // FLIGHT | TRAIN | HOTEL | BUS
+  itemId     String
+  details    Json?
+  passengers Json?
+  amount     Float?
+  status     String   @default("CONFIRMED")
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@map("travel_bookings")
+}
+
+// ===================== SERVICES - CREDIT SCORE =====================
+
+model CreditScoreRecord {
+  id        String   @id @default(cuid())
+  userId    String
+  score     Int
+  provider  String   @default("CIBIL")
+  factors   Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("credit_score_records")
+}
+
+// ===================== STREAMING / NETFLIX-LIKE SERVICE =====================
+
+enum StreamingContentType {
+  MOVIE
+  SERIES
+  EPISODE
+  DOCUMENTARY
+  SHORT
+  LIVE
+  MUSIC_VIDEO
+  PODCAST
+}
+
+enum StreamingQuality {
+  SD
+  HD
+  FULL_HD
+  UHD_4K
+  DOLBY_VISION
+}
+
+model StreamingConfig {
+  id                    String   @id @default(cuid())
+  enabled               Boolean  @default(false)
+  brandName             String   @default("Neoflix")
+  tagline               String?
+  logoUrl               String?
+  heroImageUrl          String?
+  maxConcurrentStreams   Int      @default(1)
+  maxProfiles           Int      @default(5)
+  trialDays             Int      @default(7)
+  downloadEnabled       Boolean  @default(false)
+  maxDownloads          Int      @default(10)
+  adSupportedTier       Boolean  @default(false)
+  parentalControlEnabled Boolean @default(true)
+  contentRatings        String[] @default(["U", "UA", "A", "S"])
+  supportedQualities    StreamingQuality[] @default([SD, HD, FULL_HD])
+  supportedLanguages    String[] @default(["en", "hi"])
+  autoPlayNext          Boolean  @default(true)
+  skipIntroEnabled      Boolean  @default(true)
+  skipIntroDuration     Int      @default(120)  // seconds — skip intro jumps to this point
+  skipRecapDuration     Int      @default(30)   // seconds — recap ends at this point
+  watchPartyEnabled     Boolean  @default(false)
+  offlineViewingDays    Int      @default(30)
+  // ── Configurable Algorithms ──
+  trendingWindowDays    Int      @default(7)    // "trending" = most watched in N days
+  newPopularWindowDays  Int      @default(30)   // "new & popular" = released in last N days
+  topNTrending          Int      @default(10)   // show top N trending items
+  recommendationLimit   Int      @default(20)   // max recommendations to show
+  continueWatchingLimit Int      @default(10)   // max continue watching items
+  watchHistoryLimit     Int      @default(50)   // max watch history items
+  // ── Playback ──
+  playbackSpeeds        String[] @default(["0.5", "0.75", "1", "1.25", "1.5", "2"])
+  defaultQuality        StreamingQuality @default(HD)
+  // ── Content Discovery ──
+  enableGeoRestrictions Boolean  @default(false)
+  enableKidsMode        Boolean  @default(true)
+  maturityLevels        String[] @default(["U", "U/A 7+", "U/A 13+", "U/A 16+", "A"])
+  // ── Notifications ──
+  enableEmailNotifications Boolean @default(false)
+  enablePushNotifications  Boolean @default(false)
+  // ── Extensible JSON config for anything else ──
+  extraConfig           Json?    // unlimited key-value pairs for future features
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("streaming_config")
+}
+
+model StreamingPlan {
+  id                  String            @id @default(cuid())
+  name                String
+  slug                String            @unique
+  description         String?
+  price               Float
+  currency            String            @default("INR")
+  interval            String            @default("MONTHLY") // MONTHLY, QUARTERLY, YEARLY
+  maxStreams           Int               @default(1)
+  maxProfiles         Int               @default(1)
+  quality             StreamingQuality  @default(HD)
+  downloadAllowed     Boolean           @default(false)
+  adsEnabled          Boolean           @default(false)
+  features            String[]          @default([])
+  options             Json?             // Infinite configurable key-value pairs (e.g. {"HDR": "true", "Spatial Audio": "Dolby Atmos", "Family Sharing": "5 members"})
+  isActive            Boolean           @default(true)
+  sortOrder           Int               @default(0)
+  trialDays           Int               @default(0)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  subscriptions       StreamingSubscription[]
+
+  @@index([isActive, sortOrder])
+  @@map("streaming_plans")
+}
+
+model StreamingSubscription {
+  id              String   @id @default(cuid())
+  userId          String
+  planId          String
+  plan            StreamingPlan @relation(fields: [planId], references: [id])
+  status          String   @default("ACTIVE") // ACTIVE, PAUSED, CANCELLED, EXPIRED, TRIAL
+  startDate       DateTime @default(now())
+  endDate         DateTime?
+  trialEndsAt     DateTime?
+  cancelledAt     DateTime?
+  autoRenew       Boolean  @default(true)
+  paymentMethod   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, planId])
+  @@index([userId, status])
+  @@index([status, endDate])
+  @@map("streaming_subscriptions")
+}
+
+model StreamingContent {
+  id              String              @id @default(cuid())
+  title           String
+  slug            String              @unique
+  type            StreamingContentType
+  description     String?
+  thumbnailUrl    String?
+  bannerUrl       String?
+  trailerUrl      String?
+  videoUrl        String?             // Main content URL (HLS/DASH)
+  duration        Int?                // seconds
+  releaseDate     DateTime?
+  rating          String?             // U, UA, A, S
+  imdbRating      Float?
+  language        String              @default("en")
+  subtitles       String[]            @default([])
+  genres          String[]            @default([])
+  cast            String[]            @default([])
+  director        String?
+  producer        String?
+  studio          String?
+  seasonNumber    Int?
+  episodeNumber   Int?
+  seriesId        String?
+  series          StreamingContent?   @relation("SeriesEpisodes", fields: [seriesId], references: [id])
+  episodes        StreamingContent[]  @relation("SeriesEpisodes")
+  quality         StreamingQuality[]  @default([HD])
+  isFeatured      Boolean             @default(false)
+  isExclusive     Boolean             @default(false)
+  isActive        Boolean             @default(true)
+  viewCount       Int                 @default(0)
+  tags            String[]            @default([])
+  maturityRating  String?             @default("U")
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  watchHistory    WatchHistory[]
+  watchlist       StreamingWatchlist[]
+  ratings         StreamingRating[]
+  collectionItems StreamingCollectionItem[]
+  downloads       StreamingDownload[]
+
+  @@index([type, isActive])
+  @@index([genres])
+  @@index([language, isActive])
+  @@index([isFeatured])
+  @@index([seriesId, seasonNumber, episodeNumber])
+  @@map("streaming_content")
+}
+
+model WatchHistory {
+  id          String   @id @default(cuid())
+  userId      String
+  contentId   String
+  content     StreamingContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  progress    Int      @default(0) // seconds watched
+  completed   Boolean  @default(false)
+  lastWatched DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, contentId])
+  @@index([userId, lastWatched])
+  @@map("watch_history")
+}
+
+model StreamingWatchlist {
+  id        String   @id @default(cuid())
+  userId    String
+  contentId String
+  content   StreamingContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  addedAt   DateTime @default(now())
+
+  @@unique([userId, contentId])
+  @@index([userId])
+  @@map("streaming_watchlist")
+}
+
+// ── Streaming Profiles (Netflix multi-profile)
+model StreamingProfile {
+  id             String   @id @default(cuid())
+  userId         String
+  name           String
+  avatarUrl      String?
+  isKids         Boolean  @default(false)
+  maturityRating String   @default("U/A 16+") // U, U/A 7+, U/A 13+, U/A 16+, A
+  pin            String?  // 4-digit parental lock
+  language       String   @default("en")
+  autoPlayNext   Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+  @@map("streaming_profiles")
+}
+
+// ── Streaming Ratings & Reviews
+model StreamingRating {
+  id        String   @id @default(cuid())
+  userId    String
+  contentId String
+  content   StreamingContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  rating    Int      // 1-5 stars
+  review    String?
+  spoiler   Boolean  @default(false)
+  helpful   Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, contentId])
+  @@index([contentId, rating])
+  @@map("streaming_ratings")
+}
+
+// ── Streaming Collections (Trending, Top 10, Genre-based)
+model StreamingCollection {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String?
+  type        String   @default("MANUAL") // MANUAL, TRENDING, TOP_10, NEW_RELEASES, GENRE, PERSONALIZED
+  genre       String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  items       StreamingCollectionItem[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([type, isActive])
+  @@map("streaming_collections")
+}
+
+model StreamingCollectionItem {
+  id           String   @id @default(cuid())
+  collectionId String
+  collection   StreamingCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  contentId    String
+  content      StreamingContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  sortOrder    Int      @default(0)
+
+  @@unique([collectionId, contentId])
+  @@map("streaming_collection_items")
+}
+
+// ── Streaming Notifications
+model StreamingNotification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // NEW_RELEASE, RECOMMENDATION, SUBSCRIPTION, REMINDER
+  title     String
+  message   String
+  imageUrl  String?
+  linkUrl   String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@map("streaming_notifications")
+}
+
+// ── Streaming Downloads
+model StreamingDownload {
+  id        String   @id @default(cuid())
+  userId    String
+  contentId String
+  content   StreamingContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  quality   StreamingQuality @default(HD)
+  status    String   @default("DOWNLOADING") // DOWNLOADING, COMPLETED, EXPIRED, DELETED
+  expiresAt DateTime
+  fileSize  Int?     // bytes
+  createdAt DateTime @default(now())
+
+  @@unique([userId, contentId])
+  @@index([userId, status])
+  @@map("streaming_downloads")
+}
+
+// ===================== TRADING PLATFORM (Groww/Zerodha-like) =====================
+
+// ── Global Exchanges & Market Types ─────────────────────────────────────────
+
+model TradingExchange {
+  id            String   @id @default(cuid())
+  code          String   @unique  // "NSE", "NYSE", "LSE", etc.
+  name          String            // "National Stock Exchange of India"
+  country       String            // "IN", "US", "GB"
+  region        String            // "ASIA", "AMERICAS", "EUROPE", "AFRICA", "OCEANIA", "MIDDLE_EAST"
+  timezone      String            // "Asia/Kolkata", "America/New_York"
+  currency      String            // "INR", "USD", "GBP"
+  marketType    String            // "EQUITY", "COMMODITY", "DERIVATIVES", "CRYPTO", "FOREX", "BOND"
+  openTime      String?           // "09:15" (local time)
+  closeTime     String?           // "15:30"
+  preMarketOpen String?
+  postMarketClose String?
+  tradingDays   String[]  @default(["MON", "TUE", "WED", "THU", "FRI"])
+  isActive      Boolean  @default(true)
+  logoUrl       String?
+  website       String?
+  mic           String?  // Market Identifier Code (ISO 10383)
+  suffix        String?  // Yahoo Finance suffix e.g. ".NS", ".L", ".T"
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([country])
+  @@index([region, isActive])
+  @@index([marketType])
+  @@map("trading_exchanges")
+}
+
+
+enum TradingAssetType {
+  STOCK
+  ETF
+  MUTUAL_FUND
+  BOND
+  COMMODITY
+  CRYPTO
+  FOREX
+  FUTURES
+  OPTIONS
+  INDEX
+  IPO
+  SGB // Sovereign Gold Bond
+  NPS
+  FD  // Fixed Deposit
+}
+
+enum TradingOrderType {
+  MARKET
+  LIMIT
+  STOP_LOSS
+  STOP_LIMIT
+  BRACKET
+  COVER
+  AMO // After Market Order
+  GTT // Good Till Triggered
+}
+
+enum TradingOrderSide {
+  BUY
+  SELL
+}
+
+enum TradingOrderStatus {
+  PENDING
+  OPEN
+  PARTIALLY_FILLED
+  FILLED
+  CANCELLED
+  REJECTED
+  EXPIRED
+  TRIGGERED
+}
+
+model TradingConfig {
+  id                      String   @id @default(cuid())
+  enabled                 Boolean  @default(false)
+  brandName               String   @default("Newtrade")
+  tagline                 String?
+  logoUrl                 String?
+  // Supported asset classes
+  stocksEnabled           Boolean  @default(true)
+  mutualFundsEnabled      Boolean  @default(true)
+  etfEnabled              Boolean  @default(true)
+  cryptoEnabled           Boolean  @default(false)
+  forexEnabled            Boolean  @default(false)
+  commoditiesEnabled      Boolean  @default(false)
+  futuresEnabled          Boolean  @default(false)
+  optionsEnabled          Boolean  @default(false)
+  ipoEnabled              Boolean  @default(true)
+  bondsEnabled            Boolean  @default(true)
+  sgbEnabled              Boolean  @default(true)
+  npsEnabled              Boolean  @default(false)
+  fdEnabled               Boolean  @default(false)
+  // Trading hours & rules
+  marketOpenTime          String   @default("09:15")
+  marketCloseTime         String   @default("15:30")
+  preMarketOpen           String   @default("09:00")
+  preMarketClose          String   @default("09:15")
+  postMarketOpen          String   @default("15:40")
+  postMarketClose         String   @default("16:00")
+  tradingDays             String[] @default(["MON", "TUE", "WED", "THU", "FRI"])
+  // Fees & charges
+  brokerageFlat           Decimal  @default(20)    // per order flat fee
+  brokeragePercent        Decimal  @default(0.03)  // percentage of trade value
+  brokerageType           String   @default("FLAT") // FLAT, PERCENT, HYBRID
+  sttRate                 Decimal  @default(0.1)   // Securities Transaction Tax %
+  gstRate                 Decimal  @default(18)    // GST on brokerage
+  stampDutyRate           Decimal  @default(0.015)
+  sebiCharges             Decimal  @default(0.0001)
+  exchangeCharges         Decimal  @default(0.00345)
+  dpCharges               Decimal  @default(15.93) // per sell transaction
+  // Limits
+  maxOrderValue           Decimal  @default(10000000) // 1 crore
+  maxDailyOrders          Int      @default(100)
+  maxOpenOrders           Int      @default(25)
+  marginMultiplier        Decimal  @default(5)     // leverage for intraday
+  // Features
+  sipEnabled              Boolean  @default(true)  // Systematic Investment Plan
+  gttEnabled              Boolean  @default(true)  // Good Till Triggered
+  basketOrderEnabled      Boolean  @default(true)
+  paperTradingEnabled     Boolean  @default(true)
+  fractionalSharesEnabled Boolean  @default(false)
+  afterMarketOrderEnabled Boolean  @default(true)
+  intradayEnabled         Boolean  @default(true)
+  shortSellingEnabled     Boolean  @default(false)
+  // KYC & compliance
+  kycRequired             Boolean  @default(true)
+  panRequired             Boolean  @default(true)
+  aadhaarRequired         Boolean  @default(false)
+  nomineeRequired         Boolean  @default(true)
+  riskDisclosureRequired  Boolean  @default(true)
+  // Notifications
+  orderNotifications      Boolean  @default(true)
+  priceAlerts             Boolean  @default(true)
+  marketNewsEnabled       Boolean  @default(true)
+  // Data providers
+  marketDataProvider      String   @default("INTERNAL") // INTERNAL, NSE, BSE, YAHOO, ALPHA_VANTAGE
+  marketDataApiKey        String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@map("trading_config")
+}
+
+model TradingAccount {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  accountNumber   String   @unique
+  status          String   @default("PENDING") // PENDING, ACTIVE, SUSPENDED, CLOSED
+  kycStatus       String   @default("PENDING") // PENDING, SUBMITTED, VERIFIED, REJECTED
+  panNumber       String?
+  dematId         String?  // Demat account number
+  bankAccountId   String?
+  bankIfsc        String?
+  nomineeDetails  Json?
+  riskProfile     String   @default("MODERATE") // CONSERVATIVE, MODERATE, AGGRESSIVE
+  marginAvailable Decimal  @default(0)
+  fundsBalance    Decimal  @default(0)
+  blockedMargin   Decimal  @default(0)
+  isPaperTrading  Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  holdings        TradingHolding[]
+  orders          TradingOrder[]
+  watchlists      TradingWatchlist[]
+  sipPlans        TradingSIP[]
+  transactions    TradingTransaction[]
+  gttOrders       TradingGTT[]
+  ipoApplications TradingIPOApplication[]
+  mfInvestments   TradingMFInvestment[]
+  alerts          TradingAlert[]
+  positions       TradingPosition[]
+  algoStrategies  AlgoStrategy[]
+  brokerConnections AlgoBrokerConnection[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("trading_accounts")
+}
+
+model TradingAsset {
+  id              String           @id @default(cuid())
+  symbol          String           @unique
+  name            String
+  type            TradingAssetType
+  exchange        String           @default("NSE") // NSE, BSE, MCX, CRYPTO
+  sector          String?
+  industry        String?
+  isin            String?          @unique
+  lotSize         Int              @default(1)
+  tickSize        Decimal          @default(0.05)
+  circuitLimit    Decimal?         // percentage
+  faceValue       Decimal?
+  marketCap       Decimal?
+  peRatio         Decimal?
+  pbRatio         Decimal?
+  dividendYield   Decimal?
+  week52High      Decimal?
+  week52Low       Decimal?
+  isActive        Boolean          @default(true)
+  isTradeable     Boolean          @default(true)
+  isF_O           Boolean          @default(false) // Futures & Options eligible
+  logoUrl         String?
+  description     String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  holdings        TradingHolding[]
+  orders          TradingOrder[]
+  watchlistItems  TradingWatchlistItem[]
+  marketData      TradingMarketData[]
+  sipPlans        TradingSIP[]
+  gttOrders       TradingGTT[]
+  alerts          TradingAlert[]
+  positions       TradingPosition[]
+  orderDepth      TradingOrderDepth?
+
+  @@index([type, isActive])
+  @@index([exchange, symbol])
+  @@index([sector])
+  @@map("trading_assets")
+}
+
+model TradingMarketData {
+  id          String   @id @default(cuid())
+  assetId     String
+  asset       TradingAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  ltp         Decimal  // Last Traded Price
+  open        Decimal?
+  high        Decimal?
+  low         Decimal?
+  close       Decimal? // Previous close
+  volume      BigInt   @default(0)
+  change      Decimal  @default(0)
+  changePct   Decimal  @default(0)
+  bid         Decimal?
+  ask         Decimal?
+  bidQty      Int?
+  askQty      Int?
+  timestamp   DateTime @default(now())
+
+  @@index([assetId, timestamp])
+  @@map("trading_market_data")
+}
+
+model TradingOrder {
+  id              String             @id @default(cuid())
+  accountId       String
+  account         TradingAccount     @relation(fields: [accountId], references: [id])
+  assetId         String
+  asset           TradingAsset       @relation(fields: [assetId], references: [id])
+  orderType       TradingOrderType
+  side            TradingOrderSide
+  status          TradingOrderStatus @default(PENDING)
+  quantity        Int
+  filledQuantity  Int                @default(0)
+  price           Decimal?           // limit price
+  triggerPrice    Decimal?           // stop-loss trigger
+  avgFilledPrice  Decimal?
+  product         String             @default("CNC") // CNC (delivery), MIS (intraday), NRML
+  validity        String             @default("DAY") // DAY, IOC, GTC, GTT
+  isAMO           Boolean            @default(false)
+  tag             String?            // user tag for identification
+  brokerage       Decimal            @default(0)
+  taxes           Decimal            @default(0)
+  totalCharges    Decimal            @default(0)
+  rejectionReason String?
+  filledAt        DateTime?
+  cancelledAt     DateTime?
+  expiresAt       DateTime?
+  parentOrderId   String?            // for bracket/cover orders
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([accountId, status])
+  @@index([assetId])
+  @@index([status, createdAt])
+  @@map("trading_orders")
+}
+
+model TradingHolding {
+  id              String       @id @default(cuid())
+  accountId       String
+  account         TradingAccount @relation(fields: [accountId], references: [id])
+  assetId         String
+  asset           TradingAsset @relation(fields: [assetId], references: [id])
+  quantity        Int
+  avgBuyPrice     Decimal
+  investedValue   Decimal
+  currentValue    Decimal      @default(0)
+  pnl             Decimal      @default(0)
+  pnlPercent      Decimal      @default(0)
+  dayChange       Decimal      @default(0)
+  dayChangePct    Decimal      @default(0)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([accountId, assetId])
+  @@index([accountId])
+  @@map("trading_holdings")
+}
+
+model TradingWatchlist {
+  id          String   @id @default(cuid())
+  accountId   String
+  account     TradingAccount @relation(fields: [accountId], references: [id])
+  name        String   @default("My Watchlist")
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  items       TradingWatchlistItem[]
+
+  @@index([accountId])
+  @@map("trading_watchlists")
+}
+
+model TradingWatchlistItem {
+  id          String   @id @default(cuid())
+  watchlistId String
+  watchlist   TradingWatchlist @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
+  assetId     String
+  asset       TradingAsset @relation(fields: [assetId], references: [id])
+  sortOrder   Int      @default(0)
+  addedAt     DateTime @default(now())
+
+  @@unique([watchlistId, assetId])
+  @@map("trading_watchlist_items")
+}
+
+model TradingSIP {
+  id            String       @id @default(cuid())
+  accountId     String
+  account       TradingAccount @relation(fields: [accountId], references: [id])
+  assetId       String
+  asset         TradingAsset @relation(fields: [assetId], references: [id])
+  amount        Decimal
+  frequency     String       @default("MONTHLY") // DAILY, WEEKLY, MONTHLY
+  sipDate       Int          @default(1) // day of month
+  status        String       @default("ACTIVE") // ACTIVE, PAUSED, CANCELLED
+  startDate     DateTime     @default(now())
+  endDate       DateTime?
+  totalInvested Decimal      @default(0)
+  installments  Int          @default(0)
+  nextDueDate   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([accountId, status])
+  @@map("trading_sips")
+}
+
+model TradingTransaction {
+  id          String       @id @default(cuid())
+  accountId   String
+  account     TradingAccount @relation(fields: [accountId], references: [id])
+  type        String       // DEPOSIT, WITHDRAWAL, BUY, SELL, DIVIDEND, BROKERAGE, TAX, SIP
+  amount      Decimal
+  balanceBefore Decimal
+  balanceAfter  Decimal
+  description String?
+  referenceId String?      // orderId, sipId, etc.
+  status      String       @default("COMPLETED")
+  createdAt   DateTime     @default(now())
+
+  @@index([accountId, createdAt])
+  @@index([type])
+  @@map("trading_transactions")
+}
+
+// ── GTT Orders (Good Till Triggered)
+model TradingGTT {
+  id          String   @id @default(cuid())
+  accountId   String
+  account     TradingAccount @relation(fields: [accountId], references: [id])
+  assetId     String
+  asset       TradingAsset @relation(fields: [assetId], references: [id])
+  triggerType String   // SINGLE, OCO (One Cancels Other)
+  triggerPrice Decimal
+  limitPrice  Decimal?
+  stopPrice   Decimal? // for OCO
+  side        TradingOrderSide
+  quantity    Int
+  status      String   @default("ACTIVE") // ACTIVE, TRIGGERED, CANCELLED, EXPIRED
+  triggeredAt DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([accountId, status])
+  @@map("trading_gtt")
+}
+
+// ── IPO Applications
+model TradingIPO {
+  id            String   @id @default(cuid())
+  name          String
+  symbol        String
+  exchange      String   @default("NSE")
+  priceMin      Decimal
+  priceMax      Decimal
+  lotSize       Int
+  issueSize     Decimal? // in crores
+  openDate      DateTime
+  closeDate     DateTime
+  listingDate   DateTime?
+  status        String   @default("UPCOMING") // UPCOMING, OPEN, CLOSED, LISTED
+  category      String   @default("MAINBOARD") // MAINBOARD, SME
+  description   String?
+  rhpUrl        String?  // Red Herring Prospectus
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  applications  TradingIPOApplication[]
+  @@index([status, openDate])
+  @@map("trading_ipos")
+}
+
+model TradingIPOApplication {
+  id        String   @id @default(cuid())
+  accountId String
+  account   TradingAccount @relation(fields: [accountId], references: [id])
+  ipoId     String
+  ipo       TradingIPO @relation(fields: [ipoId], references: [id])
+  lots      Int
+  bidPrice  Decimal
+  amount    Decimal
+  status    String   @default("APPLIED") // APPLIED, ALLOTTED, NOT_ALLOTTED, REFUNDED
+  upiId     String?
+  createdAt DateTime @default(now())
+
+  @@unique([accountId, ipoId])
+  @@map("trading_ipo_applications")
+}
+
+// ── Mutual Funds
+model TradingMutualFund {
+  id            String   @id @default(cuid())
+  name          String
+  symbol        String   @unique
+  category      String   // EQUITY, DEBT, HYBRID, INDEX, ELSS, LIQUID
+  subCategory   String?  // Large Cap, Mid Cap, Small Cap, etc.
+  amcName       String   // Asset Management Company
+  nav           Decimal  @default(0)
+  navDate       DateTime?
+  expenseRatio  Decimal  @default(0)
+  aum           Decimal? // Assets Under Management (crores)
+  returns1Y     Decimal?
+  returns3Y     Decimal?
+  returns5Y     Decimal?
+  riskLevel     String   @default("MODERATE") // LOW, MODERATE, HIGH, VERY_HIGH
+  minInvestment Decimal  @default(500)
+  minSIP        Decimal  @default(500)
+  exitLoad      String?
+  isActive      Boolean  @default(true)
+  logoUrl       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  investments   TradingMFInvestment[]
+  @@index([category, isActive])
+  @@map("trading_mutual_funds")
+}
+
+model TradingMFInvestment {
+  id        String   @id @default(cuid())
+  accountId String
+  account   TradingAccount @relation(fields: [accountId], references: [id])
+  fundId    String
+  fund      TradingMutualFund @relation(fields: [fundId], references: [id])
+  type      String   @default("LUMPSUM") // LUMPSUM, SIP
+  units     Decimal  @default(0)
+  invested  Decimal  @default(0)
+  current   Decimal  @default(0)
+  sipAmount Decimal?
+  sipDate   Int?
+  status    String   @default("ACTIVE") // ACTIVE, REDEEMED, PAUSED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([accountId, status])
+  @@map("trading_mf_investments")
+}
+
+// ── Price Alerts
+model TradingAlert {
+  id          String   @id @default(cuid())
+  accountId   String
+  account     TradingAccount @relation(fields: [accountId], references: [id])
+  assetId     String
+  asset       TradingAsset @relation(fields: [assetId], references: [id])
+  condition   String   // ABOVE, BELOW, PERCENT_CHANGE
+  targetPrice Decimal?
+  percentChange Decimal?
+  status      String   @default("ACTIVE") // ACTIVE, TRIGGERED, CANCELLED
+  triggeredAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([accountId, status])
+  @@map("trading_alerts")
+}
+
+// ── Intraday Positions
+model TradingPosition {
+  id          String   @id @default(cuid())
+  accountId   String
+  account     TradingAccount @relation(fields: [accountId], references: [id])
+  assetId     String
+  asset       TradingAsset @relation(fields: [assetId], references: [id])
+  product     String   // MIS, NRML
+  side        TradingOrderSide
+  quantity    Int
+  avgPrice    Decimal
+  ltp         Decimal  @default(0)
+  pnl         Decimal  @default(0)
+  isOpen      Boolean  @default(true)
+  openedAt    DateTime @default(now())
+  closedAt    DateTime?
+
+  @@index([accountId, isOpen])
+  @@map("trading_positions")
+}
+
+// ── Order Book Depth (market depth snapshots)
+model TradingOrderDepth {
+  id       String   @id @default(cuid())
+  assetId  String
+  asset    TradingAsset @relation(fields: [assetId], references: [id])
+  bids     Json     // [{price, qty, orders}]
+  asks     Json     // [{price, qty, orders}]
+  updatedAt DateTime @default(now())
+
+  @@unique([assetId])
+  @@map("trading_order_depth")
+}
+
+// ===================== PLATFORM MODULE REGISTRY =====================
+
+model PlatformModule {
+  id              String   @id @default(cuid())
+  slug            String   @unique          // "streaming", "trading", "food-delivery"
+  name            String                    // "Streaming Platform"
+  description     String?
+  icon            String   @default("🧩")   // emoji or icon class
+  version         String   @default("1.0.0")
+  status          String   @default("DRAFT") // DRAFT, ACTIVE, MAINTENANCE, DEPRECATED
+  // Routing
+  adminRoute      String                    // "/admin/streaming"
+  userRoute       String                    // "/streaming"
+  apiPrefix       String?                   // "/api/streaming"
+  // Configuration
+  configSchema    Json?                     // JSON Schema for module-specific settings
+  config          Json?                     // Current config values
+  // Access control
+  isPublic        Boolean  @default(false)  // accessible without login
+  requiredRole    String?                   // minimum role to access admin
+  requiredPlan    String?                   // subscription plan required for users
+  // Metadata
+  category        String   @default("PLATFORM") // PLATFORM, SERVICE, INTEGRATION, ADDON
+  author          String   @default("System")
+  logoUrl         String?
+  bannerUrl       String?
+  tags            String[] @default([])
+  dependencies    String[] @default([])     // other module slugs this depends on
+  // Lifecycle
+  installedAt     DateTime @default(now())
+  activatedAt     DateTime?
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([category, status])
+  @@map("platform_modules")
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ALGO TRADING PLATFORM
+// ═══════════════════════════════════════════════════════════════════════════════
+
+enum AlgoStrategyType {
+  MOMENTUM
+  MEAN_REVERSION
+  BREAKOUT
+  SCALPING
+  ARBITRAGE
+  GRID
+  DCA // Dollar Cost Averaging
+  PAIRS
+  MARKET_MAKING
+  TREND_FOLLOWING
+  OPTIONS_STRATEGY
+  CUSTOM
+}
+
+enum AlgoTimeframe {
+  TICK
+  M1
+  M5
+  M15
+  M30
+  H1
+  H4
+  D1
+  W1
+  MO1
+}
+
+enum AlgoStatus {
+  DRAFT
+  BACKTESTING
+  PAPER_TRADING
+  LIVE
+  PAUSED
+  STOPPED
+  ERROR
+}
+
+enum AlgoSignalType {
+  ENTRY_LONG
+  ENTRY_SHORT
+  EXIT_LONG
+  EXIT_SHORT
+  SCALE_IN
+  SCALE_OUT
+  STOP_LOSS
+  TAKE_PROFIT
+}
+
+enum AlgoExecutionStatus {
+  PENDING
+  SUBMITTED
+  FILLED
+  PARTIALLY_FILLED
+  REJECTED
+  CANCELLED
+  FAILED
+}
+
+model AlgoStrategy {
+  id              String           @id @default(cuid())
+  accountId       String
+  account         TradingAccount   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  type            AlgoStrategyType
+  status          AlgoStatus       @default(DRAFT)
+  // Target assets
+  symbols         String[]         // symbols this strategy trades
+  exchanges       String[]         @default(["NSE"])
+  assetTypes      String[]         @default(["STOCK"])
+  // Strategy configuration (JSON-based for flexibility)
+  indicators      Json             @default("[]")   // [{type:"RSI",period:14,overbought:70,oversold:30}]
+  entryConditions Json             @default("[]")   // [{indicator:"RSI",operator:"<",value:30,logic:"AND"}]
+  exitConditions  Json             @default("[]")
+  parameters      Json             @default("{}")   // strategy-specific params
+  // Timeframe
+  timeframe       AlgoTimeframe    @default(M5)
+  // Risk management
+  maxPositionSize Decimal          @default(100000) // max capital per trade
+  maxDailyLoss    Decimal          @default(5000)   // stop trading if daily loss exceeds
+  maxDrawdown     Decimal          @default(10)     // % max drawdown before pause
+  stopLossPct     Decimal?                          // default SL %
+  takeProfitPct   Decimal?                          // default TP %
+  trailingStopPct Decimal?
+  maxOpenTrades   Int              @default(5)
+  riskPerTrade    Decimal          @default(2)      // % of capital risked per trade
+  // Execution settings
+  orderType       String           @default("MARKET") // MARKET, LIMIT
+  slippage        Decimal          @default(0.1)    // % acceptable slippage
+  cooldownSeconds Int              @default(60)     // min seconds between trades
+  // Schedule
+  scheduleEnabled Boolean          @default(false)
+  scheduleCron    String?                           // cron expression
+  scheduleStart   String?                           // HH:mm market start
+  scheduleEnd     String?                           // HH:mm market end
+  activeDays      String[]         @default(["MON", "TUE", "WED", "THU", "FRI"])
+  // Performance
+  totalTrades     Int              @default(0)
+  winRate         Decimal          @default(0)
+  totalPnl        Decimal          @default(0)
+  sharpeRatio     Decimal?
+  maxDrawdownHit  Decimal          @default(0)
+  // Metadata
+  version         Int              @default(1)
+  tags            String[]         @default([])
+  isPublic        Boolean          @default(false)  // share in marketplace
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  lastRunAt       DateTime?
+
+  signals         AlgoSignal[]
+  executions      AlgoExecution[]
+  backtests       AlgoBacktest[]
+  logs            AlgoLog[]
+  schedules       AlgoSchedule[]
+
+  @@index([accountId, status])
+  @@index([type, status])
+  @@index([status, lastRunAt])
+  @@map("algo_strategies")
+}
+
+model AlgoSignal {
+  id          String         @id @default(cuid())
+  strategyId  String
+  strategy    AlgoStrategy   @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  symbol      String
+  type        AlgoSignalType
+  price       Decimal                              // price at signal generation
+  targetPrice Decimal?                             // expected target
+  stopLoss    Decimal?
+  confidence  Decimal        @default(0)           // 0-100 signal strength
+  reason      String?                              // human-readable reason
+  indicators  Json?                                // indicator values at signal time
+  status      String         @default("PENDING")   // PENDING, EXECUTED, EXPIRED, CANCELLED
+  expiresAt   DateTime?
+  executedAt  DateTime?
+  createdAt   DateTime       @default(now())
+
+  executions  AlgoExecution[]
+
+  @@index([strategyId, status])
+  @@index([symbol, createdAt])
+  @@index([createdAt])
+  @@map("algo_signals")
+}
+
+model AlgoExecution {
+  id          String               @id @default(cuid())
+  strategyId  String
+  strategy    AlgoStrategy         @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  signalId    String?
+  signal      AlgoSignal?          @relation(fields: [signalId], references: [id])
+  symbol      String
+  side        TradingOrderSide
+  orderType   TradingOrderType     @default(MARKET)
+  quantity    Decimal
+  price       Decimal                              // intended price
+  filledPrice Decimal?                             // actual fill price
+  filledQty   Decimal?
+  status      AlgoExecutionStatus  @default(PENDING)
+  brokerId    String?                              // which broker executed
+  brokerOrderId String?                            // external order ID
+  slippage    Decimal?                             // actual slippage
+  fees        Decimal              @default(0)
+  pnl         Decimal?                             // realized P&L for this execution
+  error       String?
+  metadata    Json?
+  createdAt   DateTime             @default(now())
+  filledAt    DateTime?
+
+  @@index([strategyId, status])
+  @@index([symbol, createdAt])
+  @@index([status, createdAt])
+  @@map("algo_executions")
+}
+
+model AlgoBacktest {
+  id            String       @id @default(cuid())
+  strategyId    String
+  strategy      AlgoStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  // Config
+  startDate     DateTime
+  endDate       DateTime
+  initialCapital Decimal     @default(100000)
+  symbols       String[]
+  timeframe     AlgoTimeframe
+  // Results
+  totalTrades   Int          @default(0)
+  winningTrades Int          @default(0)
+  losingTrades  Int          @default(0)
+  winRate       Decimal      @default(0)
+  totalPnl      Decimal      @default(0)
+  maxDrawdown   Decimal      @default(0)
+  sharpeRatio   Decimal?
+  sortinoRatio  Decimal?
+  profitFactor  Decimal?
+  avgWin        Decimal?
+  avgLoss       Decimal?
+  maxConsecWins Int          @default(0)
+  maxConsecLoss Int          @default(0)
+  finalCapital  Decimal?
+  // Trade log
+  trades        Json         @default("[]")        // [{entry,exit,pnl,duration}]
+  equityCurve   Json         @default("[]")        // [{date,equity}]
+  status        String       @default("RUNNING")   // RUNNING, COMPLETED, FAILED
+  error         String?
+  duration      Int?                               // seconds to complete
+  createdAt     DateTime     @default(now())
+  completedAt   DateTime?
+
+  @@index([strategyId, createdAt])
+  @@map("algo_backtests")
+}
+
+model AlgoSchedule {
+  id          String       @id @default(cuid())
+  strategyId  String
+  strategy    AlgoStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  name        String
+  type        String       @default("CRON")        // CRON, INTERVAL, EVENT
+  cron        String?                              // cron expression
+  intervalMs  Int?                                 // for INTERVAL type
+  eventType   String?                              // PRICE_CROSS, VOLUME_SPIKE, NEWS, MARKET_OPEN
+  eventConfig Json?                                // event-specific config
+  timezone    String       @default("Asia/Kolkata")
+  isActive    Boolean      @default(true)
+  lastRunAt   DateTime?
+  nextRunAt   DateTime?
+  runCount    Int          @default(0)
+  maxRuns     Int?                                 // null = unlimited
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([isActive, nextRunAt])
+  @@index([strategyId])
+  @@map("algo_schedules")
+}
+
+model AlgoBroker {
+  id          String   @id @default(cuid())
+  name        String                               // Zerodha, IBKR, Alpaca, Binance
+  slug        String   @unique
+  type        String   @default("STOCK")           // STOCK, CRYPTO, FOREX, MULTI
+  // Connection
+  apiUrl      String
+  wsUrl       String?
+  authType    String   @default("API_KEY")         // API_KEY, OAUTH, TOKEN
+  // Capabilities
+  markets     String[] @default([])                // NSE, NYSE, CRYPTO, etc.
+  orderTypes  String[] @default(["MARKET", "LIMIT"])
+  features    String[] @default([])                // BRACKET, COVER, GTT, ALGO
+  // Limits
+  rateLimit   Int      @default(10)                // requests per second
+  maxOrders   Int      @default(200)               // per day
+  // Status
+  isActive    Boolean  @default(true)
+  isDefault   Boolean  @default(false)
+  // Metadata
+  logoUrl     String?
+  docsUrl     String?
+  country     String   @default("IN")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  connections AlgoBrokerConnection[]
+
+  @@index([isActive, type])
+  @@map("algo_brokers")
+}
+
+model AlgoBrokerConnection {
+  id          String    @id @default(cuid())
+  brokerId    String
+  broker      AlgoBroker @relation(fields: [brokerId], references: [id], onDelete: Cascade)
+  accountId   String
+  account     TradingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  // Credentials (encrypted)
+  apiKey      String?
+  apiSecret   String?
+  accessToken String?
+  refreshToken String?
+  tokenExpiry DateTime?
+  // Status
+  isActive    Boolean   @default(true)
+  isVerified  Boolean   @default(false)
+  lastSyncAt  DateTime?
+  error       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([brokerId, accountId])
+  @@index([accountId, isActive])
+  @@map("algo_broker_connections")
+}
+
+model AlgoLog {
+  id          String       @id @default(cuid())
+  strategyId  String
+  strategy    AlgoStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  level       String       @default("INFO")        // DEBUG, INFO, WARN, ERROR
+  message     String
+  data        Json?
+  createdAt   DateTime     @default(now())
+
+  @@index([strategyId, createdAt])
+  @@index([level, createdAt])
+  @@map("algo_logs")
+}
+
+
+// ===================== ADVERTISING / SPONSORED =====================
+
+model AdCampaign {
+  id          String   @id @default(cuid())
+  sellerId    String?
+  productId   String
+  bid         Decimal  @default(0) // cost per click
+  budget      Decimal  @default(0)
+  spent       Decimal  @default(0)
+  status      String   @default("ACTIVE") // ACTIVE | PAUSED | EXHAUSTED
+  impressions Int      @default(0)
+  clicks      Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status, productId])
+  @@index([sellerId])
+  @@map("ad_campaigns")
+}
+
+// ===================== FULFILLMENT BY PLATFORM (FBA-style) =====================
+
+model FbaEnrollment {
+  id        String   @id @default(cuid())
+  productId String
+  sellerId  String?
+  mfcId     String
+  units     Int      @default(0)
+  status    String   @default("ENROLLED") // ENROLLED | ACTIVE | SUSPENDED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+  @@index([mfcId, status])
+  @@map("fba_enrollments")
 }

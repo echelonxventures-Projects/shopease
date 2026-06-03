@@ -65,8 +65,8 @@ export function validateEnv(): { valid: boolean; errors: string[] } {
     }
   }
 
-  // Warn about test keys in production
-  if (process.env.NODE_ENV === "production") {
+  // Warn about test keys in production (opt out locally/staging with ALLOW_TEST_KEYS=true)
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_TEST_KEYS !== "true") {
     const rzp = process.env.RAZORPAY_KEY_ID;
     if (rzp && (rzp.startsWith("rzp_test_") || rzp.startsWith("dummy"))) {
       errors.push("RAZORPAY_KEY_ID appears to be a test key in production");

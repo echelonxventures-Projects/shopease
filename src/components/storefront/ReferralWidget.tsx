@@ -12,7 +12,7 @@ interface ReferralWidgetProps {
 }
 
 export function ReferralWidget({ userId, userName, onReward }: ReferralWidgetProps) {
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<{ totalReferrals?: number; successfulReferrals?: number; totalRewards?: number; totalEarned?: number; pendingRewards?: number; rewards?: unknown[]; claimed?: number; pending?: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const referralLink = `${typeof window !== "undefined" ? window.location.origin : ""}/register?ref=${userId}`;
 

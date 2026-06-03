@@ -48,7 +48,7 @@ export function ProductDetailActions({
   const [loading, setLoading] = useState(false);
 
   const price = variantPrice ?? product.price;
-  const comparePrice = variantComparePrice ?? product.comparePrice;
+  const _comparePrice = variantComparePrice ?? product.comparePrice;
   const stock = variantStock !== undefined ? variantStock : product.stock;
   const images = variantImages && variantImages.length > 0 ? variantImages : product.images;
 
@@ -156,7 +156,7 @@ export function ProductDetailActions({
             </Button>
           </div>
           <p className="text-sm text-gray-500 text-center">
-            {cartQty} item{cartQty > 1 ? "s" : ""} in your cart · ₹{(price * cartQty).toLocaleString()}
+            {cartQty} item{cartQty > 1 ? "s" : ""} in your cart · ₹{(price * cartQty).toLocaleString("en-IN")}
           </p>
         </div>
       ) : (
@@ -189,7 +189,7 @@ export function ProductDetailActions({
               disabled={loading || stock === 0}
             >
               <ShoppingCart className="w-5 h-5 mr-2" />
-              {loading ? "Adding..." : `Add to Cart — ₹${(price * qty).toLocaleString()}`}
+              {loading ? "Adding..." : `Add to Cart — ₹${(price * qty).toLocaleString("en-IN")}`}
             </Button>
             <Button variant="outline" size="lg" onClick={handleWishlist}>
               <Heart className={`w-5 h-5 ${wishlisted ? "fill-red-500 text-red-500" : ""}`} />

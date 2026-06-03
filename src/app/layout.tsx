@@ -28,27 +28,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="ShopEase" />
-        <Script id="theme-init" strategy="beforeInteractive">
-          {`(function() {
-            try {
-              var theme = localStorage.getItem('theme');
-              if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-              }
-            } catch(e) {}
-          })();`}
-        </Script>
+        <Script
+          id="theme-init"
+          src="/theme-init.js"
+          strategy="beforeInteractive"
+        />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         {children}
         <Toaster position="top-right" />
-        <Script id="sw-register" strategy="lazyOnload">
-          {`if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-              navigator.serviceWorker.register('/sw.js').catch(function() {});
-            });
-          }`}
-        </Script>
+        <Script
+          id="sw-register"
+          src="/sw-register.js"
+          strategy="lazyOnload"
+        />
       </body>
     </html>
   );

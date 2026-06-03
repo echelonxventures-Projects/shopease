@@ -5,8 +5,8 @@ import { listAllMemberships, getMembershipStats } from "@/server/actions/members
 import { Crown, Users, TrendingUp } from "lucide-react";
 
 export default function PrimeAdminPage() {
-  const [memberships, setMemberships] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>(null);
+  const [memberships, setMemberships] = useState<Awaited<ReturnType<typeof listAllMemberships>>>([]);
+  const [stats, setStats] = useState<Awaited<ReturnType<typeof getMembershipStats>> | null>(null);
   const [filter, setFilter] = useState("ACTIVE");
 
   const load = () => {
@@ -46,7 +46,7 @@ export default function PrimeAdminPage() {
               <span className="text-sm text-gray-500">By Tier</span>
             </div>
             <div className="space-y-1">
-              {stats.byTier.map((t: any) => (
+              {stats.byTier.map((t) => (
                 <p key={t.tier} className="text-sm">
                   {t.tier === "PRIME_PLUS" ? "Prime Plus" : "Prime"}: <b>{t._count}</b>
                 </p>
@@ -104,7 +104,7 @@ export default function PrimeAdminPage() {
                   </span>
                 </td>
                 <td className="p-3">{m.autoRenew ? "Yes" : "No"}</td>
-                <td className="p-3">{m.endDate ? new Date(m.endDate).toLocaleDateString() : "—"}</td>
+                <td className="p-3">{m.endDate ? new Date(m.endDate).toLocaleDateString("en-IN") : "—"}</td>
               </tr>
             ))}
           </tbody>

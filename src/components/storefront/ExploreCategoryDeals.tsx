@@ -4,10 +4,18 @@ import { useEffect, useState } from "react";
 import { getCategoryDeals } from "@/server/actions/grocery-actions";
 import Link from "next/link";
 import { TrendingUp } from "lucide-react";
-import { ProductCard } from "@/components/storefront/ProductCard";
+
+
+interface CategoryDeal {
+  id: string;
+  name: string;
+  image?: string | null;
+  dealCount: number;
+  products: { id: string; name: string; images?: string[]; discountPercentage?: number }[];
+}
 
 export function ExploreCategoryDeals() {
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<CategoryDeal[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -45,7 +53,7 @@ export function ExploreCategoryDeals() {
                 </div>
               </div>
               <div className="flex gap-2 overflow-hidden">
-                {cat.products.map((product: any) => (
+                {cat.products.map((product) => (
                   <div key={product.id} className="w-16 shrink-0">
                     <div className="aspect-square bg-gray-50 rounded mb-1 overflow-hidden">
                       {product.images?.[0] ? (
@@ -56,7 +64,7 @@ export function ExploreCategoryDeals() {
                         </div>
                       )}
                     </div>
-                    {product.discountPercentage > 0 && (
+                    {(product.discountPercentage ?? 0) > 0 && (
                       <span className="text-xs text-green-700 font-bold">{product.discountPercentage}%</span>
                     )}
                   </div>

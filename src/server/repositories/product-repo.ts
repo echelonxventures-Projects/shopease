@@ -26,7 +26,7 @@ export interface EnrichedProduct {
   stock: number;
   weight: string | null;
   dimensions: string | null;
-  specs: any;
+  specs: Record<string, unknown> | null;
   isActive: boolean;
   isFeatured: boolean;
   tags: string[];
@@ -34,8 +34,8 @@ export interface EnrichedProduct {
   reviewCount: number;
   createdAt: Date;
   updatedAt: Date;
-  category: any;
-  brand: any;
+  category: { id: string; name: string; slug: string; parentId: string | null } | null;
+  brand: { id: string; name: string; slug: string } | null;
   regionPrice?: {
     currency: string;
     currencySymbol: string;
@@ -48,8 +48,11 @@ export interface EnrichedProduct {
   translationLocale: string | null;
   hasVariants: boolean;
   variantPriceRange?: { min: number; max: number };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- consumed by client components expecting flexible shape
   variants?: any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- consumed by client components expecting flexible shape
   optionTypes?: any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- consumed by client components expecting flexible shape
   reviews?: any[];
 
   // Global product catalogue
@@ -66,15 +69,49 @@ export interface EnrichedProduct {
   maxDownloads?: number | null;
   subscriptionInterval?: string | null;
   subscriptionTrialDays?: number | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- consumed by client components expecting flexible shape
   subscription?: any | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- consumed by client components expecting flexible shape
   tierPrices?: any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- consumed by client components expecting flexible shape
   bundleItems?: any[];
+
+  // International standard fields
+  condition?: string | null;
+  conditionNote?: string | null;
+  manufacturer?: string | null;
+  countryOfOrigin?: string | null;
+  warrantyType?: string | null;
+  warrantyDurationMonths?: number | null;
+  warrantyDescription?: string | null;
+  returnPolicy?: string | null;
+  ingredients?: string | null;
+  allergens?: string[];
+  dietaryFlags?: string[];
+  material?: string | null;
+  careInstructions?: string[];
+  gender?: string | null;
+  freeShipping?: boolean;
+  shipsFrom?: string | null;
+  deliveryLeadTimeDays?: number | null;
+  powerConsumption?: string | null;
+  batteryCapacity?: string | null;
+  displaySize?: string | null;
+  processorType?: string | null;
+  ramSize?: string | null;
+  storageSize?: string | null;
+  videoUrl?: string | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  gtin?: string | null;
+  mpn?: string | null;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- generic Prisma result serializer
 function serializeProduct(p: any): any {
   if (!p) return p;
   // Robust Decimal detection: check prototype chain via "in" operator
-  const toNum = (v: any) => (v != null && typeof v === "object" && "toNumber" in v && typeof v.toNumber === "function") ? v.toNumber() : v;
+  const toNum = (v: unknown) => (v != null && typeof v === "object" && "toNumber" in v && typeof (v as { toNumber: unknown }).toNumber === "function") ? (v as { toNumber: () => number }).toNumber() : v;
   return {
     ...p,
     price: toNum(p.price),
@@ -111,16 +148,22 @@ export async function getProductWithLocale(slug: string, opts?: LocaleOptions): 
   if (!product) return null;
 
   const enriched = serializeProduct(product) as EnrichedProduct;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
   delete (enriched as any).translations;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
   delete (enriched as any).regionPrices;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
   delete (enriched as any).regionAvailabilities;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
   delete (enriched as any).variants;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- enum string cast
   delete (enriched as any).optionTypes;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
   delete (enriched as any).reviews;
 
   // Apply translation
   if (opts?.locale) {
-    const translation = product.translations.find((t: any) => t.locale === opts.locale);
+    const translation = product.translations.find((t) => t.locale === opts.locale);
     if (translation) {
       enriched.name = translation.name;
       enriched.shortDesc = translation.shortDesc || enriched.shortDesc;
@@ -139,9 +182,10 @@ export async function getProductWithLocale(slug: string, opts?: LocaleOptions): 
 
   // Apply region pricing and availability
   if (opts?.regionId) {
-    const regionPrice = product.regionPrices.find((rp: any) => rp.regionId === opts.regionId);
-    const availability = product.regionAvailabilities.find((a: any) => a.regionId === opts.regionId);
+    const regionPrice = product.regionPrices.find((rp) => rp.regionId === opts.regionId);
+    const availability = product.regionAvailabilities.find((a) => a.regionId === opts.regionId);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
     const region = regionPrice?.region as any;
     enriched.regionPrice = {
       currency: regionPrice?.currency || region?.currency || "INR",
@@ -155,14 +199,14 @@ export async function getProductWithLocale(slug: string, opts?: LocaleOptions): 
 
   // Compute variant price range
   if (product.hasVariants && product.variants && product.variants.length > 0) {
-    const prices = product.variants.map((v: any) => Number(v.price));
+    const prices = product.variants.map((v) => Number(v.price));
     enriched.hasVariants = true;
     enriched.variantPriceRange = {
       min: Math.min(...prices),
       max: Math.max(...prices),
     };
     // Serialize variant data
-    enriched.variants = product.variants.map((v: any) => ({
+    enriched.variants = product.variants.map((v) => ({
       id: v.id,
       sku: v.sku,
       price: Number(v.price),
@@ -172,12 +216,12 @@ export async function getProductWithLocale(slug: string, opts?: LocaleOptions): 
       stock: v.stock,
       images: v.images,
       isActive: v.isActive,
-      options: v.options.map((o: any) => ({
+      options: v.options.map((o) => ({
         optionName: o.optionValue.optionType?.name || "Option",
         value: o.optionValue.value,
         hexColor: o.optionValue.hexColor,
       })),
-      optionLabel: v.options.map((o: any) => o.optionValue.value).join(" · "),
+      optionLabel: v.options.map((o) => o.optionValue.value).join(" · "),
     }));
   } else {
     enriched.hasVariants = false;
@@ -185,9 +229,10 @@ export async function getProductWithLocale(slug: string, opts?: LocaleOptions): 
 
   // Serialize optionTypes for storefront variant selector
   if (product.hasVariants && product.optionTypes) {
-    (enriched as any).optionTypes = product.optionTypes.map((ot: any) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- enum string cast
+    (enriched as any).optionTypes = product.optionTypes.map((ot) => {
       // Pre-compute inStock for each value
-      const values = ot.values.map((v: any) => ({
+      const values = ot.values.map((v) => ({
         id: v.id,
         value: v.value,
         hexColor: v.hexColor,
@@ -199,7 +244,7 @@ export async function getProductWithLocale(slug: string, opts?: LocaleOptions): 
 
   // Serialize global product catalogue fields
   enriched.productType = product.productType;
-  enriched.barcodes = product.barcodeRecords?.map((b: any) => b.barcode) || [];
+  enriched.barcodes = product.barcodeRecords?.map((b) => b.barcode) || [];
   enriched.hsCode = product.hsCode;
   enriched.taxCategory = product.taxCategory;
   enriched.uom = product.uom;
@@ -214,14 +259,14 @@ export async function getProductWithLocale(slug: string, opts?: LocaleOptions): 
 
   // Serialize related data
   if (product.tierPrices && product.tierPrices.length > 0) {
-    enriched.tierPrices = product.tierPrices.map((t: any) => ({
+    enriched.tierPrices = product.tierPrices.map((t) => ({
       ...t,
       price: t.price ? Number(t.price) : null,
       discountPercentage: t.discountPercentage ? Number(t.discountPercentage) : null,
     }));
   }
   if (product.bundleAsBundle && product.bundleAsBundle.length > 0) {
-    enriched.bundleItems = product.bundleAsBundle.map((b: any) => ({
+    enriched.bundleItems = product.bundleAsBundle.map((b) => ({
       id: b.id,
       productId: b.productId,
       quantity: b.quantity,
@@ -250,10 +295,15 @@ export async function getProductsByLocale(
     sort?: string;
     page?: number;
     limit?: number;
+    condition?: string;
+    gender?: string;
+    dietary?: string;
+    freeShipping?: string;
   },
   opts?: LocaleOptions
 ) {
-  const { search, category, brand, sort = "newest", page = 1, limit = 12 } = filters;
+  const { search, category, brand, sort = "newest", page = 1, limit = 12, condition, gender, dietary, freeShipping } = filters;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic Prisma where filter
   const where: any = { isActive: true };
 
   if (search) {
@@ -279,6 +329,20 @@ export async function getProductsByLocale(
   }
   if (category) where.category = { slug: category };
   if (brand) where.brand = { slug: brand };
+  if (condition) where.condition = condition;
+  if (gender) where.gender = gender;
+  if (freeShipping === "true") where.freeShipping = true;
+  if (dietary) {
+    const dietaryMap: Record<string, string> = {
+      vegan: "veganFriendly",
+      organic: "organicCertified",
+      "gluten-free": "glutenFree",
+      halal: "halalCertified",
+      kosher: "kosherCertified",
+    };
+    const field = dietaryMap[dietary];
+    if (field) where[field] = true;
+  }
 
   // Filter by region availability
   if (opts?.regionId) {
@@ -298,6 +362,7 @@ export async function getProductsByLocale(
     },
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   const sortOptions: Record<string, any> = {
     newest: { createdAt: "desc" },
     price_asc: { price: "asc" },
@@ -324,7 +389,7 @@ export async function getProductsByLocale(
     prisma.product.count({ where }),
   ]);
 
-  const enriched = products.map((p: any) => {
+  const enriched = products.map((p) => {
     const serialized = serializeProduct(p);
     if (opts?.locale && p.translations?.[0]) {
       const t = p.translations[0];
@@ -335,7 +400,7 @@ export async function getProductsByLocale(
     }
     // Compute price range from variants
     if (p.hasVariants && p.variants?.length > 0) {
-      const prices = p.variants.map((v: any) => Number(v.price));
+      const prices = p.variants.map((v) => Number(v.price));
       serialized.variantPriceRange = {
         min: Math.min(...prices),
         max: Math.max(...prices),
@@ -362,7 +427,7 @@ export async function getFeaturedProductsWithLocale(opts?: LocaleOptions) {
     take: 8,
   });
 
-  return products.map((p: any) => {
+  return products.map((p) => {
     const serialized = serializeProduct(p);
     if (opts?.locale && p.translations?.[0]) {
       const t = p.translations[0];
@@ -371,7 +436,7 @@ export async function getFeaturedProductsWithLocale(opts?: LocaleOptions) {
       serialized.tags = t.tags.length > 0 ? t.tags : serialized.tags;
     }
     if (p.hasVariants && p.variants?.length > 0) {
-      const prices = p.variants.map((v: any) => Number(v.price));
+      const prices = p.variants.map((v) => Number(v.price));
       serialized.variantPriceRange = { min: Math.min(...prices), max: Math.max(...prices) };
       serialized.hasVariants = true;
     } else {

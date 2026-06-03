@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import Link from "next/link";
+
 
 export default async function VideoRecognitionPage() {
-  const totalAnalyses = await prisma.videoAnalysis.count().catch(() => 0);
+  const _totalAnalyses = await prisma.videoAnalysis.count().catch(() => 0);
 
   const byStatus = await prisma.videoAnalysis.groupBy({
     by: ["status"],
@@ -22,7 +22,7 @@ export default async function VideoRecognitionPage() {
       <h1 className="text-2xl font-bold mb-6">Video Recognition</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {byStatus.map((s: any) => (
+        {byStatus.map((s) => (
           <div key={s.status} className="bg-white rounded-lg shadow p-6">
             <div className="text-sm text-gray-500">{statusMap[s.status] || s.status}</div>
             <div className="text-3xl font-bold">{s._count}</div>
@@ -43,7 +43,8 @@ export default async function VideoRecognitionPage() {
               </tr>
             </thead>
             <tbody>
-              {recent.map((v: any) => {
+              {recent.map((v) => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion needed for dynamic data
                 const products = v.detectedProducts ? (v.detectedProducts as any[])?.length || 0 : 0;
                 return (
                   <tr key={v.id} className="border-b last:border-0">
@@ -54,7 +55,7 @@ export default async function VideoRecognitionPage() {
                     </td>
                     <td className="p-3">{products}</td>
                     <td className="p-3 text-gray-500">{v.processingTimeMs ? `${v.processingTimeMs}ms` : "-"}</td>
-                    <td className="p-3 text-gray-400 text-sm">{new Date(v.createdAt).toLocaleDateString()}</td>
+                    <td className="p-3 text-gray-400 text-sm">{new Date(v.createdAt).toLocaleDateString("en-IN")}</td>
                   </tr>
                 );
               })}

@@ -28,8 +28,8 @@ export function ReviewVoting({ reviewId, initialVotes = 0, isVerified = false }:
       setVotes(v => v + 1);
       setVoted(true);
       toast.success("Marked as helpful");
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed");
     }
     setLoading(false);
   };

@@ -5,7 +5,7 @@ export default async function AIDashboardPage() {
   const health = await getAIHealth();
 
   const features = health.features || {};
-  const featureCount = Object.values(features).filter((f: any) => f.enabled).length;
+  const featureCount = Object.values(features).filter((f) => f.enabled).length;
   const totalFeatures = Object.keys(features).length || 14;
 
   return (
@@ -24,11 +24,11 @@ export default async function AIDashboardPage() {
         </div>
         <div className="bg-white rounded-lg shadow p-6">
           <div className="text-sm text-gray-500">Behavior Events</div>
-          <div className="text-3xl font-bold text-blue-600">{health.stats.totalBehaviors.toLocaleString()}</div>
+          <div className="text-3xl font-bold text-blue-600">{health.stats.totalBehaviors.toLocaleString("en-IN")}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
           <div className="text-sm text-gray-500">Cached Recommendations</div>
-          <div className="text-3xl font-bold text-orange-600">{health.stats.totalRecommendations.toLocaleString()}</div>
+          <div className="text-3xl font-bold text-orange-600">{health.stats.totalRecommendations.toLocaleString("en-IN")}</div>
         </div>
       </div>
 

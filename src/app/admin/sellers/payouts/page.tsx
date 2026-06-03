@@ -8,6 +8,7 @@ import { CheckCircle, Loader2, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AdminPayoutsPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [payouts, setPayouts] = useState<any[]>([]);
   const [filter, setFilter] = useState("");
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -76,17 +77,17 @@ export default function AdminPayoutsPage() {
             </tr>
           </thead>
           <tbody>
-            {payouts.map((p: any) => (
+            {payouts.map((p) => (
               <tr key={p.id} className="border-b hover:bg-gray-50">
                 <td className="p-3 font-medium">
                   {p.seller?.businessName || "—"}
                   <div className="text-xs text-gray-400">{p.seller?.user?.name}</div>
                 </td>
-                <td className="p-3 font-semibold">₹{Number(p.amount).toLocaleString()}</td>
+                <td className="p-3 font-semibold">₹{Number(p.amount).toLocaleString("en-IN")}</td>
                 <td className="p-3 text-gray-500">
-                  {p.periodStart ? new Date(p.periodStart).toLocaleDateString() : "—"}
+                  {p.periodStart ? new Date(p.periodStart).toLocaleDateString("en-IN") : "—"}
                   {" → "}
-                  {p.periodEnd ? new Date(p.periodEnd).toLocaleDateString() : "—"}
+                  {p.periodEnd ? new Date(p.periodEnd).toLocaleDateString("en-IN") : "—"}
                 </td>
                 <td className="p-3">
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[p.status]}`}>

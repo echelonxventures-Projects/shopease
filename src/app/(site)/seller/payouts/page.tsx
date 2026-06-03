@@ -42,15 +42,15 @@ export default function SellerPayoutsPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-lg p-4 shadow border">
             <p className="text-sm text-gray-500">Total Revenue</p>
-            <p className="text-2xl font-bold">₹{Number(analytics.totalRevenue).toLocaleString()}</p>
+            <p className="text-2xl font-bold">₹{Number(analytics.totalRevenue).toLocaleString("en-IN")}</p>
           </div>
           <div className="bg-white rounded-lg p-4 shadow border">
             <p className="text-sm text-gray-500">Commission Paid</p>
-            <p className="text-2xl font-bold text-red-600">₹{Number(analytics.totalCommission).toLocaleString()}</p>
+            <p className="text-2xl font-bold text-red-600">₹{Number(analytics.totalCommission).toLocaleString("en-IN")}</p>
           </div>
           <div className="bg-white rounded-lg p-4 shadow border">
             <p className="text-sm text-gray-500">Net Revenue</p>
-            <p className="text-2xl font-bold text-green-600">₹{Number(analytics.netRevenue).toLocaleString()}</p>
+            <p className="text-2xl font-bold text-green-600">₹{Number(analytics.netRevenue).toLocaleString("en-IN")}</p>
           </div>
           <div className="bg-white rounded-lg p-4 shadow border">
             <p className="text-sm text-gray-500">Rating</p>
@@ -91,9 +91,9 @@ export default function SellerPayoutsPage() {
                 return (
                   <tr key={p.id} className="border-b hover:bg-gray-50">
                     <td className="p-3">
-                      {p.periodStart ? new Date(p.periodStart).toLocaleDateString() : "—"} — {p.periodEnd ? new Date(p.periodEnd).toLocaleDateString() : "—"}
+                      {p.periodStart ? new Date(p.periodStart).toLocaleDateString("en-IN") : "—"} — {p.periodEnd ? new Date(p.periodEnd).toLocaleDateString("en-IN") : "—"}
                     </td>
-                    <td className="p-3 font-semibold">₹{Number(p.amount).toLocaleString()}</td>
+                    <td className="p-3 font-semibold">₹{Number(p.amount).toLocaleString("en-IN")}</td>
                     <td className="p-3">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${statusColors[p.status]}`}>
                         <Icon className="w-3 h-3" />
@@ -101,7 +101,7 @@ export default function SellerPayoutsPage() {
                       </span>
                     </td>
                     <td className="p-3 text-gray-500">{p.transferId || "—"}</td>
-                    <td className="p-3 text-gray-500">{new Date(p.createdAt).toLocaleDateString()}</td>
+                    <td className="p-3 text-gray-500">{new Date(p.createdAt).toLocaleDateString("en-IN")}</td>
                   </tr>
                 );
               })}

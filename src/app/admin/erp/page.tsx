@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getConfig, setConfig, bulkSetConfigs } from "@/server/actions/settings-actions";
-import { Database, Plug, ArrowRight, CheckCircle, AlertCircle, Loader2, Settings, FileText, Package, ShoppingCart, Save } from "lucide-react";
+import { Database, ArrowRight, CheckCircle, AlertCircle, Loader2, Settings, FileText, Package, ShoppingCart, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -87,9 +87,7 @@ export default function ERPIntegrationPage() {
         if (type === "products") await syncProductToERP("bulk");
         if (type === "orders") await syncOrderToERP("bulk");
         if (type === "inventory") await syncInventoryToERP("bulk", 0);
-      } catch (err: any) {
-        toast.error(err.message);
-      }
+      } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
     }
     const now = new Date().toISOString();
     setLastSync((prev) => ({ ...prev, [type]: now }));
@@ -180,7 +178,7 @@ export default function ERPIntegrationPage() {
                   <div>
                     <p className="font-medium text-sm capitalize">{SYNC_LABELS[type].label}</p>
                     <p className="text-xs text-gray-500">
-                      {lastSync[type] ? `Last synced: ${new Date(lastSync[type]).toLocaleString()}` : "Not synced yet"}
+                      {lastSync[type] ? `Last synced: ${new Date(lastSync[type]).toLocaleString("en-IN")}` : "Not synced yet"}
                     </p>
                   </div>
                 </div>

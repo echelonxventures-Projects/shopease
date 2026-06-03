@@ -5,6 +5,7 @@ import { listGiftCardPromos, createGiftCardPromo, deactivateGiftCard } from "@/s
 import { toast } from "sonner";
 
 export default function GiftCardsPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [cards, setCards] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -38,13 +39,13 @@ export default function GiftCardsPage() {
       setShowForm(false);
       setForm({ code: "", faceValue: "", validUntil: "" });
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleDeactivate = async (id: string) => {
     if (!confirm("Deactivate this gift card?")) return;
     try { await deactivateGiftCard(id); toast.success("Deactivated"); fetch(); }
-    catch (err: any) { toast.error(err.message); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   return (
@@ -102,10 +103,10 @@ export default function GiftCardsPage() {
               : cards.map((c) => (
                 <tr key={c.id} className="border-t hover:bg-gray-50">
                   <td className="px-4 py-3 font-mono text-sm">{c.code}</td>
-                  <td className="px-4 py-3 text-sm">₹{Number(c.faceValue).toLocaleString()}</td>
-                  <td className="px-4 py-3 text-sm">₹{Number(c.balance).toLocaleString()}</td>
+                  <td className="px-4 py-3 text-sm">₹{Number(c.faceValue).toLocaleString("en-IN")}</td>
+                  <td className="px-4 py-3 text-sm">₹{Number(c.balance).toLocaleString("en-IN")}</td>
                   <td className="px-4 py-3 text-sm">{c.redeemedCount}</td>
-                  <td className="px-4 py-3 text-sm">{c.validUntil ? new Date(c.validUntil).toLocaleDateString() : "Never"}</td>
+                  <td className="px-4 py-3 text-sm">{c.validUntil ? new Date(c.validUntil).toLocaleDateString("en-IN") : "Never"}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${c.isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
                       {c.isActive ? "Active" : "Deactivated"}

@@ -1,8 +1,9 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getSession, isAdminRole } from "@/lib/auth";
 import { encrypt, decrypt, hash, generateSecureCode, deriveRedemptionToken } from "@/lib/encryption";
+import { razorpay, verifyRazorpayPaymentSignature } from "@/lib/razorpay";
 import { headers } from "next/headers";
 
 // ===================== WALLET =====================
@@ -122,7 +123,7 @@ export async function createVoucher(data: {
   regionId?: string | null;
 }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const rawCode = (data.code || generateSecureCode()).toUpperCase().trim();
   const codeHash = hash(rawCode);
@@ -133,6 +134,7 @@ export async function createVoucher(data: {
       code: rawCode,
       codeHash,
       encryptedCode,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- enum string cast
       type: (data.type || "AMOUNT") as any,
       faceValue: data.faceValue,
       purchasePrice: data.purchasePrice ?? data.faceValue,
@@ -166,22 +168,23 @@ export async function updateVoucher(
   }
 ) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
-  const updateData: any = { ...data };
+  const updateData: Record<string, unknown> = { ...data };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- enum string cast
   if (data.type) updateData.type = data.type as any;
   return prisma.voucher.update({ where: { id }, data: updateData });
 }
 
 export async function toggleVoucherActive(id: string, isActive: boolean) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
   return prisma.voucher.update({ where: { id }, data: { isActive } });
 }
 
 export async function deleteVoucher(id: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
   return prisma.voucher.delete({ where: { id } });
 }
 
@@ -470,7 +473,7 @@ export async function creditWallet(
   referenceId?: string
 ) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   let wallet = await prisma.wallet.findUnique({ where: { userId } });
   if (!wallet) {
@@ -510,7 +513,7 @@ export async function creditWallet(
 
 export async function getAllWallets() {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const wallets = await prisma.wallet.findMany({
     include: { user: { select: { name: true, email: true } } },
@@ -541,6 +544,7 @@ export async function getTierBalances(regionId?: string) {
   if (!session) throw new Error("Unauthorized");
   const userId = session.user?.id as string;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   const tierWhere: any = { isActive: true };
   if (regionId) {
     tierWhere.OR = [{ regionId: null }, { regionId }];
@@ -556,7 +560,7 @@ export async function getTierBalances(regionId?: string) {
     },
   });
 
-  return tiers.map((tier: any) => ({
+  return tiers.map((tier) => ({
     ...tier,
     minPurchasePrice: tier.minPurchasePrice ? Number(tier.minPurchasePrice) : null,
     maxRedemptionPerOrder: tier.maxRedemptionPerOrder ? Number(tier.maxRedemptionPerOrder) : null,
@@ -578,6 +582,7 @@ export async function getWalletWithTiers(regionId?: string) {
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   const tierWhere: any = { isActive: true };
   if (regionId) {
     tierWhere.OR = [{ regionId: null }, { regionId }];
@@ -594,7 +599,7 @@ export async function getWalletWithTiers(regionId?: string) {
     },
   });
 
-  const tierData = tiers.map((tier: any) => ({
+  const tierData = tiers.map((tier) => ({
     id: tier.id,
     slug: tier.slug,
     name: tier.name,
@@ -606,6 +611,7 @@ export async function getWalletWithTiers(regionId?: string) {
   }));
 
   // Calculate total balance (shared + separate)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   const totalTierBalance = tierData.reduce((sum: number, t: any) => sum + Number(t.balance), 0);
 
   const txCount = await prisma.walletTransaction.count({ where: { walletId: wallet.id } });
@@ -727,7 +733,7 @@ export async function createGiftCard(data: {
   regionId?: string | null;
 }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const rawCode = (data.code || generateSecureCode("GC", 16)).toUpperCase().trim();
   const codeHash = hash(rawCode);
@@ -752,7 +758,7 @@ export async function createGiftCard(data: {
 
 export async function getGiftCards() {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
   return prisma.giftCard.findMany({
     include: { tier: true },
     orderBy: { createdAt: "desc" },
@@ -823,7 +829,7 @@ export async function redeemGiftCard(code: string) {
   }
 
   // Determine target: if gift card has tier → tier balance, else main wallet
-  let targetBalance = Number(giftCard.balance);
+  const targetBalance = Number(giftCard.balance);
   const creditAmount = targetBalance;
 
   const result = await prisma.$transaction(async (tx) => {
@@ -851,6 +857,7 @@ export async function redeemGiftCard(code: string) {
     });
 
     // If tier-specific gift card, also credit tier balance
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
     let tierBalanceUpdate: any = null;
     if (giftCard.tierId) {
       let tierBal = await tx.voucherTierBalance.findUnique({
@@ -878,6 +885,7 @@ export async function redeemGiftCard(code: string) {
       data: {
         giftCardId: giftCard.id,
         userId,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- enum string cast
         type: "DEBIT" as any,
         amount: creditAmount,
         balanceBefore: Number(giftCard.balance),
@@ -910,15 +918,33 @@ export async function createTopUp(amount: number, method: string) {
   const userId = session.user?.id as string;
 
   if (amount <= 0 || amount > 100000) throw new Error("Invalid top-up amount");
+  if (!razorpay) throw new Error("Payment provider not configured");
 
   const topUp = await prisma.walletTopUp.create({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- enum string cast
     data: { userId, amount, method: method as any, status: "PENDING" },
   });
 
-  return topUp;
+  // Create a real Razorpay order and bind it to this top-up so confirmTopUp
+  // can verify a genuine payment before crediting the wallet.
+  const rzpOrder = await razorpay.orders.create({
+    amount: Math.round(amount * 100),
+    currency: "INR",
+    receipt: topUp.id,
+    notes: { topUpId: topUp.id, userId },
+  });
+
+  await prisma.walletTopUp.update({ where: { id: topUp.id }, data: { referenceId: rzpOrder.id } });
+
+  return { topUpId: topUp.id, razorpayOrderId: rzpOrder.id, amount: rzpOrder.amount, currency: rzpOrder.currency };
 }
 
-export async function confirmTopUp(topUpId: string, referenceId?: string) {
+export async function confirmTopUp(
+  topUpId: string,
+  razorpayOrderId: string,
+  razorpayPaymentId: string,
+  signature: string,
+) {
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");
   const userId = session.user?.id as string;
@@ -926,6 +952,14 @@ export async function confirmTopUp(topUpId: string, referenceId?: string) {
   const topUp = await prisma.walletTopUp.findUnique({ where: { id: topUpId } });
   if (!topUp || topUp.userId !== userId) throw new Error("Top-up not found");
   if (topUp.status !== "PENDING") throw new Error("Top-up already processed");
+
+  // Never trust the client: only credit the wallet for a genuine, bound payment.
+  if (!razorpayOrderId || !signature || !verifyRazorpayPaymentSignature(razorpayOrderId, razorpayPaymentId, signature)) {
+    throw new Error("Payment verification failed");
+  }
+  if (topUp.referenceId !== razorpayOrderId) {
+    throw new Error("Payment does not match this top-up");
+  }
 
   let wallet = await prisma.wallet.findUnique({ where: { userId } });
   if (!wallet) {
@@ -940,7 +974,7 @@ export async function confirmTopUp(topUpId: string, referenceId?: string) {
   await prisma.$transaction(async (tx) => {
     await tx.walletTopUp.update({
       where: { id: topUpId },
-      data: { status: "SUCCESS", referenceId },
+      data: { status: "SUCCESS", referenceId: razorpayPaymentId },
     });
 
     await tx.wallet.update({
@@ -958,7 +992,7 @@ export async function confirmTopUp(topUpId: string, referenceId?: string) {
         balanceAfter,
         description: `Wallet top-up via ${topUp.method}`,
         referenceType: "TOP_UP",
-        referenceId,
+        referenceId: razorpayPaymentId,
       },
     });
   });
@@ -989,7 +1023,7 @@ export async function getTopUps(page = 1, limit = 20) {
 
 export async function getUserWalletDetails(targetUserId: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const wallet = await prisma.wallet.findUnique({ where: { userId: targetUserId } });
 
@@ -1072,10 +1106,10 @@ export async function creditTierBalance(
   userId: string,
   tierId: string,
   amount: number,
-  description?: string,
+  _description?: string,
 ) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   let tierBalance = await prisma.voucherTierBalance.findUnique({
     where: { userId_voucherTierId: { userId, voucherTierId: tierId } },

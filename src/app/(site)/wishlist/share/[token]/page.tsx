@@ -27,7 +27,7 @@ export default function SharedWishlistPage() {
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
         <Heart className="w-6 h-6 fill-red-500 text-red-500" />
-        {data.displayName}'s Wishlist
+        {data.displayName}&apos;s Wishlist
       </h1>
       <p className="text-gray-500 mb-6">{data.items.length} items</p>
 

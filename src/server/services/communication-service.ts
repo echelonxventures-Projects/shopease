@@ -1,7 +1,6 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
 
 // ===================== SENSITIVE DATA =====================
 // Use environment variables for provider credentials:
@@ -33,9 +32,10 @@ async function sendViaTwilio(phone: string, message: string) {
     });
 
     return { sent: true, channelId: result.sid, channel: "SMS" };
-  } catch (err: any) {
-    console.error("[SMS Twilio Error]", err.message);
-    return { sent: false, reason: err.message };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[SMS Twilio Error]", msg);
+    return { sent: false, reason: msg };
   }
 }
 
@@ -60,8 +60,9 @@ async function sendViaFast2SMS(phone: string, message: string) {
 
     const data = await response.json();
     return { sent: data.status === "success", channel: "SMS", reason: data.message };
-  } catch (err: any) {
-    return { sent: false, reason: err.message };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { sent: false, reason: msg };
   }
 }
 
@@ -98,8 +99,9 @@ async function sendViaResend(to: string, subject: string, html: string) {
 
     const data = await response.json();
     return { sent: !!data.id, channel: "EMAIL", channelId: data.id };
-  } catch (err: any) {
-    return { sent: false, reason: err.message };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { sent: false, reason: msg };
   }
 }
 
@@ -120,8 +122,9 @@ async function sendViaSendGrid(to: string, subject: string, html: string) {
     });
 
     return { sent: true, channel: "EMAIL" };
-  } catch (err: any) {
-    return { sent: false, reason: err.message };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { sent: false, reason: msg };
   }
 }
 
@@ -179,14 +182,15 @@ export async function sendWhatsApp(phone: string, message: string) {
       channel: "WHATSAPP",
       channelId: data.messages?.[0]?.id,
     };
-  } catch (err: any) {
-    return { sent: false, reason: err.message };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { sent: false, reason: msg };
   }
 }
 
 // ===================== PUSH (Web Push / Firebase) =====================
 
-export async function sendPush(userId: string, title: string, message: string, metadata?: Record<string, any>) {
+export async function sendPush(userId: string, title: string, message: string, metadata?: Record<string, string>) {
   const fcmKey = process.env.FIREBASE_SERVER_KEY;
 
   if (!fcmKey) {
@@ -226,7 +230,8 @@ export async function sendPush(userId: string, title: string, message: string, m
     }
 
     return { sent: results.length > 0, channel: "PUSH" };
-  } catch (err: any) {
-    return { sent: false, reason: err.message };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { sent: false, reason: msg };
   }
 }

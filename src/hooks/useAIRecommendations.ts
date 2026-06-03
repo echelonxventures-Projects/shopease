@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { fetchRecommendations, trackRecommendationClick } from "@/server/actions/ai-recommendation-actions";
 
 interface UseAIRecommendationsResult {
-  products: any[];
+  products: unknown[];
   loading: boolean;
   error: string | null;
   refresh: () => void;
@@ -13,7 +13,7 @@ export function useAIRecommendations(
   context: { page: string; productId?: string; categoryId?: string },
   limit: number = 8
 ): UseAIRecommendationsResult {
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,9 +22,9 @@ export function useAIRecommendations(
     setError(null);
     try {
       const results = await fetchRecommendations({ ...context, limit });
-      setProducts(results.map((r: any) => r.product));
-    } catch (err: any) {
-      setError(err.message || "Failed to load recommendations");
+      setProducts(results.map((r) => r.product));
+    } catch (err) {
+      setError((err instanceof Error ? err.message : String(err)) || "Failed to load recommendations");
     } finally {
       setLoading(false);
     }
@@ -34,7 +34,8 @@ export function useAIRecommendations(
     load();
   }, [load]);
 
-  const handleClick = async (productId: string, recommendationId: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _handleClick = async (productId: string, recommendationId: string) => {
     await trackRecommendationClick(productId, recommendationId);
   };
 

@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 
 // ===================== PIN CODE AUTO-DETECT (Global) =====================
 
@@ -95,13 +96,13 @@ async function resolvePinCodeIndia(pincode: string): Promise<PinCodeResult> {
       return { valid: false, message: "Pin code not found" };
     }
 
-    const offices = data[0].PostOffice;
+    const offices: Array<{ DeliveryStatus?: string; Country?: string; State?: string; District?: string; Name?: string; Pincode?: string }> = data[0].PostOffice;
     if (!offices || offices.length === 0) {
       return { valid: false, message: "No data for this pin code" };
     }
 
     // Pick the first delivery office, or fall back to first entry
-    const main = offices.find((o: any) => o.DeliveryStatus === "Delivery") || offices[0];
+    const main = offices.find((o) => o.DeliveryStatus === "Delivery") || offices[0];
 
     return {
       valid: true,
@@ -177,11 +178,11 @@ export async function getCitiesForDistrict(districtId: string) {
 
 // Search locations by name (for city search)
 export async function searchLocations(query: string, type?: string) {
-  const where: any = {
+  const where: Prisma.LocationWhereInput = {
     name: { contains: query, mode: "insensitive" },
     isActive: true,
   };
-  if (type) where.type = type;
+  if (type) where.type = type as Prisma.LocationWhereInput["type"];
 
   const results = await prisma.location.findMany({
     where,

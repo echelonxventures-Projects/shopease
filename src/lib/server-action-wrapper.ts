@@ -1,10 +1,12 @@
-import { AppError, serializeError } from "./errors";
+import { AppError } from "./errors";
 
 /**
  * Wrap a server action with error handling.
  * Catches all errors, converts to AppError if needed, never leaks internals.
  */
-export function withErrorHandling<T extends (...args: any[]) => Promise<any>>(fn: T): T {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- generic wrapper requires any for arbitrary function signatures
+export function withErrorHandling<T extends (...args: any[]) => Promise<unknown>>(fn: T): T {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- must match T's parameter types
   return (async (...args: any[]) => {
     try {
       return await fn(...args);

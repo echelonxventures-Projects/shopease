@@ -1,8 +1,10 @@
 "use server";
 
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import crypto from "crypto";
+import { validate, vId } from "@/lib/validate";
 
 export async function getWishlist(locale?: string) {
   const session = await getSession();
@@ -20,16 +22,17 @@ export async function getWishlist(locale?: string) {
     orderBy: { createdAt: "desc" },
   });
 
-  return items.map((item: any) => {
+  return items.map((item) => {
     const p = item.product;
-    const translation = locale && p.translations?.[0];
+    const translations = Array.isArray(p.translations) ? p.translations : [];
+    const translation = locale && translations[0];
     return {
       ...item,
       product: {
         ...p,
-        name: translation?.name ?? p.name,
-        shortDesc: translation?.shortDesc ?? p.shortDesc,
-        description: translation?.description ?? p.description,
+        name: translation ? translation.name : p.name,
+        shortDesc: translation ? translation.shortDesc : p.shortDesc,
+        description: translation ? translation.description : p.description,
         price: typeof p.price?.toNumber === 'function' ? p.price.toNumber() : p.price,
         comparePrice: typeof p.comparePrice?.toNumber === 'function' ? p.comparePrice.toNumber() : p.comparePrice,
         avgRating: typeof p.avgRating?.toNumber === 'function' ? p.avgRating.toNumber() : p.avgRating,
@@ -42,13 +45,16 @@ export async function addToWishlist(productId: string, variantId?: string) {
   const session = await getSession();
   if (!session?.user?.id) return { error: "Unauthorized" };
 
+  const input = validate(z.object({ productId: vId, variantId: z.string().trim().optional().or(z.literal("")) }), { productId, variantId });
+
   const existing = await prisma.wishlistItem.findUnique({
-    where: { userId_productId_variantId: { userId: session.user.id as string, productId, variantId: variantId || null as any } },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
+    where: { userId_productId_variantId: { userId: session.user.id as string, productId: input.productId, variantId: input.variantId || null as any } },
   });
   if (existing) return { error: "Already in wishlist" };
 
   await prisma.wishlistItem.create({
-    data: { userId: session.user.id as string, productId, variantId },
+    data: { userId: session.user.id as string, productId: input.productId, variantId: input.variantId || undefined },
   });
   return { success: true };
 }
@@ -68,6 +74,7 @@ export async function isInWishlist(productId: string, variantId?: string) {
   if (!session?.user?.id) return false;
 
   const item = await prisma.wishlistItem.findUnique({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
     where: { userId_productId_variantId: { userId: session.user.id as string, productId, variantId: variantId || null as any } },
   });
   return !!item;
@@ -103,7 +110,7 @@ export async function getSharedWishlist(token: string) {
 
   return {
     displayName: user.name || "Anonymous",
-    items: user.wishlist.map((item: any) => ({
+    items: user.wishlist.map((item) => ({
       ...item,
       product: {
         ...item.product,

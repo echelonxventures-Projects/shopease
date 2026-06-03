@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Camera, Upload, Loader2, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Camera, Upload, Loader2 } from "lucide-react";
+
 
 interface AIStyleMatcherProps {
   productId?: string;
@@ -10,7 +10,7 @@ interface AIStyleMatcherProps {
 
 export function AIStyleMatcher({ productId }: AIStyleMatcherProps) {
   const [analyzing, setAnalyzing] = useState(false);
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<{ id: string; name: string; slug: string; price: number | string }[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const handleImageUpload = async (file: File) => {
@@ -43,8 +43,8 @@ export function AIStyleMatcher({ productId }: AIStyleMatcherProps) {
         const products = await searchRes.json();
         setResults(Array.isArray(products) ? products.slice(0, 4) : []);
       }
-    } catch (err: any) {
-      setError(err.message || "Analysis failed");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Analysis failed");
     } finally {
       setAnalyzing(false);
     }
@@ -85,10 +85,10 @@ export function AIStyleMatcher({ productId }: AIStyleMatcherProps) {
 
       {results.length > 0 && (
         <div className="grid grid-cols-2 gap-3 mt-3" role="list" aria-label="Similar products">
-          {results.map((p: any) => (
+          {results.map((p) => (
             <div key={p.id} className="border rounded p-2 text-sm" role="listitem">
               <p className="truncate">{p.name}</p>
-              <p className="font-bold text-violet-600">₹{Number(p.price).toLocaleString()}</p>
+              <p className="font-bold text-violet-600">₹{Number(p.price).toLocaleString("en-IN")}</p>
             </div>
           ))}
         </div>

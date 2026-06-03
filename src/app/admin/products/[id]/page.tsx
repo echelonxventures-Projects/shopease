@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { updateProduct, getProduct, getCategories, getBrands } from "@/server/actions/product-actions";
+import { getCategoryBrands } from "@/server/actions/brand-category-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,8 +15,9 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import Link from "next/link";
+
 import { ArrowLeft, ChevronLeft } from "lucide-react";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { VariantBuilder } from "@/components/variants/VariantBuilder";
@@ -30,15 +32,22 @@ import {
 export default function EditProductPage() {
   const router = useRouter();
   const params = useParams();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [categories, setCategories] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [brands, setBrands] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
+  const [filteredBrands, setFilteredBrands] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [images, setImages] = useState<string[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [translations, setTranslations] = useState<any[]>([]);
   const [translationDialog, setTranslationDialog] = useState(false);
-  const [editingTranslation, setEditingTranslation] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
+  const [_editingTranslation, _setEditingTranslation] = useState<any>(null);
   const [transMode, setTransMode] = useState<"select" | "form">("select");
   const [transForm, setTransForm] = useState({
     locale: "", name: "", slug: "", shortDesc: "", description: "", tags: "",
@@ -48,6 +57,12 @@ export default function EditProductPage() {
     categoryId: "", brandId: "", stock: "", sku: "", tags: "",
     discountType: "NONE", discountValue: "", offerStartDate: "", offerEndDate: "",
     isActive: true, isFeatured: false,
+    // Advanced
+    gtin: "", mpn: "", manufacturer: "", countryOfOrigin: "", condition: "NEW",
+    weightGrams: "", lengthMm: "", widthMm: "", heightMm: "",
+    costPrice: "", wholesalePrice: "", msrp: "",
+    warrantyType: "NONE", warrantyDurationMonths: "", returnPolicy: "DAYS_30",
+    ingredients: "", material: "", gender: "", videoUrl: "", metaTitle: "", metaDescription: "",
   });
 
   useEffect(() => {
@@ -57,6 +72,7 @@ export default function EditProductPage() {
         if (!p) { router.push("/admin/products"); return; }
         setProduct(p);
         setImages(p.images || []);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex type from external source
         const toLocalISO = (d: any) => d ? new Date(d).toISOString().slice(0, 16) : "";
         setForm({
           name: p.name, shortDesc: p.shortDesc || "", description: p.description || "",
@@ -68,6 +84,18 @@ export default function EditProductPage() {
           offerStartDate: toLocalISO(p.offerStartDate),
           offerEndDate: toLocalISO(p.offerEndDate),
           isActive: p.isActive, isFeatured: p.isFeatured,
+          // Advanced
+          gtin: p.gtin || "", mpn: p.mpn || "", manufacturer: p.manufacturer || "",
+          countryOfOrigin: p.countryOfOrigin || "", condition: p.condition || "NEW",
+          weightGrams: p.weightGrams?.toString() ?? "", lengthMm: p.lengthMm?.toString() ?? "",
+          widthMm: p.widthMm?.toString() ?? "", heightMm: p.heightMm?.toString() ?? "",
+          costPrice: p.costPrice?.toString() ?? "", wholesalePrice: p.wholesalePrice?.toString() ?? "",
+          msrp: p.msrp?.toString() ?? "",
+          warrantyType: p.warrantyType || "NONE",
+          warrantyDurationMonths: p.warrantyDurationMonths?.toString() ?? "",
+          returnPolicy: p.returnPolicy || "DAYS_30",
+          ingredients: p.ingredients || "", material: p.material || "", gender: p.gender || "",
+          videoUrl: p.videoUrl || "", metaTitle: p.metaTitle || "", metaDescription: p.metaDescription || "",
         });
         setCategories(cats); setBrands(brs);
       })
@@ -80,6 +108,16 @@ export default function EditProductPage() {
         .catch(() => {});
     }
   }, [params?.id]);
+
+  // Filter brands based on selected category
+  useEffect(() => {
+    if (!form.categoryId) { setFilteredBrands(brands); return; }
+    getCategoryBrands(form.categoryId).then((mappings) => {
+      if (mappings.length === 0) { setFilteredBrands(brands); return; }
+      const allowedIds = new Set(mappings.map((m: { brand: { id: string } }) => m.brand.id));
+      setFilteredBrands(brands.filter((b: { id: string }) => allowedIds.has(b.id)));
+    }).catch(() => setFilteredBrands(brands));
+  }, [form.categoryId, brands]);
 
   const handleSubmit = async () => {
     if (!form.name || !form.price || !form.categoryId) { toast.error("Name, price, and category required"); return; }
@@ -107,15 +145,32 @@ export default function EditProductPage() {
         tags: form.tags,
         isActive: form.isActive, isFeatured: form.isFeatured,
         images: images,
-        barcodes: [],
-        isSnappable: false,
-        productType: "PHYSICAL",
-        taxCategory: "STANDARD",
-        trackingType: "NONE",
+        // Advanced fields
+        gtin: form.gtin || undefined,
+        mpn: form.mpn || undefined,
+        manufacturer: form.manufacturer || undefined,
+        countryOfOrigin: form.countryOfOrigin || undefined,
+        condition: form.condition as "NEW" | undefined,
+        weightGrams: form.weightGrams ? parseFloat(form.weightGrams) : undefined,
+        lengthMm: form.lengthMm ? parseFloat(form.lengthMm) : undefined,
+        widthMm: form.widthMm ? parseFloat(form.widthMm) : undefined,
+        heightMm: form.heightMm ? parseFloat(form.heightMm) : undefined,
+        costPrice: form.costPrice ? parseFloat(form.costPrice) : undefined,
+        wholesalePrice: form.wholesalePrice ? parseFloat(form.wholesalePrice) : undefined,
+        msrp: form.msrp ? parseFloat(form.msrp) : undefined,
+        warrantyType: form.warrantyType as "NONE" | undefined,
+        warrantyDurationMonths: form.warrantyDurationMonths ? parseInt(form.warrantyDurationMonths) : undefined,
+        returnPolicy: form.returnPolicy as "DAYS_30" | undefined,
+        ingredients: form.ingredients || undefined,
+        material: form.material || undefined,
+        gender: form.gender || undefined,
+        videoUrl: form.videoUrl || undefined,
+        metaTitle: form.metaTitle || undefined,
+        metaDescription: form.metaDescription || undefined,
       });
       toast.success("Product updated");
       router.push("/admin/products");
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
     finally { setSubmitting(false); }
   };
 
@@ -132,7 +187,7 @@ export default function EditProductPage() {
       tags: transForm.tags ? transForm.tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
     };
     try {
-      const existing = translations.find((t: any) => t.locale === transForm.locale);
+      const existing = translations.find((t) => t.locale === transForm.locale);
       if (existing) {
         await updateProductTranslation(existing.id, payload);
       } else {
@@ -143,7 +198,7 @@ export default function EditProductPage() {
       setTransMode("select");
       setTransForm({ locale: "", name: "", slug: "", shortDesc: "", description: "", tags: "" });
       getProductTranslations(params.id as string).then(setTranslations).catch(() => {});
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleDeleteTranslation = async (locale: string) => {
@@ -152,7 +207,7 @@ export default function EditProductPage() {
       await deleteProductTranslation(params.id as string, locale);
       toast.success("Translation deleted");
       setTranslations((t) => t.filter((t) => t.locale !== locale));
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const openTranslationDialog = (translation?: any) => {
@@ -195,7 +250,7 @@ export default function EditProductPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Discount Type</Label>
-              <Select value={form.discountType} onValueChange={(v) => setForm({ ...form, discountType: v || "NONE" })}>
+              <Select value={form.discountType} onValueChange={(v) => { if (v) setForm({ ...form, discountType: v || "NONE" }); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="NONE">None</SelectItem>
@@ -234,7 +289,7 @@ export default function EditProductPage() {
           <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-xs font-semibold text-blue-700 mb-1">💰 Tax Estimate (Standard rate)</p>
             <p className="text-sm text-blue-900">
-              Price: ₹{parseFloat(form.price).toLocaleString()} → Tax incl. (est. 18%): ₹{(parseFloat(form.price) * 1.18).toFixed(2)}
+              Price: ₹{parseFloat(form.price).toLocaleString("en-IN")} → Tax incl. (est. 18%): ₹{(parseFloat(form.price) * 1.18).toFixed(2)}
             </p>
           </div>
         )}
@@ -244,7 +299,7 @@ export default function EditProductPage() {
             <Select value={form.categoryId} onValueChange={(v) => v && setForm({ ...form, categoryId: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {categories.map((c: any) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
+                {categories.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
               </SelectContent>
             </Select>
           </div>
@@ -254,7 +309,7 @@ export default function EditProductPage() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No brand</SelectItem>
-                {brands.map((b: any) => (<SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>))}
+                {filteredBrands.map((b) => (<SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>))}
               </SelectContent>
             </Select>
           </div>
@@ -265,6 +320,98 @@ export default function EditProductPage() {
           <label className="flex items-center gap-2"><input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} /> Active</label>
           <label className="flex items-center gap-2"><input type="checkbox" checked={form.isFeatured} onChange={(e) => setForm({ ...form, isFeatured: e.target.checked })} /> Featured</label>
         </div>
+
+        {/* Advanced Fields */}
+        <div className="border-t pt-4">
+          <h3 className="text-sm font-semibold mb-3">Advanced Details</h3>
+          <Tabs defaultValue="ids" className="w-full">
+            <TabsList className="flex flex-wrap w-full">
+              <TabsTrigger value="ids">IDs & Origin</TabsTrigger>
+              <TabsTrigger value="physical">Physical</TabsTrigger>
+              <TabsTrigger value="pricing">Pricing</TabsTrigger>
+              <TabsTrigger value="warranty">Warranty</TabsTrigger>
+              <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="seo">SEO</TabsTrigger>
+            </TabsList>
+            <TabsContent value="ids" className="space-y-3 pt-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div><Label>GTIN</Label><Input value={form.gtin} onChange={(e) => setForm({ ...form, gtin: e.target.value })} /></div>
+                <div><Label>MPN</Label><Input value={form.mpn} onChange={(e) => setForm({ ...form, mpn: e.target.value })} /></div>
+                <div><Label>Manufacturer</Label><Input value={form.manufacturer} onChange={(e) => setForm({ ...form, manufacturer: e.target.value })} /></div>
+                <div><Label>Country of Origin</Label><Input value={form.countryOfOrigin} onChange={(e) => setForm({ ...form, countryOfOrigin: e.target.value })} placeholder="IN, US, CN" /></div>
+                <div>
+                  <Label>Condition</Label>
+                  <Select value={form.condition} onValueChange={(v) => v && setForm({ ...form, condition: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NEW">New</SelectItem>
+                      <SelectItem value="LIKE_NEW">Like New</SelectItem>
+                      <SelectItem value="REFURBISHED">Refurbished</SelectItem>
+                      <SelectItem value="USED_GOOD">Used - Good</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </TabsContent>
+            <TabsContent value="physical" className="space-y-3 pt-3">
+              <div className="grid grid-cols-4 gap-3">
+                <div><Label>Weight (g)</Label><Input type="number" value={form.weightGrams} onChange={(e) => setForm({ ...form, weightGrams: e.target.value })} /></div>
+                <div><Label>Length (mm)</Label><Input type="number" value={form.lengthMm} onChange={(e) => setForm({ ...form, lengthMm: e.target.value })} /></div>
+                <div><Label>Width (mm)</Label><Input type="number" value={form.widthMm} onChange={(e) => setForm({ ...form, widthMm: e.target.value })} /></div>
+                <div><Label>Height (mm)</Label><Input type="number" value={form.heightMm} onChange={(e) => setForm({ ...form, heightMm: e.target.value })} /></div>
+              </div>
+            </TabsContent>
+            <TabsContent value="pricing" className="space-y-3 pt-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div><Label>Cost Price</Label><Input type="number" value={form.costPrice} onChange={(e) => setForm({ ...form, costPrice: e.target.value })} /></div>
+                <div><Label>Wholesale</Label><Input type="number" value={form.wholesalePrice} onChange={(e) => setForm({ ...form, wholesalePrice: e.target.value })} /></div>
+                <div><Label>MSRP</Label><Input type="number" value={form.msrp} onChange={(e) => setForm({ ...form, msrp: e.target.value })} /></div>
+              </div>
+            </TabsContent>
+            <TabsContent value="warranty" className="space-y-3 pt-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label>Warranty</Label>
+                  <Select value={form.warrantyType} onValueChange={(v) => v && setForm({ ...form, warrantyType: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NONE">None</SelectItem>
+                      <SelectItem value="MANUFACTURER">Manufacturer</SelectItem>
+                      <SelectItem value="SELLER">Seller</SelectItem>
+                      <SelectItem value="LIFETIME">Lifetime</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Duration (months)</Label><Input type="number" value={form.warrantyDurationMonths} onChange={(e) => setForm({ ...form, warrantyDurationMonths: e.target.value })} /></div>
+                <div>
+                  <Label>Return Policy</Label>
+                  <Select value={form.returnPolicy} onValueChange={(v) => v && setForm({ ...form, returnPolicy: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NO_RETURN">No Return</SelectItem>
+                      <SelectItem value="DAYS_7">7 Days</SelectItem>
+                      <SelectItem value="DAYS_30">30 Days</SelectItem>
+                      <SelectItem value="DAYS_90">90 Days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </TabsContent>
+            <TabsContent value="details" className="space-y-3 pt-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Material</Label><Input value={form.material} onChange={(e) => setForm({ ...form, material: e.target.value })} /></div>
+                <div><Label>Gender</Label><Input value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} placeholder="men, women, unisex" /></div>
+              </div>
+              <div><Label>Ingredients</Label><Textarea value={form.ingredients} onChange={(e) => setForm({ ...form, ingredients: e.target.value })} rows={2} /></div>
+            </TabsContent>
+            <TabsContent value="seo" className="space-y-3 pt-3">
+              <div><Label>Meta Title</Label><Input value={form.metaTitle} onChange={(e) => setForm({ ...form, metaTitle: e.target.value })} /></div>
+              <div><Label>Meta Description</Label><Textarea value={form.metaDescription} onChange={(e) => setForm({ ...form, metaDescription: e.target.value })} rows={2} /></div>
+              <div><Label>Video URL</Label><Input value={form.videoUrl} onChange={(e) => setForm({ ...form, videoUrl: e.target.value })} /></div>
+            </TabsContent>
+          </Tabs>
+        </div>
+
         <Button onClick={handleSubmit} disabled={submitting}>{submitting ? "Saving..." : "Save Changes"}</Button>
       </div>
 
@@ -284,7 +431,7 @@ export default function EditProductPage() {
           <p className="text-sm text-gray-400 py-4">No translations yet. Add one to localize this product.</p>
         ) : (
           <div className="space-y-2">
-            {translations.map((t: any) => (
+            {translations.map((t) => (
               <div key={t.locale} className="flex items-center justify-between border rounded-lg p-3">
                 <div>
                   <Badge className="mb-1">{getLocaleName(t.locale)}</Badge>
@@ -302,6 +449,18 @@ export default function EditProductPage() {
       </div>
 
       {/* Variant Builder */}
+      <div className="bg-white rounded-lg shadow p-6 max-w-2xl mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-bold">Variants</h2>
+            <p className="text-sm text-gray-500">Manage product options (size, color, etc.) and variant combinations</p>
+          </div>
+          <Button onClick={() => router.push(`/admin/products/${params.id}/variants`)}>
+            Manage Variants →
+          </Button>
+        </div>
+      </div>
+
       <VariantBuilder productId={product.id} />
 
       {/* Translation Dialog */}
@@ -319,7 +478,7 @@ export default function EditProductPage() {
                 <p className="text-sm text-gray-500">Select an existing translation to edit, or choose a new locale to create one.</p>
                 <div className="grid grid-cols-2 gap-2">
                   {LOCALES.filter((l) => l.code !== "en").map((loc) => {
-                    const existing = translations.find((t: any) => t.locale === loc.code);
+                    const existing = translations.find((t) => t.locale === loc.code);
                     return (
                       <Button
                         key={loc.code}
@@ -358,11 +517,11 @@ export default function EditProductPage() {
                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setTransMode("select")}>
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
-                  <DialogTitle>{translations.some((t: any) => t.locale === transForm.locale) ? "Edit Translation" : "Create Translation"}</DialogTitle>
+                  <DialogTitle>{translations.some((t) => t.locale === transForm.locale) ? "Edit Translation" : "Create Translation"}</DialogTitle>
                 </div>
               </DialogHeader>
-              <div className={`px-4 py-2 rounded-md text-sm font-medium mb-2 ${translations.some((t: any) => t.locale === transForm.locale) ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-green-50 text-green-700 border border-green-200"}`}>
-                {translations.some((t: any) => t.locale === transForm.locale) ? "✏️ Editing existing translation" : "✨ Creating new translation"}
+              <div className={`px-4 py-2 rounded-md text-sm font-medium mb-2 ${translations.some((t) => t.locale === transForm.locale) ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-green-50 text-green-700 border border-green-200"}`}>
+                {translations.some((t) => t.locale === transForm.locale) ? "✏️ Editing existing translation" : "✨ Creating new translation"}
                 {` — ${getLocaleName(transForm.locale)}`}
               </div>
               <div className="space-y-4">

@@ -92,7 +92,9 @@ export default function AdminTranslationsPage() {
   // Region pricing
   const [regionDialogOpen, setRegionDialogOpen] = useState(false);
   const [regionProduct, setRegionProduct] = useState<ProductOverview | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [regionData, setRegionData] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [regions, setRegions] = useState<any[]>([]);
   const [regionPriceForm, setRegionPriceForm] = useState({ regionId: "", price: "", comparePrice: "", discountType: "NONE", discountValue: "" });
 
@@ -101,11 +103,11 @@ export default function AdminTranslationsPage() {
     getTranslationOverview({
       page, limit, search: searchTerm, coverageFilter, localeFilter,
     })
-      .then((data: any) => {
+      .then((data) => {
         setProducts(data.products);
         setTotal(data.total);
       })
-      .catch((e: any) => {
+      .catch((e) => {
         if (e.message === "Unauthorized") router.push("/auth/login");
       })
       .finally(() => setLoading(false));
@@ -127,7 +129,7 @@ export default function AdminTranslationsPage() {
       toast.success("Translation deleted");
       fetchOverview();
       getTranslationStats().then(setStats).catch(() => {});
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const openEditor = (product: ProductOverview, translation?: Translation) => {
@@ -176,7 +178,7 @@ export default function AdminTranslationsPage() {
       setEditorOpen(false);
       fetchOverview();
       getTranslationStats().then(setStats).catch(() => {});
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
     finally { setSubmitting(false); }
   };
 
@@ -195,8 +197,8 @@ export default function AdminTranslationsPage() {
     try {
       const data = await getProductsMissingTranslation(locale);
       setMissingProducts(data);
-      setBulkSelected(new Set(data.map((p: any) => p.id)));
-    } catch (err: any) { toast.error(err.message); }
+      setBulkSelected(new Set(data.map((p) => p.id)));
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
     finally { setBulkLoading(false); }
   };
 
@@ -218,7 +220,7 @@ export default function AdminTranslationsPage() {
       setBulkDialogOpen(false);
       fetchOverview();
       getTranslationStats().then(setStats).catch(() => {});
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
     finally { setBulkLoading(false); }
   };
 
@@ -251,7 +253,7 @@ export default function AdminTranslationsPage() {
       setRegionPriceForm({ regionId: "", price: "", comparePrice: "", discountType: "NONE", discountValue: "" });
       const data = await getProductRegionOverview(regionProduct!.id);
       setRegionData(data);
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const getCoverageBadge = (coverage: number) => {
@@ -643,7 +645,7 @@ export default function AdminTranslationsPage() {
             {/* Existing region prices */}
             {regionData?.prices && regionData.prices.length > 0 ? (
               <div className="space-y-2 max-h-40 overflow-auto">
-                {regionData.prices.map((p: any) => (
+                {regionData.prices.map((p: { regionId: string; regionName: string; currencySymbol: string; price: number; comparePrice?: number }) => (
                   <div key={p.regionId} className="flex items-center justify-between border rounded-lg p-3">
                     <div>
                       <Badge className="mb-1">{p.regionName}</Badge>
@@ -656,7 +658,7 @@ export default function AdminTranslationsPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-gray-400">
-                        {regionData.availabilities?.find((a: any) => a.regionId === p.regionId)?.isAvailable ? "In stock" : "Unavailable"}
+                        {regionData.availabilities?.find((a: { regionId: string; isAvailable: boolean }) => a.regionId === p.regionId)?.isAvailable ? "In stock" : "Unavailable"}
                       </p>
                     </div>
                   </div>
@@ -675,7 +677,7 @@ export default function AdminTranslationsPage() {
                   <Select value={regionPriceForm.regionId} onValueChange={(v) => v && setRegionPriceForm({ ...regionPriceForm, regionId: v })}>
                     <SelectTrigger className="mt-1"><SelectValue placeholder="Select region" /></SelectTrigger>
                     <SelectContent>
-                      {regions.map((r: any) => (
+                      {regions.map((r) => (
                         <SelectItem key={r.id} value={r.id}>{r.name} ({r.currency})</SelectItem>
                       ))}
                     </SelectContent>

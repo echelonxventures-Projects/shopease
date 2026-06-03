@@ -93,16 +93,18 @@ export async function syncTaxRates(countryCode?: string) {
           }
         }
 
-        let categoryRulesCount = 0;
+        let _categoryRulesCount = 0;
         for (const [taxCategory, { rate, source }] of categoryMap) {
           await prisma.taxCategoryRule.upsert({
             where: {
               taxCategory_regionId: {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
                 taxCategory: taxCategory as any,
                 regionId: region.id,
               },
             },
             create: {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
               taxCategory: taxCategory as any,
               regionId: region.id,
               taxRate: rate,
@@ -115,7 +117,7 @@ export async function syncTaxRates(countryCode?: string) {
               isActive: rate > 0,
             },
           });
-          categoryRulesCount++;
+          _categoryRulesCount++;
         }
       }
 
@@ -133,12 +135,13 @@ export async function syncTaxRates(countryCode?: string) {
         rulesCount: rates.length,
         status: "SUCCESS",
       });
-    } catch (error: any) {
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
       await prisma.taxSyncLog.update({
         where: { id: log.id },
         data: {
           status: "FAILED",
-          error: error.message ?? "Unknown error",
+          error: errorMsg,
         },
       });
 
@@ -147,7 +150,7 @@ export async function syncTaxRates(countryCode?: string) {
         providerName: provider.name,
         rulesCount: 0,
         status: "FAILED",
-        error: error.message ?? "Unknown error",
+        error: errorMsg,
       });
     }
   }

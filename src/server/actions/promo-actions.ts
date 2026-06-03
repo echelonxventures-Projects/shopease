@@ -1,9 +1,11 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getSession, isAdminRole } from "@/lib/auth";
 import { evaluatePromos, recordPromoUsage, type CartContext } from "@/server/repositories/promo-repo";
 import { encrypt, hash, generateSecureCode } from "@/lib/encryption";
+import type { Prisma } from "@prisma/client";
+import { PromoStatus, PromoType, PromoDiscountType } from "@prisma/client";
 
 // ===================== PROMO CRUD =====================
 
@@ -13,9 +15,9 @@ export async function getPromos(filters?: {
   isActive?: boolean;
   regionId?: string | null;
 }) {
-  const where: any = {};
-  if (filters?.type !== undefined) where.type = filters.type;
-  if (filters?.status !== undefined) where.status = filters.status;
+  const where: Prisma.PromoWhereInput = {};
+  if (filters?.type !== undefined) where.type = filters.type as Prisma.PromoWhereInput["type"];
+  if (filters?.status !== undefined) where.status = filters.status as Prisma.PromoWhereInput["status"];
   if (filters?.isActive !== undefined) where.isActive = filters.isActive;
   if (filters?.regionId !== undefined) where.regionId = filters.regionId || null;
 
@@ -56,14 +58,14 @@ export async function createPromo(data: {
   applicableCategoryIds?: string[];
   applicableBrandIds?: string[];
   excludedProductIds?: string[];
-  rules?: any;
+  rules?: Prisma.InputJsonValue;
   stackingGroup?: string;
   priority?: number;
   isActive?: boolean;
   regionId?: string | null;
 }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN")
+  if (!session || !isAdminRole(session!.user?.role))
     throw new Error("Unauthorized");
 
   const rawCode = data.code ? data.code.toUpperCase().trim() : generateSecureCode("PROMO", 20);
@@ -81,9 +83,9 @@ export async function createPromo(data: {
       applicableCategoryIds: data.applicableCategoryIds || [],
       applicableBrandIds: data.applicableBrandIds || [],
       excludedProductIds: data.excludedProductIds || [],
-      status: (data.status || "DRAFT") as any,
-      discountType: data.discountType as any,
-      type: data.type as any,
+      status: (data.status || "DRAFT") as PromoStatus,
+      discountType: data.discountType as PromoDiscountType,
+      type: data.type as PromoType,
       priority: data.priority ?? 0,
       isActive: data.isActive ?? true,
       regionId: data.regionId || null,
@@ -111,7 +113,7 @@ export async function updatePromo(
     applicableCategoryIds?: string[];
     applicableBrandIds?: string[];
     excludedProductIds?: string[];
-    rules?: any;
+    rules?: Prisma.InputJsonValue;
     stackingGroup?: string;
     priority?: number;
     isActive?: boolean;
@@ -119,20 +121,20 @@ export async function updatePromo(
   }
 ) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN")
+  if (!session || !isAdminRole(session!.user?.role))
     throw new Error("Unauthorized");
 
-  const updateData: any = { ...data };
-  if (data.status) updateData.status = data.status as any;
-  if (data.discountType) updateData.discountType = data.discountType as any;
-  if (data.type) updateData.type = data.type as any;
+  const updateData: Record<string, unknown> = { ...data };
+  if (data.status) updateData.status = data.status as PromoStatus;
+  if (data.discountType) updateData.discountType = data.discountType as PromoDiscountType;
+  if (data.type) updateData.type = data.type as PromoType;
 
   return prisma.promo.update({ where: { id }, data: updateData });
 }
 
 export async function deletePromo(id: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN")
+  if (!session || !isAdminRole(session!.user?.role))
     throw new Error("Unauthorized");
 
   return prisma.promo.delete({ where: { id } });
@@ -140,7 +142,7 @@ export async function deletePromo(id: string) {
 
 export async function togglePromoActive(id: string, isActive: boolean) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN")
+  if (!session || !isAdminRole(session!.user?.role))
     throw new Error("Unauthorized");
 
   return prisma.promo.update({ where: { id }, data: { isActive } });
@@ -148,23 +150,23 @@ export async function togglePromoActive(id: string, isActive: boolean) {
 
 export async function publishPromo(id: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN")
+  if (!session || !isAdminRole(session!.user?.role))
     throw new Error("Unauthorized");
 
   return prisma.promo.update({
     where: { id },
-    data: { status: "ACTIVE" as any },
+    data: { status: "ACTIVE" as PromoStatus },
   });
 }
 
 export async function pausePromo(id: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN")
+  if (!session || !isAdminRole(session!.user?.role))
     throw new Error("Unauthorized");
 
   return prisma.promo.update({
     where: { id },
-    data: { status: "PAUSED" as any },
+    data: { status: "PAUSED" as PromoStatus },
   });
 }
 
@@ -221,7 +223,7 @@ export async function applyPromoCode(
   };
 }
 
-async function enrichCartItems(items: any[]) {
+async function enrichCartItems(items: Array<{ productId: string; quantity: number; price: number }>) {
   if (items.length === 0) return items;
   const products = await prisma.product.findMany({
     where: { id: { in: items.map((i) => i.productId) } },
@@ -239,7 +241,7 @@ async function enrichCartItems(items: any[]) {
 
 export async function getPromoUsages(promoId: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN")
+  if (!session || !isAdminRole(session!.user?.role))
     throw new Error("Unauthorized");
 
   return prisma.promoUsage.findMany({
@@ -261,7 +263,7 @@ export async function recordPromoUsageAction(
 
 export async function migrateCouponToPromo(couponId: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN")
+  if (!session || !isAdminRole(session!.user?.role))
     throw new Error("Unauthorized");
 
   const coupon = await prisma.coupon.findUnique({ where: { id: couponId } });

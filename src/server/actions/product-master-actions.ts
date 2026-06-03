@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getSession, isAdminRole } from "@/lib/auth";
+import type { Prisma } from "@prisma/client";
 
 function serialize<T>(data: unknown): T {
   if (data == null) return data as T;
@@ -33,7 +34,7 @@ export async function getMasterProducts({
   limit?: number;
   sort?: string;
 }) {
-  const where: any = {};
+  const where: Prisma.ProductWhereInput = {};
 
   if (search) {
     where.OR = [
@@ -46,6 +47,7 @@ export async function getMasterProducts({
   if (category) where.masterCategory = category;
   if (status) where.masterStatus = status;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   const sortMap: Record<string, any> = {
     newest: { createdAt: "desc" },
     name: { name: "asc" },
@@ -65,6 +67,7 @@ export async function getMasterProducts({
     prisma.product.count({ where }),
   ]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic array from Prisma Json field
   return serialize<{ products: any[]; total: number; page: number; totalPages: number }>({
     products,
     total,
@@ -93,9 +96,10 @@ export async function checkProductDuplicate({
   sku?: string;
   excludeId?: string;
 }) {
-  const where: any = {};
+  const where: Prisma.ProductWhereInput = {};
   if (excludeId) where.id = { not: excludeId };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic array from Prisma Json field
   const or: any[] = [];
   if (name) or.push({ name: { equals: name, mode: "insensitive" } });
   if (slug) or.push({ slug });
@@ -108,6 +112,7 @@ export async function checkProductDuplicate({
     take: 5,
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic array from Prisma Json field
   return serialize<{ duplicates: any[] }>({ duplicates: existing });
 }
 
@@ -154,7 +159,9 @@ export async function createMasterProduct(data: {
         sku: data.sku,
         masterStatus: "ACTIVE",
         masterCategory: data.masterCategory,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- enum string cast
         productType: (data.productType as any) || "PHYSICAL",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
         taxCategory: (data.taxCategory as any) || "STANDARD",
       },
     })
@@ -163,7 +170,7 @@ export async function createMasterProduct(data: {
 
 export async function updateMasterProduct(id: string, data: Partial<{ name: string; price: number; stock: number; masterStatus: string; tags: string[]; images: string[]; isActive: boolean }>) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   return serialize(await prisma.product.update({ where: { id }, data }));
 }
@@ -185,7 +192,7 @@ export async function browseCatalogForSupplier(supplierId: string, {
   page?: number;
   limit?: number;
 }) {
-  const where: any = { masterStatus: "ACTIVE" };
+  const where: Prisma.ProductWhereInput = { masterStatus: "ACTIVE" };
 
   if (search) {
     where.OR = [
@@ -229,6 +236,7 @@ export async function browseCatalogForSupplier(supplierId: string, {
     prisma.product.count({ where }),
   ]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic array from Prisma Json field
   return serialize<{ products: any[]; total: number }>({ products, total });
 }
 
@@ -245,7 +253,7 @@ export async function getSupplierListings(supplierId: string, {
   page?: number;
   limit?: number;
 }) {
-  const where: any = { supplierId };
+  const where: Prisma.SupplierProductListingWhereInput = { supplierId };
   if (status) where.status = status;
 
   let listings = await prisma.supplierProductListing.findMany({
@@ -267,6 +275,7 @@ export async function getSupplierListings(supplierId: string, {
 
   const total = await prisma.supplierProductListing.count({ where });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic array from Prisma Json field
   return serialize<{ listings: any[]; total: number }>({ listings, total });
 }
 
@@ -408,9 +417,9 @@ export async function getAllSupplierListings({
   limit?: number;
 }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
-  const where: any = {};
+  const where: Prisma.SupplierProductListingWhereInput = {};
   if (status) where.status = status;
   if (supplierId) where.supplierId = supplierId;
 
@@ -428,12 +437,13 @@ export async function getAllSupplierListings({
     prisma.supplierProductListing.count({ where }),
   ]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic array from Prisma Json field
   return serialize<{ listings: any[]; total: number }>({ listings, total });
 }
 
 export async function approveSupplierListing(listingId: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   return serialize(
     await prisma.supplierProductListing.update({
@@ -445,7 +455,7 @@ export async function approveSupplierListing(listingId: string) {
 
 export async function rejectSupplierListing(listingId: string, reason: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   return serialize(
     await prisma.supplierProductListing.update({
@@ -483,6 +493,7 @@ export async function getAvailableProducts({
   const productIds = [...new Set(activeListings.map((l) => l.productId))];
   if (productIds.length === 0) return { products: [], total: 0, page: 1, totalPages: 0 };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic Prisma where filter
   const where: any = {
     id: { in: productIds },
     isActive: true,
@@ -500,6 +511,7 @@ export async function getAvailableProducts({
   if (minPrice !== undefined) where.price = { ...where.price, gte: minPrice };
   if (maxPrice !== undefined) where.price = { ...where.price, lte: maxPrice };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   const sortMap: Record<string, any> = {
     newest: { createdAt: "desc" },
     price_asc: { price: "asc" },
@@ -528,8 +540,9 @@ export async function getAvailableProducts({
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic array from Prisma Json field
   return serialize<{ products: any[]; total: number; page: number; totalPages: number }>({
-    products: products.map((p: any) => ({
+    products: products.map((p) => ({
       ...p,
       listingPrice: cheapestPrices.get(p.id) || p.price,
     })),

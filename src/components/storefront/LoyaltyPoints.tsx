@@ -48,8 +48,8 @@ export function LoyaltyPoints({ userId, onRedeem }: LoyaltyPointsProps) {
       const result = await redeemPoints(userId, points);
       toast.success(`₹${result.value} added to your wallet!`);
       onRedeem?.(result.value);
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed");
     }
     setRedeeming(false);
   };
@@ -63,7 +63,7 @@ export function LoyaltyPoints({ userId, onRedeem }: LoyaltyPointsProps) {
           <span className="text-3xl">⭐</span>
           <div>
             <div className="text-sm text-gray-500">Loyalty Points</div>
-            <div className="text-2xl font-bold text-indigo-900">{points.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-indigo-900">{points.toLocaleString("en-IN")}</div>
           </div>
         </div>
         <span className={`px-3 py-1 rounded-full text-sm font-bold ${tier.bg} ${tier.color}`}>
@@ -74,8 +74,8 @@ export function LoyaltyPoints({ userId, onRedeem }: LoyaltyPointsProps) {
       {nextTier && (
         <div className="mb-3">
           <div className="flex justify-between text-xs text-gray-500 mb-1">
-            <span>{points.toLocaleString()}</span>
-            <span>{nextTier.min.toLocaleString()} → {nextTier.tier}</span>
+            <span>{points.toLocaleString("en-IN")}</span>
+            <span>{nextTier.min.toLocaleString("en-IN")} → {nextTier.tier}</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div className="bg-indigo-500 h-2 rounded-full transition-all" style={{ width: `${progress}%` }} />

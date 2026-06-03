@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { reviewSchema } from "@/lib/validations/review";
 
 export async function getReviews(productId: string) {
   const reviews = await prisma.review.findMany({
@@ -16,6 +17,8 @@ export async function submitReview(productId: string, rating: number, comment?: 
   const session = await getSession();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
+  // Validate input
+  const validated = reviewSchema.parse({ productId, rating, comment });
   const userId = session.user.id as string;
 
   // Check if already reviewed
@@ -29,8 +32,9 @@ export async function submitReview(productId: string, rating: number, comment?: 
     where: { userId, status: { in: ["DELIVERED", "RETURNED"] } },
   });
   const hasOrdered = orders.some(o => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
     const items = o.items as any[];
-    return items.some((i: any) => i.productId === productId);
+    return items.some((i) => i.productId === productId);
   });
 
   const review = await prisma.review.create({
@@ -79,11 +83,11 @@ export async function getMyReviews() {
 
   const reviews = await prisma.review.findMany({
     where: { userId: session.user.id as string },
-    include: { product: { select: { id: true, name: true, slug: true, thumbnail: true } } },
+    include: { product: { select: { id: true, name: true, slug: true, thumbnail: true, price: true } } },
     orderBy: { createdAt: "desc" },
   });
 
-  return reviews.map((r: any) => ({
+  return reviews.map((r) => ({
     ...r,
     product: {
       ...r.product,

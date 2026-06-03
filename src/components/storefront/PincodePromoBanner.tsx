@@ -8,13 +8,13 @@ interface PincodePromoBannerProps {
 }
 
 export function PincodePromoBanner({ pincode }: PincodePromoBannerProps) {
-  const [promos, setPromos] = useState<any[]>([]);
+  const [promos, setPromos] = useState<{ id: string; promo: { title: string; description?: string } }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!pincode) { setLoading(false); return; }
     findPincodePromos(pincode)
-      .then((data: any) => setPromos(data))
+      .then((data) => setPromos(data as { id: string; promo: { title: string; description?: string } }[]))
       .finally(() => setLoading(false));
   }, [pincode]);
 

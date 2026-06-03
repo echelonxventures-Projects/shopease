@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-export function CategoryNav({ categories }: { categories: any[] }) {
+export function CategoryNav({ categories }: { categories: { id: string; slug: string; name: string; image?: string | null }[] }) {
   return (
     <div className="flex gap-4 overflow-x-auto pb-2">
       {categories

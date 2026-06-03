@@ -8,8 +8,8 @@ export const productTranslationSchema = z.object({
   name: z.string().min(1, "Name is required").max(255).transform(stripHtml),
   slug: z.string().min(1, "Slug is required").max(255).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase alphanumeric with hyphens"),
   shortDesc: z.string().max(200).optional().transform((v) => v ? stripHtml(v) : undefined),
-  description: z.string().optional().transform((v) => v ? stripHtml(v) : undefined),
-  tags: z.array(z.string()).optional(),
+  description: z.string().max(10000, "Description too long").optional().transform((v) => v ? stripHtml(v) : undefined),
+  tags: z.array(z.string().trim().max(100)).max(50, "Maximum 50 tags").optional(),
 });
 
 export const categoryTranslationSchema = z.object({

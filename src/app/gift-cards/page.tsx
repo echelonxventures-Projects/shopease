@@ -14,7 +14,7 @@ import {
 } from "@/server/actions/gift-card-store-actions";
 import { GiftCardStoreCard } from "@/components/storefront/GiftCardStoreCard";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Gift, Filter, X } from "lucide-react";
+import { ChevronRight, Gift, Filter } from "lucide-react";
 
 function GiftCardsContent() {
   const router = useRouter();
@@ -27,7 +27,7 @@ function GiftCardsContent() {
   const [newArrivals, setNewArrivals] = useState<any[]>([]);
   const [featured, setFeatured] = useState<any[]>([]);
   const [occasionCards, setOccasionCards] = useState<any[]>([]);
-  const [filterOptions, setFilterOptions] = useState<any>(null);
+  const [_filterOptions, setFilterOptions] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [deliveryFilter, setDeliveryFilter] = useState("");

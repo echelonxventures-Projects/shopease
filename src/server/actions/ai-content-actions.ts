@@ -29,6 +29,7 @@ export async function generateProductDescription(productId: string) {
       if (parsed.tags) {
         await prisma.product.update({
           where: { id: productId },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
           data: { aiTags: parsed.tags as any },
         });
       }

@@ -19,7 +19,7 @@ const ORDER_STATUS: Record<string, string> = {
 
 export default function B2BOrdersPage() {
   const [business, setBusiness] = useState<any>(null);
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, _setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch B2B orders via getMyBusiness
@@ -75,11 +75,11 @@ export default function B2BOrdersPage() {
                       {order.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="font-bold">{order.currency || "INR"} {Number(order.totalAmount).toLocaleString()}</TableCell>
+                  <TableCell className="font-bold">{order.currency || "INR"} {Number(order.totalAmount).toLocaleString("en-IN")}</TableCell>
                   <TableCell>{order.paymentTerms?.replace("_", " ") || "—"}</TableCell>
                   <TableCell>{order.taxExempt ? "Exempt" : "Applied"}</TableCell>
                   <TableCell className="text-sm text-gray-500">
-                    {new Date(order.createdAt).toLocaleDateString()}
+                    {new Date(order.createdAt).toLocaleDateString("en-IN")}
                   </TableCell>
                 </TableRow>
               ))}

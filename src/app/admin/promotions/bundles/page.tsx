@@ -6,8 +6,11 @@ import { listAllPromos, listAllCategories } from "@/server/actions/phaseA-action
 import { toast } from "sonner";
 
 export default function CrossCategoryBundlesPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [bundles, setBundles] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [promos, setPromos] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -51,13 +54,13 @@ export default function CrossCategoryBundlesPage() {
       setShowForm(false);
       setForm({ promoId: "", categoryIds: [], bundleDiscountType: "FLAT", bundleDiscountValue: "", maxDiscount: "", minItemsPerCategory: "1" });
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete?")) return;
     try { await deleteCrossCategoryBundle(id); toast.success("Deleted"); fetch(); }
-    catch (err: any) { toast.error(err.message); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   return (
@@ -151,8 +154,8 @@ export default function CrossCategoryBundlesPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    {b.bundleDiscountType === "PERCENTAGE" ? `${b.bundleDiscountValue}%` : `₹${Number(b.bundleDiscountValue).toLocaleString()}`}
-                    {b.maxDiscount && <span className="text-xs text-gray-500 block">Max: ₹{Number(b.maxDiscount).toLocaleString()}</span>}
+                    {b.bundleDiscountType === "PERCENTAGE" ? `${b.bundleDiscountValue}%` : `₹${Number(b.bundleDiscountValue).toLocaleString("en-IN")}`}
+                    {b.maxDiscount && <span className="text-xs text-gray-500 block">Max: ₹{Number(b.maxDiscount).toLocaleString("en-IN")}</span>}
                   </td>
                   <td className="px-4 py-3 text-sm">{b.minItemsPerCategory}</td>
                   <td className="px-4 py-3">

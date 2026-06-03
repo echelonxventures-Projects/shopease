@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { mockPrisma, createMockSession, createMockCartItem } from "../setup";
+import { createMockSession } from "../setup";
 import { addToCart, getCartItems, clearCart } from "@/server/actions/cart-actions";
 
 vi.mock("@/lib/auth", async () => {

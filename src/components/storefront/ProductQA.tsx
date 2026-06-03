@@ -8,8 +8,22 @@ interface ProductQAProps {
   productId: string;
 }
 
+interface QAAnswer {
+  id: string;
+  answer: string;
+  isSeller: boolean;
+  createdAt: string | Date;
+}
+
+interface QAQuestion {
+  id: string;
+  question: string;
+  userName: string;
+  answers: QAAnswer[];
+}
+
 export function ProductQA({ productId }: ProductQAProps) {
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<QAQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [question, setQuestion] = useState("");
@@ -32,7 +46,7 @@ export function ProductQA({ productId }: ProductQAProps) {
       setQuestion("");
       setShowForm(false);
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Failed"); }
   };
 
   const handleAnswer = async (qId: string) => {
@@ -43,7 +57,7 @@ export function ProductQA({ productId }: ProductQAProps) {
       toast.success("Answer submitted");
       setAnswerMap({ ...answerMap, [qId]: "" });
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Failed"); }
   };
 
   return (
@@ -71,7 +85,7 @@ export function ProductQA({ productId }: ProductQAProps) {
 
       {loading ? <p className="text-gray-500">Loading...</p>
         : questions.length === 0 ? <p className="text-gray-500">No questions yet. Be the first to ask!</p>
-        : questions.map((q: any) => (
+        : questions.map((q) => (
           <div key={q.id} className="border rounded-lg p-4 space-y-3">
             <div className="flex items-start gap-2">
               <span className="text-blue-600 font-bold">Q:</span>
@@ -81,7 +95,7 @@ export function ProductQA({ productId }: ProductQAProps) {
               </div>
             </div>
 
-            {q.answers.map((a: any) => (
+            {q.answers.map((a) => (
               <div key={a.id} className="flex items-start gap-2 ml-6">
                 <span className={a.isSeller ? "text-green-600 font-bold" : "text-gray-600 font-bold"}>
                   {a.isSeller ? "A*" : "A"}:
@@ -89,7 +103,7 @@ export function ProductQA({ productId }: ProductQAProps) {
                 <div>
                   <p className="text-gray-700">{a.answer}</p>
                   <p className="text-xs text-gray-500 mt-1">
-                    {a.isSeller ? "Seller" : "Customer"} • {new Date(a.createdAt).toLocaleDateString()}
+                    {a.isSeller ? "Seller" : "Customer"} • {new Date(a.createdAt).toLocaleDateString("en-IN")}
                   </p>
                 </div>
               </div>

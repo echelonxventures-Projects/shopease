@@ -16,52 +16,74 @@ class StripeProvider implements PaymentProvider {
     if (this.apiKey) return;
     if (regionId) {
       const config = await getGatewayConfig("stripe", regionId);
-      this.apiKey = (config?.config as any)?.secretKey || process.env.STRIPE_SECRET_KEY || null;
+      this.apiKey = (config?.config as { secretKey?: string })?.secretKey || process.env.STRIPE_SECRET_KEY || null;
     }
     if (!this.apiKey) {
       this.apiKey = process.env.STRIPE_SECRET_KEY || null;
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Stripe SDK type not available without dependency
+  private client: Record<string, any> | null = null;
+
+  /** Lazily construct the real Stripe SDK client (optional dependency). */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Stripe SDK type not available without dependency
+  private async getClient(): Promise<Record<string, any>> {
+    if (this.client) return this.client;
+    const moduleName = "stripe";
+    const mod = await import(/* webpackIgnore: true */ moduleName);
+    const Stripe = (mod as { default?: unknown }).default || mod;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Stripe SDK returns dynamic methods
+    this.client = new (Stripe as new (key: string) => Record<string, any>)(this.apiKey as string);
+    return this.client;
+  }
+
   async createPaymentIntent(params: PaymentIntentParams): Promise<PaymentResult> {
-    await this.init(params.metadata?.regionId);
+    await this.init(params.metadata?.regionId as string | undefined);
     if (!this.apiKey) {
       return { success: false, paymentId: "", status: "failed", error: "Stripe API key not configured" };
     }
 
     try {
-      // In production, use: const stripe = new Stripe(this.apiKey);
-      // const intent = await stripe.paymentIntents.create({ ... });
-      // For now, return a mock response
+      const stripe = await this.getClient();
+      const intent = await stripe.paymentIntents.create({
+        amount: Math.round(params.amount * 100),
+        currency: params.currency.toLowerCase(),
+        automatic_payment_methods: { enabled: true },
+        metadata: { userId: params.userId ?? "", ...(params.metadata || {}) },
+      });
       return {
         success: true,
-        paymentId: `pi_stripe_${Date.now()}`,
-        providerTxnId: `pi_${Math.random().toString(36).slice(2, 15)}`,
-        status: "requires_payment_method",
-        clientSecret: `pi_${Math.random().toString(36).slice(2, 15)}_secret_${Math.random().toString(36).slice(2, 10)}`,
+        paymentId: intent.id,
+        providerTxnId: intent.id,
+        status: intent.status,
+        clientSecret: intent.client_secret,
         metadata: { provider: "stripe", amount: params.amount, currency: params.currency },
       };
-    } catch (error: any) {
-      return { success: false, paymentId: "", status: "failed", error: error.message };
+    } catch (error) {
+      return { success: false, paymentId: "", status: "failed", error: (error instanceof Error ? error.message : String(error)) };
     }
   }
 
-  async confirmPayment(paymentId: string, params?: any): Promise<PaymentResult> {
+  async confirmPayment(paymentId: string, params?: Record<string, unknown>): Promise<PaymentResult> {
     await this.init();
     if (!this.apiKey) {
       return { success: false, paymentId, status: "failed", error: "Stripe API key not configured" };
     }
 
     try {
-      // In production: const confirmation = await stripe.paymentIntents.confirm(paymentId, params);
+      const stripe = await this.getClient();
+      const intent = params?.paymentMethodId
+        ? await stripe.paymentIntents.confirm(paymentId, { payment_method: params.paymentMethodId })
+        : await stripe.paymentIntents.retrieve(paymentId);
       return {
-        success: true,
+        success: intent.status === "succeeded" || intent.status === "processing",
         paymentId,
-        status: "succeeded",
+        status: intent.status,
         metadata: { provider: "stripe" },
       };
-    } catch (error: any) {
-      return { success: false, paymentId, status: "failed", error: error.message };
+    } catch (error) {
+      return { success: false, paymentId, status: "failed", error: (error instanceof Error ? error.message : String(error)) };
     }
   }
 
@@ -72,29 +94,41 @@ class StripeProvider implements PaymentProvider {
     }
 
     try {
-      // In production: const refund = await stripe.refunds.create({ payment_intent: paymentId, amount });
+      const stripe = await this.getClient();
+      const refund = await stripe.refunds.create({
+        payment_intent: paymentId,
+        ...(amount ? { amount: Math.round(amount * 100) } : {}),
+      });
       return {
         success: true,
-        refundId: `re_${Math.random().toString(36).slice(2, 15)}`,
-        amount: amount || 0,
-        status: "succeeded",
+        refundId: refund.id,
+        amount: refund.amount / 100,
+        status: refund.status,
       };
-    } catch (error: any) {
-      return { success: false, refundId: "", amount: 0, status: "failed", error: error.message };
+    } catch (error) {
+      return { success: false, refundId: "", amount: 0, status: "failed", error: (error instanceof Error ? error.message : String(error)) };
     }
   }
 
-  async handleWebhook(body: any, signature?: string): Promise<WebhookEvent> {
+  async handleWebhook(body: unknown, signature?: string): Promise<WebhookEvent> {
     if (!signature) {
       throw new Error("Stripe webhook requires signature");
     }
-    // In production: const event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET);
-    const raw = typeof body === "string" ? JSON.parse(body) : body;
+    await this.init();
+    const secret = process.env.STRIPE_WEBHOOK_SECRET;
+    let event: { type?: string; data?: { object?: { id?: string; status?: string } } };
+    if (secret && this.apiKey) {
+      const stripe = await this.getClient();
+      // body must be the raw request string/Buffer for signature verification
+      event = stripe.webhooks.constructEvent(body, signature, secret);
+    } else {
+      event = typeof body === "string" ? JSON.parse(body) : body as typeof event;
+    }
     return {
-      type: raw.type || "unknown",
-      paymentId: raw.data?.object?.id || "",
-      status: raw.data?.object?.status || "unknown",
-      raw,
+      type: event.type || "unknown",
+      paymentId: event.data?.object?.id || "",
+      status: event.data?.object?.status || "unknown",
+      raw: event,
     };
   }
 

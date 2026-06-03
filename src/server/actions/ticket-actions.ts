@@ -3,10 +3,14 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { TicketStatus, TicketPriority, TicketCategory } from "@prisma/client";
+import { ticketSchema } from "@/lib/validations/ticket";
 
 export async function createTicket(data: { subject: string; description: string; category: string; priority?: string }) {
   const session = await getSession();
   if (!session?.user?.id) throw new Error("Unauthorized");
+
+  // Validate input
+  const validated = ticketSchema.parse(data);
 
   const ticketCount = await prisma.supportTicket.count();
   const ticketNumber = `TKT-${Date.now().toString().slice(-6)}-${(ticketCount + 1).toString().padStart(4, "0")}`;
@@ -28,7 +32,7 @@ export async function getTickets() {
   if (!session?.user) throw new Error("Unauthorized");
 
   const userId = session.user.id as string;
-  const role = (session as any).user?.role as string;
+  const role = session!.user?.role as string;
 
   const where = role === "CUSTOMER_CARE" ? {} : { customerId: userId };
 
@@ -60,7 +64,7 @@ export async function getTicket(id: string) {
   });
 
   const userId = session.user.id as string;
-  const role = (session as any).user?.role as string;
+  const role = session!.user?.role as string;
   if (!ticket) throw new Error("Ticket not found");
   if (role !== "CUSTOMER_CARE" && ticket.customerId !== userId) throw new Error("Unauthorized");
 
@@ -78,8 +82,9 @@ export async function addTicketMessage(ticketId: string, message: string, isInte
 
 export async function updateTicketStatus(ticketId: string, status: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "CUSTOMER_CARE") throw new Error("Unauthorized");
+  if (!session || session!.user?.role !== "CUSTOMER_CARE") throw new Error("Unauthorized");
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic form data from client
   const data: any = { status: status as TicketStatus };
   if (status === "RESOLVED") data.resolvedAt = new Date();
 
@@ -107,7 +112,7 @@ export async function createRefund(orderId: string, reason: string, amount: numb
 
 export async function processRefund(refundId: string, approved: boolean, adminNote?: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "CUSTOMER_CARE") throw new Error("Unauthorized");
+  if (!session || session!.user?.role !== "CUSTOMER_CARE") throw new Error("Unauthorized");
 
   return prisma.refund.update({
     where: { id: refundId },

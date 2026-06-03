@@ -5,7 +5,9 @@ import { listSearchPromoTriggers, createSearchPromoTrigger, deleteSearchPromoTri
 import { toast } from "sonner";
 
 export default function SearchTriggersPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [triggers, setTriggers] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [promos, setPromos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -27,13 +29,13 @@ export default function SearchTriggersPage() {
       toast.success("Created");
       setShowForm(false); setForm({ keyword: "", promoId: "", matchType: "CONTAINS" });
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete?")) return;
     try { await deleteSearchPromoTrigger(id); toast.success("Deleted"); fetch(); }
-    catch (err: any) { toast.error(err.message); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const matchTypeBadge = (m: string) => {

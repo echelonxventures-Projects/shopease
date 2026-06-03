@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getTickets, createTicket, addTicketMessage } from "@/server/actions/ticket-actions";
+import { getTickets, createTicket } from "@/server/actions/ticket-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, MessageSquare } from "lucide-react";
+import { Plus } from "lucide-react";
 import Link from "next/link";
 
 const categoryLabels: Record<string, string> = {
@@ -96,7 +96,7 @@ export default function TicketsPage() {
                   <td className="px-4 py-3 text-sm">{categoryLabels[t.category] || t.category}</td>
                   <td className="px-4 py-3"><Badge className={priorityColors[t.priority]}>{t.priority}</Badge></td>
                   <td className="px-4 py-3"><Badge className={statusColors[t.status]}>{t.status.replace(/_/g, " ")}</Badge></td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{new Date(t.updatedAt).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{new Date(t.updatedAt).toLocaleDateString("en-IN")}</td>
                 </tr>
               ))
             )}

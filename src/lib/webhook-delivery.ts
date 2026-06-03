@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 
 interface WebhookEvent {
   type: string;
-  payload: Record<string, any>;
+  payload: Record<string, unknown>;
   timestamp: string;
 }
 
@@ -55,8 +55,8 @@ export async function dispatchWebhook(event: WebhookEvent) {
       });
 
       results.push({ webhookId: webhook.id, deliveryId: delivery.id, status: response.ok ? "DELIVERED" : "FAILED" });
-    } catch (err: any) {
-      results.push({ webhookId: webhook.id, deliveryId: "N/A", status: "ERROR", error: err.message });
+    } catch (err) {
+      results.push({ webhookId: webhook.id, deliveryId: "N/A", status: "ERROR", error: (err instanceof Error ? err.message : String(err)) });
     }
   }
 

@@ -8,13 +8,13 @@ interface EMICalculatorProps {
 }
 
 export function EMICalculator({ orderTotal }: EMICalculatorProps) {
-  const [options, setOptions] = useState<any[]>([]);
+  const [options, setOptions] = useState<{ id: string; bankName: string; cardType: string; emiTenure?: number | null; minOrderValue?: number | string | null; isActive: boolean }[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTenure, setSelectedTenure] = useState<number>(0);
 
   useEffect(() => {
     listNoCostEMI()
-      .then((data) => setOptions(data))
+      .then((data) => setOptions(data as unknown as typeof options))
       .finally(() => setLoading(false));
   }, []);
 
@@ -60,11 +60,11 @@ export function EMICalculator({ orderTotal }: EMICalculatorProps) {
       <div className="bg-white rounded px-4 py-3 flex items-center justify-between">
         <div>
           <p className="text-sm text-gray-500">Monthly instalment</p>
-          <p className="text-2xl font-bold text-blue-800">₹{Math.round(monthly).toLocaleString()}</p>
+          <p className="text-2xl font-bold text-blue-800">₹{Math.round(monthly).toLocaleString("en-IN")}</p>
         </div>
         <div className="text-right">
           <p className="text-sm text-gray-500">Total</p>
-          <p className="text-lg font-medium">₹{orderTotal.toLocaleString()}</p>
+          <p className="text-lg font-medium">₹{orderTotal.toLocaleString("en-IN")}</p>
           <p className="text-xs text-green-600">Zero interest</p>
         </div>
       </div>

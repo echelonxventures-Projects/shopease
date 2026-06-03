@@ -1,9 +1,10 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { hash, compare } from "bcryptjs";
-import { registerSchema, loginSchema } from "@/lib/validations/auth";
+import { hash } from "bcryptjs";
+import { registerSchema } from "@/lib/validations/auth";
 import { signIn } from "next-auth/react";
+import { evaluateAdvancedFraud, type RequestContext } from "@/lib/fraud/advanced-detection";
 
 export async function registerUser(formData: FormData) {
   const data = {
@@ -28,6 +29,41 @@ export async function registerUser(formData: FormData) {
   const existing = await prisma.user.findUnique({ where: { email: data.email } });
   if (existing) {
     return { error: "Email already registered" };
+  }
+
+  // Check phone uniqueness
+  if (data.phone) {
+    const phoneExists = await prisma.user.findFirst({ where: { phone: data.phone }, select: { id: true } });
+    if (phoneExists) {
+      return { error: "Phone number already registered" };
+    }
+  }
+
+  // Advanced fraud detection on registration
+  const deviceSignals = {
+    userAgent: formData.get("_ua") as string || undefined,
+    fingerprint: formData.get("_fp") as string || undefined,
+    timezone: formData.get("_tz") as string || undefined,
+    screenResolution: formData.get("_sr") as string || undefined,
+    language: formData.get("_lang") as string || undefined,
+  };
+  const fraudContext: RequestContext = {
+    ip: formData.get("_ip") as string || undefined,
+    userAgent: deviceSignals.userAgent,
+    device: deviceSignals,
+  };
+
+  // Use a temporary ID for pre-registration fraud check
+  const tempId = `pre_reg_${data.email}`;
+  const verdict = await evaluateAdvancedFraud(tempId, "REGISTER", fraudContext);
+  if (verdict.action === "BLOCK") {
+    return { error: "Registration blocked due to suspicious activity. Please try again later." };
+  }
+  if (verdict.requiresCaptcha) {
+    const captchaToken = formData.get("_captcha") as string;
+    if (!captchaToken) {
+      return { error: "Please complete the captcha verification", requiresCaptcha: true, riskScore: verdict.score };
+    }
   }
 
   const hashedPassword = await hash(data.password, 10);

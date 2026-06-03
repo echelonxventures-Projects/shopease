@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { getCountriesForDropdown } from "@/server/actions/localization-actions";
 import { getSubLocations } from "@/server/actions/location-actions";
-import { ChevronDown, X, Search, Loader2, MapPin, Building2 } from "lucide-react";
+import { ChevronDown, X, Search, Loader2, MapPin } from "lucide-react";
 
 interface LocationSelectorProps {
   countryId?: string;
@@ -312,7 +312,7 @@ function FreeTextSearch({
     try {
       const { searchLocations } = await import("@/server/actions/location-actions");
       const data = await searchLocations(q);
-      setResults(data.map((l: any) => ({ id: l.id, name: l.name, code: l.code, type: l.type })));
+      setResults(data.map((l: { id: string; name: string; code?: string | null; type?: string }) => ({ id: l.id, name: l.name, code: l.code ?? undefined, type: l.type })));
       setOpen(true);
       setHighlightedIdx(-1);
     } catch {
@@ -381,6 +381,7 @@ function FreeTextSearch({
               <div
                 key={opt.id}
                 role="option"
+                aria-selected={idx === highlightedIdx}
                 className={`px-3 py-2 text-sm cursor-pointer flex items-center justify-between transition-colors
                   ${idx === highlightedIdx ? "bg-blue-100 text-blue-800" : "text-gray-700 hover:bg-gray-50"}
                 `}
@@ -417,10 +418,10 @@ function FreeTextSearch({
 // ---- Main Cascading Selector ----
 
 export function LocationCascadingSelector({
-  countryId,
-  stateId,
-  districtId,
-  villageId,
+  countryId = "",
+  stateId = "",
+  districtId = "",
+  villageId = "",
   onChange,
   showCountry = true,
   showState = true,
@@ -447,7 +448,7 @@ export function LocationCascadingSelector({
       getCountriesForDropdown()
         .then((data) => {
           if (cancelled) return;
-          setCountries(data.map((c: any) => ({ id: c.id, name: `${c.currencySymbol} ${c.name} (${c.code})`, code: c.code, type: "COUNTRY" })));
+          setCountries(data.map((c: { id: string; name: string; code: string; currencySymbol?: string }) => ({ id: c.id, name: `${c.currencySymbol} ${c.name} (${c.code})`, code: c.code, type: "COUNTRY" })));
           setCountriesLoading(false);
           setCountriesError(null);
         })
@@ -473,7 +474,7 @@ export function LocationCascadingSelector({
       getSubLocations(countryId)
         .then((locs) => {
           if (cancelled) return;
-          setStates(locs.map((l: any) => ({ id: l.id, name: l.name, code: l.code, type: l.type })));
+          setStates(locs.map((l: { id: string; name: string; code?: string | null; type?: string }) => ({ id: l.id, name: l.name, code: l.code ?? undefined, type: l.type })));
           setLoadingStates(false);
         })
         .catch(() => {
@@ -497,7 +498,7 @@ export function LocationCascadingSelector({
       getSubLocations(stateId)
         .then((locs) => {
           if (cancelled) return;
-          const mapped = locs.map((l: any) => ({ id: l.id, name: l.name, code: l.code, type: l.type }));
+          const mapped = locs.map((l: { id: string; name: string; code?: string | null; type?: string }) => ({ id: l.id, name: l.name, code: l.code ?? undefined, type: l.type }));
           if (mapped.length > 0) {
             setDistricts(mapped);
             setHasDistrictData(true);
@@ -529,7 +530,7 @@ export function LocationCascadingSelector({
       getSubLocations(districtId)
         .then((locs) => {
           if (cancelled) return;
-          const mapped = locs.map((l: any) => ({ id: l.id, name: l.name, code: l.code, type: l.type }));
+          const mapped = locs.map((l: { id: string; name: string; code?: string | null; type?: string }) => ({ id: l.id, name: l.name, code: l.code ?? undefined, type: l.type }));
           if (mapped.length > 0) {
             setVillages(mapped);
             setHasVillageData(true);

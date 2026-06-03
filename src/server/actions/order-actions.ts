@@ -2,9 +2,12 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { razorpay } from "@/lib/razorpay";
+import { razorpay, verifyRazorpayPaymentSignature } from "@/lib/razorpay";
 import { sendOrderNotification } from "@/server/services/notification-service";
+import { assertOrderIdempotency } from "@/lib/duplicate-prevention";
+import { evaluateAdvancedFraud, type RequestContext } from "@/lib/fraud/advanced-detection";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- generic Prisma result serializer
 function serializeOrder(order: any) {
   if (!order) return order;
   return {
@@ -14,7 +17,7 @@ function serializeOrder(order: any) {
     shippingCost: typeof order.shippingCost?.toNumber === 'function' ? order.shippingCost.toNumber() : order.shippingCost,
     discount: typeof order.discount?.toNumber === 'function' ? order.discount.toNumber() : order.discount,
     total: typeof order.total?.toNumber === 'function' ? order.total.toNumber() : order.total,
-    payments: order.payments?.map((p: any) => ({
+    payments: order.payments?.map((p: { amount?: { toNumber?: () => number } }) => ({
       ...p,
       amount: typeof p.amount?.toNumber === 'function' ? p.amount.toNumber() : p.amount,
     })),
@@ -47,33 +50,57 @@ export async function getOrder(id: string) {
 }
 
 export async function createOrder(data: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic array from Prisma Json field
   items: any[];
   subtotal: number;
   tax: number;
   shippingCost: number;
   discount: number;
   total: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   shippingAddress: any;
   paymentMethod: string;
   couponCode?: string;
   notes?: string;
   walletAmount?: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic array from Prisma Json field
   appliedPromos?: any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   promoCodeResult?: any;
+  idempotencyKey?: string;
+  _fraudContext?: RequestContext;
 }) {
   const session = await getSession();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
   const userId = session.user.id as string;
 
+  // Prevent double-submit
+  if (data.idempotencyKey) {
+    await assertOrderIdempotency(data.idempotencyKey);
+  }
+
+  // Advanced fraud detection
+  if (data._fraudContext || data.total > 5000) {
+    const verdict = await evaluateAdvancedFraud(userId, "ORDER", data._fraudContext || { timestamp: new Date() });
+    if (verdict.action === "BLOCK") {
+      throw new Error("Order blocked: suspicious activity detected. Contact support if this is an error.");
+    }
+    if (verdict.action === "CHALLENGE" && verdict.riskLevel === "HIGH") {
+      throw new Error("Additional verification required. Please complete identity verification.");
+    }
+  }
+
   const orderCount = await prisma.order.count();
   const orderNumber = `ORD-${Date.now().toString().slice(-6)}-${(orderCount + 1).toString().padStart(4, "0")}`;
 
+  const { idempotencyKey, _fraudContext, ...orderData } = data;
   const order = await prisma.order.create({
     data: {
       userId,
       orderNumber,
-      ...data,
+      idempotencyKey: idempotencyKey || undefined,
+      ...orderData,
     },
   });
 
@@ -114,6 +141,13 @@ export async function createRazorpayOrder(orderId: string) {
     },
   });
 
+  // Bind this Razorpay order to our order so confirmPayment can verify the
+  // signature belongs to THIS order (prevents cross-order signature replay).
+  await prisma.order.update({
+    where: { id: order.id },
+    data: { paymentIntent: razorpayOrder.id },
+  });
+
   return {
     razorpayOrderId: razorpayOrder.id,
     amount: razorpayOrder.amount,
@@ -121,7 +155,12 @@ export async function createRazorpayOrder(orderId: string) {
   };
 }
 
-export async function confirmPayment(orderId: string, paymentId: string) {
+export async function confirmPayment(
+  orderId: string,
+  paymentId: string,
+  razorpayOrderId?: string,
+  signature?: string,
+) {
   const session = await getSession();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
@@ -129,6 +168,15 @@ export async function confirmPayment(orderId: string, paymentId: string) {
   if (!order) throw new Error("Order not found");
   if (order.userId !== session.user.id) throw new Error("Forbidden");
   if (order.paymentStatus === "PAID") return { success: true, message: "Already confirmed" };
+
+  // Never trust the client: the payment is only real if Razorpay's signature
+  // verifies AND it is bound to the Razorpay order we created for THIS order.
+  if (!razorpayOrderId || !signature || !verifyRazorpayPaymentSignature(razorpayOrderId, paymentId, signature)) {
+    throw new Error("Payment verification failed");
+  }
+  if (order.paymentIntent !== razorpayOrderId) {
+    throw new Error("Payment does not match this order");
+  }
 
   await prisma.order.update({
     where: { id: orderId },
@@ -156,6 +204,7 @@ export async function confirmPayment(orderId: string, paymentId: string) {
   }
 
   // Auto-assign nearest available delivery agent (quick commerce)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   let assignment: any = null;
   try {
     const { autoAssignDeliveryAgent } = await import("./delivery-actions");
@@ -191,6 +240,7 @@ export async function confirmPayment(orderId: string, paymentId: string) {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
   const items = order.items as any[];
   for (const item of items) {
     await prisma.product.update({

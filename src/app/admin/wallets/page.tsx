@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getAllWallets, creditWallet, getUserWalletDetails, creditTierBalance } from "@/server/actions/wallet-actions";
+import { getAllWallets, creditWallet, getUserWalletDetails } from "@/server/actions/wallet-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,16 +13,16 @@ import { toast } from "sonner";
 
 export default function AdminWalletsPage() {
   const router = useRouter();
-  const [wallets, setWallets] = useState<any[]>([]);
+  const [wallets, setWallets] = useState<Awaited<ReturnType<typeof getAllWallets>>>([]);
   const [loading, setLoading] = useState(true);
   const [creditDialog, setCreditDialog] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<Awaited<ReturnType<typeof getAllWallets>>[number] | null>(null);
   const [creditAmount, setCreditAmount] = useState("");
   const [creditDesc, setCreditDesc] = useState("");
   const [creditRefType, setCreditRefType] = useState("CASHBACK");
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [detailsUser, setDetailsUser] = useState<any>(null);
-  const [details, setDetails] = useState<any>(null);
+  const [detailsUser, setDetailsUser] = useState<Awaited<ReturnType<typeof getAllWallets>>[number] | null>(null);
+  const [details, setDetails] = useState<Awaited<ReturnType<typeof getUserWalletDetails>> | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsTab, setDetailsTab] = useState("wallet");
 
@@ -43,18 +43,17 @@ export default function AdminWalletsPage() {
     if (!selectedUser) return;
 
     try {
-      await creditWallet(selectedUser.user.id, parseFloat(creditAmount), creditDesc, creditRefType);
+      await creditWallet(selectedUser.userId, parseFloat(creditAmount), creditDesc, creditRefType);
       toast.success(`${selectedUser.currency || '₹'}${creditAmount} credited to ${selectedUser.user.name || selectedUser.user.email}`);
       setCreditDialog(false);
       setCreditAmount("");
       setCreditDesc("");
       setSelectedUser(null);
       fetch();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex type from external source
   const handleViewDetails = async (wallet: any) => {
     setDetailsUser(wallet);
     setDetailsOpen(true);
@@ -116,7 +115,7 @@ export default function AdminWalletsPage() {
             {wallets.length === 0 ? (
               <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-500">No wallets yet</td></tr>
             ) : (
-              wallets.map((w: any) => (
+              wallets.map((w) => (
                 <tr key={w.id} className="border-t">
                   <td className="px-4 py-3">{w.user?.name || "—"}</td>
                   <td className="px-4 py-3 text-sm">{w.user?.email}</td>
@@ -236,11 +235,11 @@ export default function AdminWalletsPage() {
                   {details.walletTransactions.length > 0 ? (
                     <div className="space-y-2">
                       <p className="text-sm font-semibold">Recent Transactions</p>
-                      {details.walletTransactions.map((wt: any) => (
+                      {details.walletTransactions.map((wt) => (
                         <div key={wt.id} className="flex justify-between text-sm border-b pb-2">
                           <div>
                             <p className="font-medium">{wt.description || wt.referenceType}</p>
-                            <p className="text-xs text-gray-500">{new Date(wt.createdAt).toLocaleString()}</p>
+                            <p className="text-xs text-gray-500">{new Date(wt.createdAt).toLocaleString("en-IN")}</p>
                           </div>
                           <div className="text-right">
                             <p className={`font-bold ${wt.type === "CREDIT" ? "text-green-600" : "text-red-600"}`}>
@@ -261,7 +260,7 @@ export default function AdminWalletsPage() {
               {detailsTab === "tiers" && (
                 <div className="space-y-3">
                   {details.tierBalances.length > 0 ? (
-                    details.tierBalances.map((tb: any) => (
+                    details.tierBalances.map((tb) => (
                       <div key={tb.id} className="flex items-center justify-between border rounded-lg p-3">
                         <div className="flex items-center gap-3">
                           <div className="w-4 h-4 rounded-full" style={{ backgroundColor: tb.tierColor }} />
@@ -283,11 +282,11 @@ export default function AdminWalletsPage() {
               {detailsTab === "giftcards" && (
                 <div className="space-y-2">
                   {details.giftCardTransactions.length > 0 ? (
-                    details.giftCardTransactions.map((gct: any) => (
+                    details.giftCardTransactions.map((gct) => (
                       <div key={gct.id} className="flex justify-between text-sm border-b pb-2">
                         <div>
                           <p className="font-mono text-xs">{gct.giftCardCode}</p>
-                          <p className="text-xs text-gray-500">{new Date(gct.createdAt).toLocaleString()}</p>
+                          <p className="text-xs text-gray-500">{new Date(gct.createdAt).toLocaleString("en-IN")}</p>
                         </div>
                         <p className={`font-bold ${gct.type === "CREDIT" ? "text-green-600" : "text-red-600"}`}>
                           {gct.type === "CREDIT" ? "+" : "-"}{(details.wallet?.currency === "INR" ? "₹" : details.wallet?.currency || "")}{gct.amount.toFixed(2)}
@@ -306,11 +305,11 @@ export default function AdminWalletsPage() {
                   {details.topUps.length > 0 ? (
                     <>
                       <p className="text-xs text-gray-500 mb-2">Total top-ups: {details.topUpsTotal}</p>
-                      {details.topUps.map((tu: any) => (
+                      {details.topUps.map((tu) => (
                         <div key={tu.id} className="flex justify-between text-sm border-b pb-2">
                           <div>
                             <p className="font-medium">{tu.method}</p>
-                            <p className="text-xs text-gray-500">{new Date(tu.createdAt).toLocaleString()}</p>
+                            <p className="text-xs text-gray-500">{new Date(tu.createdAt).toLocaleString("en-IN")}</p>
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-green-600">{(details.wallet?.currency === "INR" ? "₹" : details.wallet?.currency || "")}{tu.amount.toFixed(2)}</p>

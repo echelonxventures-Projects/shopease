@@ -5,7 +5,9 @@ import { getCustomerAnalytics, getCustomerSegments } from "@/server/actions/anal
 import { Users, TrendingUp, DollarSign, Repeat, BarChart3, Loader2 } from "lucide-react";
 
 export default function CustomerAnalyticsPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [analytics, setAnalytics] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [segments, setSegments] = useState<any>(null);
   const [days, setDays] = useState(30);
   const [loading, setLoading] = useState(true);
@@ -74,14 +76,14 @@ export default function CustomerAnalyticsPage() {
             <DollarSign className="w-5 h-5 text-green-600" />
             <span className="text-sm text-gray-500">Avg Order Value</span>
           </div>
-          <p className="text-3xl font-bold">₹{Math.round(analytics?.avgOrderValue || 0).toLocaleString()}</p>
+          <p className="text-3xl font-bold">₹{Math.round(analytics?.avgOrderValue || 0).toLocaleString("en-IN")}</p>
         </div>
         <div className="bg-white rounded-lg p-5 shadow border">
           <div className="flex items-center gap-3 mb-2">
             <TrendingUp className="w-5 h-5 text-amber-600" />
             <span className="text-sm text-gray-500">Avg Lifetime Value</span>
           </div>
-          <p className="text-3xl font-bold">₹{Math.round(analytics?.avgLifetimeValue || 0).toLocaleString()}</p>
+          <p className="text-3xl font-bold">₹{Math.round(analytics?.avgLifetimeValue || 0).toLocaleString("en-IN")}</p>
         </div>
       </div>
 

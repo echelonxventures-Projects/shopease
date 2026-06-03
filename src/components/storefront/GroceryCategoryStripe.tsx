@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
+
 
 export function CategoryStripe({ categories, selectedCategoryId, onSelect }: {
-  categories: any[];
+  categories: { id: string; name: string; image?: string }[];
   selectedCategoryId?: string;
   onSelect?: (id: string) => void;
 }) {

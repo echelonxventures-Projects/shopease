@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Upload, X, GripVertical, Image as ImageIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Upload, X, GripVertical } from "lucide-react";
+
 import { toast } from "sonner";
 
 interface ImageUploaderProps {
@@ -32,7 +32,7 @@ export function ImageUploader({ images, onChange }: ImageUploaderProps) {
       const urls = await Promise.all(validFiles.map(uploadFile));
       onChange([...images, ...urls]);
       toast.success(`${urls.length} image${urls.length > 1 ? "s" : ""} uploaded`);
-    } catch (err: any) { toast.error(err.message || "Upload failed"); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Upload failed"); }
     finally { setUploading(false); }
   };
 

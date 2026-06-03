@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Wallet, TrendingUp, Gift, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { Wallet, TrendingUp } from "lucide-react";
+
 
 const LEVELS: Record<string, number> = { BRONZE: 5, SILVER: 8, GOLD: 12, PLATINUM: 15 };
 
@@ -14,8 +14,8 @@ interface CashbackProps {
 
 export function CashbackWidget({ orderTotal, currencySymbol = "₹" }: CashbackProps) {
   const [cashbackRate, setCashbackRate] = useState(5); // Default 5%
-  const [userLevel, setUserLevel] = useState<"BRONZE" | "SILVER" | "GOLD" | "PLATINUM">("BRONZE");
-  const [cashbackBalance, setCashbackBalance] = useState(0);
+  const [userLevel, _setUserLevel] = useState<"BRONZE" | "SILVER" | "GOLD" | "PLATINUM">("BRONZE");
+  const [cashbackBalance, _setCashbackBalance] = useState(0);
 
   useEffect(() => {
     setCashbackRate(LEVELS[userLevel]);
@@ -36,7 +36,7 @@ export function CashbackWidget({ orderTotal, currencySymbol = "₹" }: CashbackP
 
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-white rounded-lg p-3 border" role="status" aria-label="Earnings">
-          <p className="text-xs text-gray-500 mb-1">You'll earn</p>
+          <p className="text-xs text-gray-500 mb-1">You&apos;ll earn</p>
           <p className="text-xl font-bold text-green-600" aria-live="polite">{currencySymbol}{maxCashback}</p>
           <p className="text-xs text-gray-400">cashback</p>
         </div>
@@ -63,7 +63,7 @@ export function CashbackWidget({ orderTotal, currencySymbol = "₹" }: CashbackP
               }`}
               role="meter"
               aria-valuetext={`${level} level at ${LEVELS[level]} percent`}
-              aria-now={LEVELS[level]}
+              aria-valuenow={LEVELS[level]}
               aria-valuemin={5}
               aria-valuemax={15}
             >

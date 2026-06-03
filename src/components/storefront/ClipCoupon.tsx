@@ -30,8 +30,8 @@ export function ClipCoupon({ promoId, title, discountText, userId, onClipped }: 
         toast.success("Coupon clipped!");
       }
       onClipped?.();
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed");
     }
     setLoading(false);
   };

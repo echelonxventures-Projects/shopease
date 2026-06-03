@@ -48,9 +48,9 @@ export function StoreLocator() {
             navigator.geolocation.getCurrentPosition((pos) => {
               setStores(mockStores.map((s) => ({
                 ...s,
-                distance: Math.sqrt(
+                distance: parseFloat(Math.sqrt(
                   Math.pow(pos.coords.latitude - s.lat, 2) + Math.pow(pos.coords.longitude - s.lng, 2)
-                ).toFixed(1) as any as number,
+                ).toFixed(1)),
               })).sort((a, b) => a.distance - b.distance));
             });
           }
@@ -109,7 +109,7 @@ export function StoreLocator() {
       {stores.length === 0 && (
         <div className="text-center py-12 text-gray-500">
           <MapPin className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-          <p>No stores found near "{search}"</p>
+          <p>No stores found near &quot;{search}&quot;</p>
         </div>
       )}
     </div>

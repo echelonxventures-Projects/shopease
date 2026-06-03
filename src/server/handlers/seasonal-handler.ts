@@ -7,6 +7,7 @@ export const seasonalHandler: PromotionHandler = {
     return "TOTAL";
   },
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PromotionHandler interface contract
   async evaluate(promo: any, context: PromotionContext) {
     if (promo.discountType === "PERCENTAGE") {
       let discount = context.subtotal * (Number(promo.discountValue) / 100);

@@ -10,7 +10,7 @@ export default async function ProductsPage({
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) {
   const params = await searchParams;
-  const { search, category, brand, sort, page } = params;
+  const { search, category, brand, sort, page, condition, gender, dietary, freeShipping } = params;
   const { locale, region } = await getLocaleRegion();
 
   const [result, categories, brands] = await Promise.all([
@@ -22,6 +22,10 @@ export default async function ProductsPage({
       page: Number(page) || 1,
       locale,
       regionId: region,
+      condition: condition || "",
+      gender: gender || "",
+      dietary: dietary || "",
+      freeShipping: freeShipping || "",
     }),
     getCategories(),
     getBrands(),

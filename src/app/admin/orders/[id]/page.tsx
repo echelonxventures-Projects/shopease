@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ArrowLeft, Package, MapPin, Clock } from "lucide-react";
-import Link from "next/link";
+
 
 const statusColors: Record<string, string> = {
   PENDING: "bg-yellow-100 text-yellow-800", CONFIRMED: "bg-blue-100 text-blue-800",
@@ -23,12 +23,13 @@ const statusColors: Record<string, string> = {
 export default function AdminOrderDetailPage() {
   const router = useRouter();
   const params = useParams();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [order, setOrder] = useState<any>(null);
 
   useEffect(() => {
     if (!params?.id) return;
     getAllOrders({ page: 1, limit: 100 }).then((data) => {
-      const found = data.orders.find((o: any) => o.id === params.id);
+      const found = data.orders.find((o) => o.id === params.id);
       if (!found) { router.push("/admin/orders"); return; }
       setOrder(found);
     }).catch(() => router.push("/auth/login"));
@@ -61,7 +62,7 @@ export default function AdminOrderDetailPage() {
                   updateOrderStatus(order.id, status).then(() => {
                     setOrder({ ...order, status });
                     toast.success("Status updated");
-                  }).catch((e: any) => toast.error(e.message));
+                  }).catch((e) => toast.error(e.message));
                 }}>
                   <SelectTrigger className="w-40">
                     <SelectValue placeholder="Update status" />
@@ -79,14 +80,15 @@ export default function AdminOrderDetailPage() {
           <Card className="p-6">
             <h2 className="text-lg font-bold mb-4">Items</h2>
             <div className="space-y-4">
-              {(order.items as any[])?.map((item: any, i: number) => (
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion needed for dynamic data
+              {(order.items as any[])?.map((item, i) => (
                 <div key={i} className="flex items-center gap-4 border-b pb-4 last:border-0">
                   <Package className="w-8 h-8 text-gray-400" />
                   <div className="flex-1">
                     <p className="font-medium">{item.name}</p>
                     <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
                   </div>
-                  <p className="font-bold">₹{(item.price * item.quantity).toLocaleString()}</p>
+                  <p className="font-bold">₹{(item.price * item.quantity).toLocaleString("en-IN")}</p>
                 </div>
               ))}
             </div>
@@ -103,19 +105,19 @@ export default function AdminOrderDetailPage() {
           <Card className="p-6">
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><MapPin className="w-5 h-5" /> Address</h2>
             <div className="text-sm text-gray-600">
-              <p className="font-medium text-gray-900">{(order.shippingAddress as any)?.fullName}</p>
-              <p>{(order.shippingAddress as any)?.street}</p>
+              <p className="font-medium text-gray-900">{(order.shippingAddress as Record<string, string>)?.fullName}</p>
+              <p>{(order.shippingAddress as Record<string, string>)?.street}</p>
               <p>
                 {[
-                  (order.shippingAddress as any)?.city,
-                  (order.shippingAddress as any)?.districtName,
-                  (order.shippingAddress as any)?.stateName,
-                  (order.shippingAddress as any)?.villageName,
+                  (order.shippingAddress as Record<string, string>)?.city,
+                  (order.shippingAddress as Record<string, string>)?.districtName,
+                  (order.shippingAddress as Record<string, string>)?.stateName,
+                  (order.shippingAddress as Record<string, string>)?.villageName,
                 ].filter(Boolean).join(", ")}
-                {(order.shippingAddress as any)?.zipCode && ` - ${(order.shippingAddress as any)?.zipCode}`}
+                {(order.shippingAddress as Record<string, string>)?.zipCode && ` - ${(order.shippingAddress as Record<string, string>)?.zipCode}`}
               </p>
-              <p>{(order.shippingAddress as any)?.countryName || "India"}</p>
-              <p>Phone: {(order.shippingAddress as any)?.phone}</p>
+              <p>{(order.shippingAddress as Record<string, string>)?.countryName || "India"}</p>
+              <p>Phone: {(order.shippingAddress as Record<string, string>)?.phone}</p>
             </div>
           </Card>
 
@@ -139,12 +141,13 @@ export default function AdminOrderDetailPage() {
             <Card className="p-6">
               <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Clock className="w-5 h-5" /> History</h2>
               <div className="space-y-3">
-                {(order.statusHistory as any[]).map((h: any) => (
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion needed for dynamic data
+                {(order.statusHistory as any[]).map((h) => (
                   <div key={h.id} className="flex gap-3">
                     <div className="w-2 h-2 mt-2 bg-blue-500 rounded-full shrink-0" />
                     <div>
                       <p className="text-sm font-medium">{h.message}</p>
-                      <p className="text-xs text-gray-400">{new Date(h.createdAt).toLocaleString()}</p>
+                      <p className="text-xs text-gray-400">{new Date(h.createdAt).toLocaleString("en-IN")}</p>
                     </div>
                   </div>
                 ))}

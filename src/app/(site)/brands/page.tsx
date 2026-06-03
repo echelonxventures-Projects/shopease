@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getBrands } from "@/server/actions/product-actions";
-import { getProducts } from "@/server/actions/product-actions";
+
 
 export default async function BrandsPage() {
   const brands = await getBrands();

@@ -23,6 +23,7 @@ const REGIONS = [
 ];
 
 export default function TaxCategoriesPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [rules, setRules] = useState<any[]>([]);
   const [newRule, setNewRule] = useState({ taxCategory: "STANDARD", regionCode: "IN", taxRate: "0.18" });
   const [submitting, setSubmitting] = useState(false);
@@ -39,12 +40,13 @@ export default function TaxCategoriesPage() {
       await createOrUpdateTaxCategoryRule(newRule.taxCategory, newRule.regionCode, parseFloat(newRule.taxRate));
       toast.success("Tax rule saved");
       getTaxCategoryRules().then(setRules).catch(() => {});
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
     finally { setSubmitting(false); }
   };
 
   const ruleMap: Record<string, Record<string, number>> = {};
   for (const r of rules) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion needed for dynamic data
     const rc = (r.region as any)?.code || "UNKNOWN";
     if (!ruleMap[rc]) ruleMap[rc] = {};
     ruleMap[rc][r.taxCategory] = Number(r.taxRate) * 100;
@@ -89,7 +91,8 @@ export default function TaxCategoriesPage() {
         <div className="grid grid-cols-3 gap-4">
           <div>
             <Label>Tax Category</Label>
-            <Select value={newRule.taxCategory} onValueChange={(v) => setNewRule({ ...newRule, taxCategory: v as any })}>
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion needed for dynamic data
+            <Select value={newRule.taxCategory} onValueChange={(v) => { if (v) setNewRule({ ...newRule, taxCategory: v as any }); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {TAX_CATEGORIES.map((tc) => <SelectItem key={tc} value={tc}>{tc}</SelectItem>)}
@@ -98,7 +101,8 @@ export default function TaxCategoriesPage() {
           </div>
           <div>
             <Label>Region</Label>
-            <Select value={newRule.regionCode} onValueChange={(v) => setNewRule({ ...newRule, regionCode: v as any })}>
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion needed for dynamic data
+            <Select value={newRule.regionCode} onValueChange={(v) => { if (v) setNewRule({ ...newRule, regionCode: v as any }); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {REGIONS.map((r) => <SelectItem key={r.code} value={r.code}>{r.name}</SelectItem>)}

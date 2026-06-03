@@ -1,8 +1,8 @@
-import { validateEnvOrExit } from "@/lib/env-validation";
 import * as Sentry from "@sentry/nextjs";
 
-export function register() {
+export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
+    const { validateEnvOrExit } = await import("@/lib/env-validation");
     validateEnvOrExit();
 
     if (process.env.SENTRY_DSN) {

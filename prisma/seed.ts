@@ -1,7 +1,8 @@
-import { PrismaClient, UserRole, DiscountType, ActivitySeverity, NotifType, TierBalanceMode, ProductType, TaxCategory, FreightClass, ProductTrackingType } from "@prisma/client";
+import { PrismaClient, UserRole, DiscountType, ActivitySeverity, TierBalanceMode, ProductType, TaxCategory, ProductTrackingType, PaymentMethodType, UOM, UOMCategory, FreightClass } from "@prisma/client";
 import { hash } from "bcryptjs";
-import slugify from "slugify";
-import { encrypt, hash as hashVal, generateSecureCode } from "@/lib/encryption";
+
+import * as crypto from "node:crypto";
+import { encrypt, hash as hashVal } from "@/lib/encryption";
 import {
   seedCategories,
   seedBrands,
@@ -31,6 +32,20 @@ import {
 
 const prisma = new PrismaClient();
 
+interface ExtendedProductFields {
+  productType?: ProductType;
+  taxCategory?: TaxCategory;
+  uom?: UOM;
+  trackingType?: ProductTrackingType;
+  expiryDays?: number;
+  freightClass?: FreightClass;
+  digitalUrl?: string;
+  maxDownloads?: number;
+  subscriptionInterval?: string;
+  subscriptionTrialDays?: number;
+  brand?: string;
+}
+
 async function main() {
   console.log("🌱 Seeding database...");
 
@@ -50,7 +65,7 @@ async function main() {
 
   // Create customer care user
   const ccPassword = await hash("Care@123", 10);
-  const ccUser = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: "care@example.com" },
     update: {},
     create: {
@@ -64,7 +79,7 @@ async function main() {
 
   // Create support user
   const supportPassword = await hash("Support@123", 10);
-  const supportUser = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: "support@example.com" },
     update: {},
     create: {
@@ -167,16 +182,16 @@ async function main() {
         hasVariants: product.hasVariants || false,
         images: product.images,
         sku: `SKU-${product.slug.toUpperCase().replace(/-/g, "")}`,
-        productType: (product as any).productType || ProductType.PHYSICAL,
-        taxCategory: (product as any).taxCategory || TaxCategory.STANDARD,
-        uom: (product as any).uom || null,
-        trackingType: (product as any).trackingType || ProductTrackingType.NONE,
-        expiryDays: (product as any).expiryDays || null,
-        freightClass: (product as any).freightClass || null,
-        digitalUrl: (product as any).digitalUrl || null,
-        maxDownloads: (product as any).maxDownloads || null,
-        subscriptionInterval: (product as any).subscriptionInterval || null,
-        subscriptionTrialDays: (product as any).subscriptionTrialDays || null,
+        productType: (product as unknown as ExtendedProductFields).productType || ProductType.PHYSICAL,
+        taxCategory: (product as unknown as ExtendedProductFields).taxCategory || TaxCategory.STANDARD,
+        uom: (product as unknown as ExtendedProductFields).uom || null,
+        trackingType: (product as unknown as ExtendedProductFields).trackingType || ProductTrackingType.NONE,
+        expiryDays: (product as unknown as ExtendedProductFields).expiryDays || null,
+        freightClass: (product as unknown as ExtendedProductFields).freightClass || null,
+        digitalUrl: (product as unknown as ExtendedProductFields).digitalUrl || null,
+        maxDownloads: (product as unknown as ExtendedProductFields).maxDownloads || null,
+        subscriptionInterval: (product as unknown as ExtendedProductFields).subscriptionInterval || null,
+        subscriptionTrialDays: (product as unknown as ExtendedProductFields).subscriptionTrialDays || null,
       },
     });
   }
@@ -459,9 +474,9 @@ async function main() {
     ];
     for (const m of stripeMethods) {
       await prisma.paymentGatewayMethod.upsert({
-        where: { gatewayId_method: { gatewayId: stripeGw.id, method: m.method as any } },
+        where: { gatewayId_method: { gatewayId: stripeGw.id, method: m.method as PaymentMethodType } },
         update: {},
-        create: { gatewayId: stripeGw.id, method: m.method as any, name: m.name, config: m.config as any, isEnabled: true },
+        create: { gatewayId: stripeGw.id, method: m.method as PaymentMethodType, name: m.name, config: m.config as object, isEnabled: true },
       });
     }
   }
@@ -477,9 +492,9 @@ async function main() {
     ];
     for (const m of razorpayMethods) {
       await prisma.paymentGatewayMethod.upsert({
-        where: { gatewayId_method: { gatewayId: razorpayGw.id, method: m.method as any } },
+        where: { gatewayId_method: { gatewayId: razorpayGw.id, method: m.method as PaymentMethodType } },
         update: {},
-        create: { gatewayId: razorpayGw.id, method: m.method as any, name: m.name, config: m.config as any, isEnabled: true },
+        create: { gatewayId: razorpayGw.id, method: m.method as PaymentMethodType, name: m.name, config: m.config as object, isEnabled: true },
       });
     }
   }
@@ -491,9 +506,9 @@ async function main() {
     ];
     for (const m of paypalMethods) {
       await prisma.paymentGatewayMethod.upsert({
-        where: { gatewayId_method: { gatewayId: paypalGw.id, method: m.method as any } },
+        where: { gatewayId_method: { gatewayId: paypalGw.id, method: m.method as PaymentMethodType } },
         update: {},
-        create: { gatewayId: paypalGw.id, method: m.method as any, name: m.name, config: m.config as any, isEnabled: true },
+        create: { gatewayId: paypalGw.id, method: m.method as PaymentMethodType, name: m.name, config: m.config as object, isEnabled: true },
       });
     }
   }
@@ -570,7 +585,7 @@ async function main() {
   const groceryCategoryId = slugToId["grocery"] || "";
   for (const ep of seedExtendedProducts) {
     const categoryId = ep.categoryId === "books" ? bookCategoryId : ep.categoryId === "grocery" ? groceryCategoryId : defaultCategoryId;
-    const brandId = (ep as any).brand ? brandMap[(ep as any).brand] || null : null;
+    const brandId = (ep as unknown as ExtendedProductFields).brand ? brandMap[(ep as unknown as ExtendedProductFields).brand!] || null : null;
     await prisma.product.upsert({
       where: { slug: ep.slug },
       update: {},
@@ -588,16 +603,16 @@ async function main() {
         isFeatured: ep.isFeatured || false,
         images: ep.images,
         sku: `SKU-${ep.slug.toUpperCase().replace(/-/g, "")}`,
-        productType: (ep as any).productType || ProductType.PHYSICAL,
-        taxCategory: (ep as any).taxCategory || TaxCategory.STANDARD,
-        uom: (ep as any).uom || null,
-        trackingType: (ep as any).trackingType || ProductTrackingType.NONE,
-        expiryDays: (ep as any).expiryDays || null,
-        freightClass: (ep as any).freightClass || null,
-        digitalUrl: (ep as any).digitalUrl || null,
-        maxDownloads: (ep as any).maxDownloads || null,
-        subscriptionInterval: (ep as any).subscriptionInterval || null,
-        subscriptionTrialDays: (ep as any).subscriptionTrialDays || null,
+        productType: (ep as unknown as ExtendedProductFields).productType || ProductType.PHYSICAL,
+        taxCategory: (ep as unknown as ExtendedProductFields).taxCategory || TaxCategory.STANDARD,
+        uom: (ep as unknown as ExtendedProductFields).uom || null,
+        trackingType: (ep as unknown as ExtendedProductFields).trackingType || ProductTrackingType.NONE,
+        expiryDays: (ep as unknown as ExtendedProductFields).expiryDays || null,
+        freightClass: (ep as unknown as ExtendedProductFields).freightClass || null,
+        digitalUrl: (ep as unknown as ExtendedProductFields).digitalUrl || null,
+        maxDownloads: (ep as unknown as ExtendedProductFields).maxDownloads || null,
+        subscriptionInterval: (ep as unknown as ExtendedProductFields).subscriptionInterval || null,
+        subscriptionTrialDays: (ep as unknown as ExtendedProductFields).subscriptionTrialDays || null,
       },
     });
   }
@@ -606,9 +621,9 @@ async function main() {
   // Seed UOM data
   for (const u of seedUomData) {
     await prisma.unitOfMeasure.upsert({
-      where: { code: u.code as any },
+      where: { code: u.code as UOM },
       update: {},
-      create: { code: u.code as any, name: u.name, category: u.category as any, symbol: u.symbol },
+      create: { code: u.code as UOM, name: u.name, category: u.category as UOMCategory, symbol: u.symbol },
     });
   }
   console.log(`✓ UOM data seeded (${seedUomData.length} units)`);
@@ -638,9 +653,9 @@ async function main() {
     const regionId = regionMap[t.regionCode];
     if (regionId) {
       await prisma.taxCategoryRule.upsert({
-        where: { taxCategory_regionId: { taxCategory: t.taxCategory as any, regionId } },
+        where: { taxCategory_regionId: { taxCategory: t.taxCategory as TaxCategory, regionId } },
         update: {},
-        create: { taxCategory: t.taxCategory as any, regionId, taxRate: t.taxRate },
+        create: { taxCategory: t.taxCategory as TaxCategory, regionId, taxRate: t.taxRate },
       });
     }
   }
@@ -661,7 +676,6 @@ async function main() {
 
   // ===================== PROMOTION ENGINE SEED DATA =====================
   console.log("\n📢 Seeding promotion engine data...");
-  const crypto = require("crypto");
 
   // Stack rules
   await prisma.promotionStackRule.upsert({
@@ -1114,12 +1128,12 @@ async function main() {
         isFeatured: false,
         images: ep.images,
         sku: `SKU-${ep.slug.toUpperCase().replace(/-/g, "")}`,
-        productType: (ep as any).productType || ProductType.PHYSICAL,
-        taxCategory: (ep as any).taxCategory || TaxCategory.STANDARD,
-        uom: (ep as any).uom || null,
-        trackingType: (ep as any).trackingType || ProductTrackingType.NONE,
-        expiryDays: (ep as any).expiryDays || null,
-        freightClass: (ep as any).freightClass || null,
+        productType: (ep as unknown as ExtendedProductFields).productType || ProductType.PHYSICAL,
+        taxCategory: (ep as unknown as ExtendedProductFields).taxCategory || TaxCategory.STANDARD,
+        uom: (ep as unknown as ExtendedProductFields).uom || null,
+        trackingType: (ep as unknown as ExtendedProductFields).trackingType || ProductTrackingType.NONE,
+        expiryDays: (ep as unknown as ExtendedProductFields).expiryDays || null,
+        freightClass: (ep as unknown as ExtendedProductFields).freightClass || null,
       },
     });
     newAdditionalProducts++;

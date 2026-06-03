@@ -2,10 +2,12 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { addToCartSchema, updateCartSchema, removeFromCartSchema } from "@/lib/validations/cart";
+import { addToCartSchema } from "@/lib/validations/cart";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- generic Prisma result serializer
 function serializeCartItem(item: any, locale?: string) {
   if (!item) return item;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
   const p = item.product as any;
   if (!p) return item;
 
@@ -16,7 +18,7 @@ function serializeCartItem(item: any, locale?: string) {
       id: item.variant.id,
       sku: item.variant.sku,
       price: typeof item.variant.price?.toNumber === 'function' ? item.variant.price.toNumber() : item.variant.price,
-      optionLabel: item.variant.options?.map((o: any) => o.optionValue?.value).join(" · ") || null,
+      optionLabel: item.variant.options?.map((o: { optionValue?: { value: string } }) => o.optionValue?.value).join(" · ") || null,
     } : null,
     product: {
       ...p,
@@ -56,7 +58,7 @@ export async function addToCart(productId: string, quantity = 1, variantId?: str
 
   const validationResult = addToCartSchema.safeParse({ productId, quantity, variantId: variantId || undefined });
   if (!validationResult.success) return { error: "Invalid input", issues: validationResult.error.issues };
-  const { productId: validProductId, quantity: validQuantity } = validationResult.data;
+  const { productId: _validProductId, quantity: _validQuantity } = validationResult.data;
 
   const userId = session.user.id as string;
   const effectiveVariantId = variantId || null;

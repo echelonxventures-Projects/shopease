@@ -152,7 +152,7 @@ export async function trackBrowseEvent(data: {
     });
 
     for (const trigger of triggers) {
-      const config = trigger.condition as any;
+      const config = trigger.condition as Record<string, unknown>;
       if (config?.category === data.category && trigger.promoId) {
         await triggerPromo(trigger.promoId, {
           userId,
@@ -192,6 +192,7 @@ export async function trackCartEvent(data: {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
 async function triggerPromo(promoId: string, context: any) {
   await deliverWebhook("ORDER.CREATED", {
     promoId,
@@ -238,6 +239,7 @@ export async function handleOrderCreated(orderId: string) {
 
   await sendOrderNotification(orderId, "CONFIRMED");
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
   const items = order.items as any[];
   if (Array.isArray(items)) {
     for (const item of items) {
@@ -261,6 +263,7 @@ export async function handleOrderStatusChange(orderId: string, status: string) {
 
   if (!order) return;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- enum string cast
   await deliverWebhook(`ORDER.${status}` as any, {
     orderId: order.id,
     orderNumber: order.orderNumber,

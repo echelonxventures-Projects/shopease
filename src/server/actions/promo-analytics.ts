@@ -49,7 +49,7 @@ export async function getPromoAnalytics(promoId: string, days: number = 30) {
   };
 }
 
-export async function trackPromoImpression(promoId: string, sessionId?: string, userId?: string) {
+export async function trackPromoImpression(promoId: string, _sessionId?: string, _userId?: string) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -87,7 +87,7 @@ export async function trackPromoClick(promoId: string, source?: string, sessionI
   });
 }
 
-export async function trackPromoRedemption(promoId: string, discount: number, revenue: number, userId?: string, orderId?: string) {
+export async function trackPromoRedemption(promoId: string, discount: number, revenue: number, _userId?: string, _orderId?: string) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 

@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getBrands, createBrand, updateBrand, deleteBrand } from "@/server/actions/admin-actions";
+import { getCategories } from "@/server/actions/product-actions";
+import { getBrandCategories, bulkAssignBrandCategories } from "@/server/actions/brand-category-actions";
 import {
   createBrandTranslation,
   getBrandTranslations,
@@ -23,29 +25,36 @@ import { Languages } from "lucide-react";
 
 export default function BrandsPage() {
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [brands, setBrands] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", slug: "", description: "", logo: "", isActive: true });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
+  const [allCategories, setAllCategories] = useState<any[]>([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
 
   // Translations
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [translations, setTranslations] = useState<any[]>([]);
   const [transDialogOpen, setTransDialogOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [editingBrand, setEditingBrand] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [editingTranslation, setEditingTranslation] = useState<any>(null);
   const [transForm, setTransForm] = useState({ locale: "", name: "", slug: "", description: "" });
 
   const fetch = () => {
     getBrands({ limit: 100 })
-      .then((data: any) => setBrands(data.brands))
-      .catch((e: any) => { if (e.message === "Unauthorized") router.push("/auth/login"); })
+      .then((data) => setBrands(data.brands))
+      .catch((e) => { if (e.message === "Unauthorized") router.push("/auth/login"); })
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetch(); }, []);
+  useEffect(() => { fetch(); getCategories().then(setAllCategories).catch(() => {}); }, []);
 
-  const resetForm = () => { setForm({ name: "", slug: "", description: "", logo: "", isActive: true }); setEditId(null); };
+  const resetForm = () => { setForm({ name: "", slug: "", description: "", logo: "", isActive: true }); setEditId(null); setSelectedCategoryIds([]); };
 
   const handleSubmit = async () => {
     if (!form.name.trim()) { toast.error("Name is required"); return; }
@@ -53,21 +62,26 @@ export default function BrandsPage() {
     try {
       if (editId) {
         await updateBrand(editId, form);
+        await bulkAssignBrandCategories(editId, selectedCategoryIds);
         toast.success("Brand updated");
       } else {
-        await createBrand(form);
+        const brand = await createBrand(form);
+        if (brand?.id && selectedCategoryIds.length > 0) {
+          await bulkAssignBrandCategories(brand.id, selectedCategoryIds);
+        }
         toast.success("Brand created");
       }
       setOpen(false); resetForm(); fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this brand? Products with this brand will be affected.")) return;
     try { await deleteBrand(id); toast.success("Brand deleted"); fetch(); }
-    catch (err: any) { toast.error(err.message); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex type from external source
   const openTranslations = async (brand: any) => {
     setEditingBrand(brand);
     setEditingTranslation(null);
@@ -98,7 +112,7 @@ export default function BrandsPage() {
       setEditingTranslation(null);
       const data = await getBrandTranslations(editingBrand.id);
       setTranslations(data);
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleDeleteTranslation = async (id: string, locale: string) => {
@@ -108,7 +122,7 @@ export default function BrandsPage() {
       toast.success("Translation deleted");
       const data = await getBrandTranslations(editingBrand.id);
       setTranslations(data);
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   if (loading) return <div className="p-6"><p className="text-gray-500">Loading...</p></div>;
@@ -136,7 +150,7 @@ export default function BrandsPage() {
             {brands.length === 0 ? (
               <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-500">No brands</td></tr>
             ) : (
-              brands.map((b: any) => (
+              brands.map((b) => (
                 <tr key={b.id} className="border-t hover:bg-gray-50">
                   <td className="px-4 py-3">
                     {b.logo ? (
@@ -156,9 +170,11 @@ export default function BrandsPage() {
                     </Badge>
                   </td>
                   <td className="px-4 py-3">
-                    <Button size="sm" variant="outline" className="mr-2" onClick={() => {
+                    <Button size="sm" variant="outline" className="mr-2" onClick={async () => {
                       setForm({ name: b.name, slug: b.slug, description: b.description || "", logo: b.logo || "", isActive: b.isActive });
-                      setEditId(b.id); setOpen(true);
+                      setEditId(b.id);
+                      try { const cats = await getBrandCategories(b.id); setSelectedCategoryIds(cats.map((c: { categoryId: string }) => c.categoryId)); } catch { setSelectedCategoryIds([]); }
+                      setOpen(true);
                     }}>Edit</Button>
                     <Button size="sm" variant="outline" className="mr-2" onClick={() => openTranslations(b)}>
                       <Languages className="w-3.5 h-3.5" />
@@ -196,6 +212,43 @@ export default function BrandsPage() {
             <label className="flex items-center gap-2">
               <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} /> Active
             </label>
+            <div>
+              <Label>Allowed Categories</Label>
+              <p className="text-xs text-gray-500 mb-2">Select which categories this brand can be used in</p>
+              <div className="max-h-40 overflow-auto border rounded p-2 space-y-1">
+                {allCategories.map((c) => (
+                  <label key={c.id} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={selectedCategoryIds.includes(c.id)}
+                      onChange={(e) => {
+                        setSelectedCategoryIds((prev) =>
+                          e.target.checked ? [...prev, c.id] : prev.filter((id) => id !== c.id)
+                        );
+                      }}
+                    />
+                    {c.name}
+                    {c.children?.map((child: { id: string; name: string }) => (
+                      <span key={child.id} />
+                    ))}
+                  </label>
+                ))}
+                {allCategories.flatMap((c) => (c.children || []).map((child: { id: string; name: string }) => (
+                  <label key={child.id} className="flex items-center gap-2 text-sm pl-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedCategoryIds.includes(child.id)}
+                      onChange={(e) => {
+                        setSelectedCategoryIds((prev) =>
+                          e.target.checked ? [...prev, child.id] : prev.filter((id) => id !== child.id)
+                        );
+                      }}
+                    />
+                    {child.name}
+                  </label>
+                )))}
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setOpen(false); resetForm(); }}>Cancel</Button>
@@ -218,7 +271,7 @@ export default function BrandsPage() {
               <p className="text-sm text-gray-400 py-4">No translations yet</p>
             ) : (
               <div className="space-y-2 max-h-60 overflow-auto">
-                {translations.map((t: any) => (
+                {translations.map((t) => (
                   <div key={t.id} className="flex items-center justify-between border rounded-lg p-3">
                     <div>
                       <Badge className="mb-1">{getLocaleName(t.locale)}</Badge>
@@ -252,7 +305,7 @@ export default function BrandsPage() {
                   <select
                     value={transForm.locale}
                     onChange={(e) => {
-                      const existing = translations.find((t: any) => t.locale === e.target.value);
+                      const existing = translations.find((t) => t.locale === e.target.value);
                       if (existing && !editingTranslation) {
                         setEditingTranslation(existing);
                         setTransForm({
@@ -270,8 +323,8 @@ export default function BrandsPage() {
                   >
                     <option value="">Select locale</option>
                     {LOCALES.filter((l) => l.code !== "en").map((loc) => (
-                      <option key={loc.code} value={loc.code} disabled={!editingTranslation && translations.some((t: any) => t.locale === loc.code)}>
-                        {loc.nativeName} {!editingTranslation && translations.some((t: any) => t.locale === loc.code) ? "(exists)" : ""}
+                      <option key={loc.code} value={loc.code} disabled={!editingTranslation && translations.some((t) => t.locale === loc.code)}>
+                        {loc.nativeName} {!editingTranslation && translations.some((t) => t.locale === loc.code) ? "(exists)" : ""}
                       </option>
                     ))}
                   </select>

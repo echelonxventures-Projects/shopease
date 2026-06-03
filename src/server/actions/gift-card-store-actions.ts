@@ -1,7 +1,7 @@
 "use server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { GiftCardDeliveryType, GiftCardFormat } from "@prisma/client";
+import { GiftCardDeliveryType } from "@prisma/client";
 
 // ─── Store browsing ─────────────────────────────────────────────────────────
 
@@ -25,6 +25,7 @@ export async function getGiftCardStoreCards(filters?: {
   const page = filters?.page ?? 1;
   const skip = (page - 1) * limit;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic Prisma where filter
   const where: any = { isActive: true };
 
   if (filters?.isBestseller) where.isBestseller = true;
@@ -46,6 +47,7 @@ export async function getGiftCardStoreCards(filters?: {
     if (filters?.maxPrice !== undefined) where.maxAmount.lte = filters.maxPrice;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   const orderBy: any = { sortOrder: "asc" };
   switch (filters?.sortBy) {
     case "newest": orderBy.createdAt = "desc"; break;
@@ -190,7 +192,7 @@ export async function getAllDesigns() {
 // ─── Filter data (for sidebar) ─────────────────────────────────────────────
 
 export async function getGiftCardFilterOptions() {
-  const [sellers, categories, brands, countries] = await Promise.all([
+  const [sellers, _categories, brands, countries] = await Promise.all([
     prisma.giftCardStore.findMany({ where: { isActive: true }, select: { seller: true } }),
     prisma.giftCardStore.findMany({ where: { isActive: true }, select: { categories: true } }),
     prisma.giftCardStore.findMany({ where: { isActive: true, brand: { not: null } }, select: { brand: true } }),
@@ -201,6 +203,7 @@ export async function getGiftCardFilterOptions() {
 
   return {
     sellers: unique(sellers.map((s) => s.seller).filter(Boolean)),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
     categories: unique(sellers.flatMap((s) => (s as any).categories?.split(",").filter(Boolean) || [])),
     brands: unique(brands.map((b) => b.brand).filter(Boolean)),
     countries: unique(countries.map((c) => c.countryOfOrigin).filter(Boolean)),

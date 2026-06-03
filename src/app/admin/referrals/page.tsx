@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 
 export default function ReferralsAdminPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [promos, setPromos] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
 
@@ -24,9 +25,7 @@ export default function ReferralsAdminPage() {
       setOpen(false);
       setForm(formEmpty);
       fetch();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   return (

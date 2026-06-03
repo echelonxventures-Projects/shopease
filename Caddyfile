@@ -1,0 +1,7 @@
+# Caddy auto-HTTPS reverse proxy.
+# APP_DOMAIN is supplied by docker-compose (e.g. shop.example.com).
+# Caddy automatically provisions and renews a Let's Encrypt certificate.
+{$APP_DOMAIN} {
+	encode gzip zstd
+	reverse_proxy app:3000
+}

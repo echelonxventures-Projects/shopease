@@ -34,7 +34,7 @@ export async function getVoiceAccuracyStats() {
   };
 }
 
-export async function improveTranscript(transcript: string, locale: string): Promise<string> {
+export async function improveTranscript(transcript: string, _locale: string): Promise<string> {
   // Check learned patterns for corrections
   const patterns = await prisma.voicePattern.findMany({
     where: { correctionRate: { gt: 0.3 } },

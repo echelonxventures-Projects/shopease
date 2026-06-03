@@ -14,9 +14,13 @@ const TRIGGER_TYPES = [
 ];
 
 export default function AutoTriggersPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [triggers, setTriggers] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [promos, setPromos] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [products, setProducts] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -35,6 +39,7 @@ export default function AutoTriggersPage() {
 
   const handleSubmit = async () => {
     if (!form.name.trim() || !form.promoId) return toast.error("Name and promo required");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex type from external source
     let condition: any = {};
     try { condition = JSON.parse(form.condition || "{}"); } catch { return toast.error("Invalid condition JSON"); }
     try {
@@ -49,26 +54,26 @@ export default function AutoTriggersPage() {
       toast.success("Created");
       setShowForm(false); setForm({ name: "", triggerType: "HIGH_STOCK", productId: "", categoryId: "", promoId: "", condition: "" });
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete?")) return;
     try { await deleteAutoPromoTrigger(id); toast.success("Deleted"); fetch(); }
-    catch (err: any) { toast.error(err.message); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleToggle = async (id: string, active: boolean) => {
     try { await updateAutoPromoTrigger(id, { isActive: !active }); toast.success("Updated"); fetch(); }
-    catch (err: any) { toast.error(err.message); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleEvaluate = async () => {
     try {
       const results = await evaluateAutoTriggers();
       if (results.length === 0) toast.info("No triggers fired");
-      else { results.forEach((r: any) => toast.success(`Trigger "${r.trigger.name}" → ${r.promo.title}`)); }
-    } catch (err: any) { toast.error(err.message); }
+      else { results.forEach((r) => toast.success(`Trigger "${r.trigger.name}" → ${r.promo.title}`)); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   return (

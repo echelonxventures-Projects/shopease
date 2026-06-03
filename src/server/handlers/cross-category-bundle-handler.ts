@@ -3,6 +3,7 @@ import type { PromotionHandler, PromotionContext } from "@/server/repositories/p
 export const crossCategoryBundleHandler: PromotionHandler = {
   types: ["BOGO", "COMBO", "MINIMUM_SPEND"],
   scope() { return "TOTAL"; },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PromotionHandler interface contract
   async evaluate(promo: any, context: PromotionContext) {
     const { prisma } = await import("@/lib/prisma");
     const bundle = await prisma.crossCategoryBundle.findUnique({ where: { promoId: promo.id } });

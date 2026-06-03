@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 
-export default async function ShareOrderPage({ params }: { params: { token: string } }) {
+export default async function ShareOrderPage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
   const order = await prisma.order.findUnique({
-    where: { shareToken: params.token },
+    where: { shareToken: token },
     select: {
       id: true,
       orderNumber: true,
@@ -24,7 +25,7 @@ export default async function ShareOrderPage({ params }: { params: { token: stri
     <div className="max-w-2xl mx-auto px-4 py-12">
       <div className="bg-white rounded-lg shadow p-8">
         <h1 className="text-2xl font-bold mb-2">Order {order.orderNumber}</h1>
-        <p className="text-gray-500 text-sm mb-6">Shared on {new Date(order.createdAt).toLocaleDateString()}</p>
+        <p className="text-gray-500 text-sm mb-6">Shared on {new Date(order.createdAt).toLocaleDateString("en-IN")}</p>
 
         {/* Status Badge */}
         <div className="mb-6">
@@ -47,7 +48,7 @@ export default async function ShareOrderPage({ params }: { params: { token: stri
                 <p className="font-medium">{item.name}</p>
                 <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
               </div>
-              <p className="font-medium">₹{(item.price * item.quantity).toLocaleString()}</p>
+              <p className="font-medium">₹{(item.price * item.quantity).toLocaleString("en-IN")}</p>
             </div>
           ))}
         </div>
@@ -55,7 +56,7 @@ export default async function ShareOrderPage({ params }: { params: { token: stri
         {/* Total */}
         <div className="flex justify-between font-bold text-lg border-t pt-4">
           <span>Total</span>
-          <span>₹{Number(order.total).toLocaleString()}</span>
+          <span>₹{Number(order.total).toLocaleString("en-IN")}</span>
         </div>
 
         <p className="text-xs text-gray-400 mt-6 text-center">

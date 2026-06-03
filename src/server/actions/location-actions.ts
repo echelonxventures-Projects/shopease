@@ -1,9 +1,11 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getSession, isAdminRole } from "@/lib/auth";
+import type { Prisma } from "@prisma/client";
 
 // Helper to serialize Location for client components (Decimal → Number, Date → string)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- generic Prisma result serializer
 function serializeLocation(loc: any) {
   return {
     id: loc.id,
@@ -31,6 +33,7 @@ export async function getCountryTree() {
     orderBy: { name: "asc" },
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   const map = new Map<string, any>();
   for (const loc of locations) {
     map.set(loc.id, {
@@ -44,6 +47,7 @@ export async function getCountryTree() {
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic array from Prisma Json field
   const tree: any[] = [];
   for (const loc of map.values()) {
     if (loc.parentId && map.has(loc.parentId)) {
@@ -79,6 +83,7 @@ export async function getSubLocations(parentId: string) {
 }
 
 export async function getLocationChain(locationId: string) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic array from Prisma Json field
   const chain: any[] = [];
   let current = await prisma.location.findUnique({
     where: { id: locationId },
@@ -106,11 +111,11 @@ export async function getLocationChain(locationId: string) {
 }
 
 export async function searchLocations(query: string, type?: string) {
-  const where: any = {
+  const where: Prisma.LocationWhereInput = {
     name: { contains: query, mode: "insensitive" },
     isActive: true,
   };
-  if (type) where.type = type;
+  if (type) where.type = type as Prisma.LocationWhereInput["type"];
 
   const locations = await prisma.location.findMany({
     where,
@@ -132,6 +137,7 @@ export async function searchLocations(query: string, type?: string) {
 
 export async function getLocationsByType(type: string) {
   const locations = await prisma.location.findMany({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- enum string cast
     where: { type: type as any, isActive: true },
     include: {
       translations: { where: { locale: "en" }, take: 1 },
@@ -165,13 +171,14 @@ export async function createLocation(data: {
   longitude?: number | null;
 }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN")
+  if (!session || !isAdminRole(session!.user?.role))
     throw new Error("Unauthorized");
 
   const result = await prisma.location.create({
     data: {
       name: data.name,
       code: data.code || null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- enum string cast
       type: data.type as any,
       parentId: data.parentId || null,
       isActive: data.isActive ?? true,
@@ -197,7 +204,7 @@ export async function updateLocation(
   }
 ) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN")
+  if (!session || !isAdminRole(session!.user?.role))
     throw new Error("Unauthorized");
 
   const result = await prisma.location.update({
@@ -205,6 +212,7 @@ export async function updateLocation(
     data: {
       name: data.name,
       code: data.code ?? undefined,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- enum string cast
       type: data.type as any,
       parentId: data.parentId ?? undefined,
       isActive: data.isActive,
@@ -218,7 +226,7 @@ export async function updateLocation(
 
 export async function deleteLocation(id: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN")
+  if (!session || !isAdminRole(session!.user?.role))
     throw new Error("Unauthorized");
 
   const result = await prisma.location.delete({ where: { id } });
@@ -227,7 +235,7 @@ export async function deleteLocation(id: string) {
 
 export async function toggleLocationActive(id: string, isActive: boolean) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN")
+  if (!session || !isAdminRole(session!.user?.role))
     throw new Error("Unauthorized");
 
   const result = await prisma.location.update({ where: { id }, data: { isActive } });
@@ -319,7 +327,7 @@ export async function createOrUpdateCountryProfile(locationId: string, data: {
   isActive?: boolean;
 }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN")
+  if (!session || !isAdminRole(session!.user?.role))
     throw new Error("Unauthorized");
 
   const result = await prisma.countryProfile.upsert({

@@ -45,6 +45,7 @@ import { seasonalHandler } from "@/server/handlers/seasonal-handler";
 import { lightningDealHandler } from "@/server/handlers/lightning-deal-handler";
 import { multiBuyHandler } from "@/server/handlers/multi-buy-handler";
 import { giftHandler } from "@/server/handlers/gift-handler";
+import type { Prisma } from "@prisma/client";
 
 const HANDLERS = [
   priceDiscountHandler,
@@ -66,7 +67,9 @@ function getHandler(promoType: string) {
 // ===================== CONDITION EVALUATION =====================
 
 async function evaluateConditions(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic condition structure from Prisma Json fields
   conditions: any[],
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic promo structure from Prisma Json fields
   promo: any,
   context: PromotionContext,
 ): Promise<{ eligible: boolean; reason?: string }> {
@@ -78,7 +81,9 @@ async function evaluateConditions(
 }
 
 async function evaluateSingleCondition(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic condition structure from Prisma Json fields
   cond: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic promo structure from Prisma Json fields
   promo: any,
   context: PromotionContext,
 ): Promise<{ eligible: boolean; reason?: string }> {
@@ -180,7 +185,7 @@ async function evaluateSingleCondition(
         if (!config?.windows) return { eligible: true };
         const hour = new Date().getHours();
         const window = config.windows.find(
-          (w: any) => hour >= w.startHour && hour < w.endHour,
+          (w: { startHour: number; endHour: number }) => hour >= w.startHour && hour < w.endHour,
         );
         return window
           ? { eligible: true }
@@ -218,6 +223,7 @@ async function enrichForCondition(items: CartItem[]): Promise<CartItem[]> {
 
 function resolveStacking(
   applied: AppliedPromotion[],
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   stackRules: Map<string, any>,
 ): AppliedPromotion[] {
   if (applied.length <= 1) return applied;
@@ -270,7 +276,9 @@ function resolveStacking(
 
 export interface PromotionHandler {
   types: string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PromotionHandler interface contract
   evaluate(promo: any, context: PromotionContext): Promise<number | null>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PromotionHandler interface contract
   scope(promo: any): "ITEM" | "SHIPPING" | "TOTAL";
 }
 
@@ -279,7 +287,7 @@ export async function evaluatePromotions(
 ): Promise<EvaluationResult> {
   // Phase 1: Load active promotions
   const now = new Date();
-  const whereBase: any = {
+  const whereBase: Prisma.PromoWhereInput = {
     isActive: true,
     status: "ACTIVE",
     validFrom: { lte: now },

@@ -2,6 +2,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
 export async function trackBehavior(type: string, productId?: string, metadata?: any) {
   const session = await getSession();
   const sessionId = typeof window !== "undefined"
@@ -18,6 +19,7 @@ export async function trackBehavior(type: string, productId?: string, metadata?:
       sessionId,
       type,
       productId: productId || null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma Json field cast
       metadata: metadata as any,
     },
   });

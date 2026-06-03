@@ -1,22 +1,55 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Zap, ArrowRight, Loader2, Check } from "lucide-react";
+import { ArrowRight, Loader2, Check } from "lucide-react";
+
+interface SectionItem {
+  icon?: string;
+  title: string;
+  description?: string;
+}
+
+interface PageSection {
+  title: string;
+  type: "stats" | "features" | "steps" | "cta";
+  items?: SectionItem[];
+  content?: string;
+  link?: string;
+  ctaText?: string;
+}
+
+interface FormField {
+  name: string;
+  label: string;
+  type: string;
+  placeholder?: string;
+  required?: boolean;
+  options?: string[];
+}
+
+interface FormConfig {
+  fields?: FormField[];
+}
+
+interface FAQItem {
+  question: string;
+  answer: string;
+}
 
 interface DynamicPageContentProps {
   page: {
     title: string;
     subtitle?: string | null;
     heroContent?: string | null;
-    sections?: any;
-    formConfig?: any;
-    faq?: any;
+    sections?: PageSection[];
+    formConfig?: FormConfig;
+    faq?: FAQItem[];
   };
   submitAction?: (data: Record<string, string>) => Promise<void>;
 }
@@ -25,9 +58,9 @@ export function DynamicPageContent({ page, submitAction }: DynamicPageContentPro
   const [formLoading, setFormLoading] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
-  const sections = page.sections as any[];
-  const formConfig = page.formConfig as any;
-  const faq = page.faq as any[];
+  const sections = page.sections;
+  const formConfig = page.formConfig;
+  const faq = page.faq;
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +76,7 @@ export function DynamicPageContent({ page, submitAction }: DynamicPageContentPro
     }
   };
 
-  const renderField = (field: any) => {
+  const renderField = (field: FormField) => {
     if (field.type === "textarea") {
       return (
         <Textarea
@@ -57,7 +90,7 @@ export function DynamicPageContent({ page, submitAction }: DynamicPageContentPro
     }
     if (field.type === "select") {
       return (
-        <Select onValueChange={(v) => { if (v) setFormValues({ ...formValues, [field.name]: v }); }}>
+        <Select onValueChange={(v) => { if (v) setFormValues({ ...formValues, [field.name]: String(v) }); }}>
           <SelectTrigger className="mt-1">
             <SelectValue placeholder={field.label} />
           </SelectTrigger>
@@ -95,13 +128,13 @@ export function DynamicPageContent({ page, submitAction }: DynamicPageContentPro
 
       <div className="max-w-7xl mx-auto px-4 py-12 space-y-16">
         {/* Sections */}
-        {sections?.map((section: any, idx: number) => (
+        {sections?.map((section: PageSection, idx: number) => (
           <section key={idx}>
             <h2 className="text-2xl font-bold text-center mb-8">{section.title}</h2>
 
             {section.type === "stats" && (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                {section.items?.map((item: any, i: number) => (
+                {section.items?.map((item: SectionItem, i: number) => (
                   <div key={i} className="bg-white rounded-xl border p-6 text-center hover:shadow-lg transition-shadow">
                     <span className="text-3xl mb-3 block">{item.icon}</span>
                     <p className="text-2xl font-bold text-gray-900">{item.title}</p>
@@ -113,7 +146,7 @@ export function DynamicPageContent({ page, submitAction }: DynamicPageContentPro
 
             {section.type === "features" && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {section.items?.map((item: any, i: number) => (
+                {section.items?.map((item: SectionItem, i: number) => (
                   <div key={i} className="bg-white rounded-xl border p-6 hover:shadow-lg transition-shadow">
                     <span className="text-2xl mb-3 block">{item.icon}</span>
                     <h3 className="font-bold text-lg mb-2">{item.title}</h3>
@@ -125,7 +158,7 @@ export function DynamicPageContent({ page, submitAction }: DynamicPageContentPro
 
             {section.type === "steps" && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {section.items?.map((item: any, i: number) => (
+                {section.items?.map((item: SectionItem, i: number) => (
                   <div key={i} className="bg-white rounded-xl border p-6 relative">
                     <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm mb-4">
                       {i + 1}
@@ -167,7 +200,7 @@ export function DynamicPageContent({ page, submitAction }: DynamicPageContentPro
                 <>
                   <h2 className="text-xl font-bold mb-6">Apply Now</h2>
                   <form onSubmit={handleFormSubmit} className="space-y-4">
-                    {formConfig.fields?.map((field: any) => (
+                    {formConfig.fields?.map((field: FormField) => (
                       <div key={field.name}>
                         <Label>
                           {field.label}
@@ -192,7 +225,7 @@ export function DynamicPageContent({ page, submitAction }: DynamicPageContentPro
           <section className="max-w-3xl mx-auto">
             <h2 className="text-2xl font-bold mb-8 text-center">Frequently Asked Questions</h2>
             <div className="space-y-4">
-              {faq.map((item: any, idx: number) => (
+              {faq.map((item: FAQItem, idx: number) => (
                 <div key={idx} className="bg-white rounded-lg border p-6">
                   <h3 className="font-bold text-gray-900 mb-2">{item.question}</h3>
                   <p className="text-sm text-gray-600">{item.answer}</p>

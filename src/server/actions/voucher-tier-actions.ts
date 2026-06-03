@@ -1,16 +1,16 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
-import { TierBalanceMode } from "@prisma/client";
+import { getSession, isAdminRole } from "@/lib/auth";
+import { TierBalanceMode, Prisma } from "@prisma/client";
 
 // ===================== ADMIN: VOUCHER TIER MANAGEMENT =====================
 
 export async function getVoucherTiersAdmin(regionId?: string | null) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
-  const where: any = {};
+  const where: Prisma.VoucherTierWhereInput = {};
   if (regionId !== undefined) {
     where.regionId = regionId || null;
   }
@@ -45,7 +45,7 @@ export async function createVoucherTier(data: {
   regionId?: string | null;
 }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   return prisma.voucherTier.create({
     data: {
@@ -80,9 +80,9 @@ export async function updateVoucherTier(
   }
 ) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
-  const updateData: any = { ...data };
+  const updateData: Record<string, unknown> = { ...data };
   if (data.balanceMode) updateData.balanceMode = data.balanceMode as TierBalanceMode;
 
   return prisma.voucherTier.update({ where: { id }, data: updateData });
@@ -90,7 +90,7 @@ export async function updateVoucherTier(
 
 export async function deleteVoucherTier(id: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   // Check if tier has vouchers
   const count = await prisma.voucher.count({ where: { voucherTierId: id } });
@@ -101,7 +101,7 @@ export async function deleteVoucherTier(id: string) {
 
 export async function getTierStats(tierId: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const [totalBalance, totalRedemptions, activeVouchers, uniqueUsers] = await Promise.all([
     prisma.voucherTierBalance.aggregate({

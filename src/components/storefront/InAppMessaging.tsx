@@ -90,7 +90,7 @@ export function InAppMessaging({ recipientId, recipientName }: InAppMessagingPro
             }`}>
               <p>{m.text}</p>
               <p className={`text-xs mt-1 ${m.senderId === "me" ? "text-blue-200" : "text-gray-400"}`}>
-                {new Date(m.timestamp).toLocaleTimeString()}
+                {new Date(m.timestamp).toLocaleTimeString("en-IN")}
               </p>
             </div>
           </div>

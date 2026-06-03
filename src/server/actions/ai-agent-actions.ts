@@ -6,6 +6,7 @@ export async function listAgents() {
   return prisma.aIAgent.findMany({ orderBy: { createdAt: "desc" } });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
 export async function createAgent(input: { name: string; description?: string; type: string; config?: any }) {
   const session = await getSession();
   if (!session?.user) throw new Error("Unauthorized");
@@ -20,6 +21,7 @@ export async function createAgent(input: { name: string; description?: string; t
   });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
 export async function updateAgent(id: string, data: { status?: string; config?: any }) {
   const session = await getSession();
   if (!session?.user) throw new Error("Unauthorized");
@@ -40,17 +42,20 @@ export async function deleteAgent(id: string) {
   return prisma.aIAgent.delete({ where: { id } });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
 export async function runAgent(agentId: string, input?: any) {
   const agent = await prisma.aIAgent.findUnique({ where: { id: agentId } });
   if (!agent) throw new Error("Agent not found");
 
   const startTime = Date.now();
   const run = await prisma.agentRun.create({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- enum string cast
     data: { agentId, status: "RUNNING", input: input as any },
   });
 
   try {
     // Execute agent based on type
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
     let output: any = {};
 
     switch (agent.type) {
@@ -90,6 +95,7 @@ export async function runAgent(agentId: string, input?: any) {
 
     await prisma.agentRun.update({
       where: { id: run.id },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- enum string cast
       data: { status: "SUCCESS", output: output as any, durationMs: Date.now() - startTime, completedAt: new Date() },
     });
 
@@ -99,10 +105,11 @@ export async function runAgent(agentId: string, input?: any) {
     });
 
     return run;
-  } catch (err: any) {
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err);
     await prisma.agentRun.update({
       where: { id: run.id },
-      data: { status: "ERROR", error: err.message, durationMs: Date.now() - startTime, completedAt: new Date() },
+      data: { status: "ERROR", error: errMsg, durationMs: Date.now() - startTime, completedAt: new Date() },
     });
 
     await prisma.aIAgent.update({

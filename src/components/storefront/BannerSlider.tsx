@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 
-export function BannerSlider({ banners }: { banners: any[] }) {
+export function BannerSlider({ banners }: { banners: { title: string; description?: string | null; link?: string | null }[] }) {
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {

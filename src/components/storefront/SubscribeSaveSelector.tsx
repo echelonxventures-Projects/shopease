@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+
 import { getSubscribePromo } from "@/server/actions/phaseA-actions";
 import { Package, Calendar, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,17 +13,23 @@ interface SubscribeSaveSelectorProps {
   onSubscribe?: (discount: number) => void;
 }
 
+interface SubscribeConfig {
+  tieredDiscounts: { cycle: number; discount: number }[];
+  interval?: string;
+}
+
 export function SubscribeSaveSelector({ productId, productName, price, onSubscribe }: SubscribeSaveSelectorProps) {
-  const [config, setConfig] = useState<any>(null);
+  const [config, setConfig] = useState<SubscribeConfig | null>(null);
   const [selectedCycle, setSelectedCycle] = useState<number>(1);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getSubscribePromo(productId)
-      .then((data: any) => {
-        setConfig(data);
-        if (data && data.tieredDiscounts?.length > 0) {
-          setSelectedCycle(data.tieredDiscounts[0].cycle || 1);
+      .then((data) => {
+        const cfg = data as SubscribeConfig | null;
+        setConfig(cfg);
+        if (cfg && cfg.tieredDiscounts?.length > 0) {
+          setSelectedCycle(cfg.tieredDiscounts[0].cycle || 1);
         }
       })
       .finally(() => setLoading(false));
@@ -31,8 +37,8 @@ export function SubscribeSaveSelector({ productId, productName, price, onSubscri
 
   if (loading || !config) return null;
 
-  const tiers = config.tieredDiscounts as any[];
-  const currentTier = tiers.find((t: any) => selectedCycle >= t.cycle) || tiers[0];
+  const tiers = config.tieredDiscounts;
+  const currentTier = tiers.find((t) => selectedCycle >= t.cycle) || tiers[0];
   const discount = currentTier?.discount || 0;
   const discountedPrice = Math.round(price * (1 - discount / 100));
 
@@ -47,7 +53,7 @@ export function SubscribeSaveSelector({ productId, productName, price, onSubscri
       </div>
 
       <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Select subscription cycle">
-        {tiers.map((tier: any) => (
+        {tiers.map((tier) => (
           <button
             key={tier.cycle}
             role="radio"

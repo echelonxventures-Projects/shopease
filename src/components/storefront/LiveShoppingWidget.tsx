@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Play, ShoppingBag, Heart, MessageCircle, Send, X, Users } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Play, ShoppingBag, Send, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -24,7 +24,7 @@ interface LiveShoppingProps {
 export function LiveShopping({ streamId, title, hostName, products, viewerCount }: LiveShoppingProps) {
   const [messages, setMessages] = useState<{ user: string; text: string; time: string }[]>([]);
   const [input, setInput] = useState("");
-  const [isLive, setIsLive] = useState(true);
+  const [_isLive, _setIsLive] = useState(true);
 
   // Simulated live chat
   useEffect(() => {
@@ -36,7 +36,7 @@ export function LiveShopping({ streamId, title, hostName, products, viewerCount 
         {
           user: names[Math.floor(Math.random() * names.length)],
           text: msgs[Math.floor(Math.random() * msgs.length)],
-          time: new Date().toLocaleTimeString(),
+          time: new Date().toLocaleTimeString("en-IN"),
         },
       ]);
     }, 3000);
@@ -45,7 +45,7 @@ export function LiveShopping({ streamId, title, hostName, products, viewerCount 
 
   const sendMessage = () => {
     if (!input.trim()) return;
-    setMessages((prev) => [...prev, { user: "You", text: input, time: new Date().toLocaleTimeString() }]);
+    setMessages((prev) => [...prev, { user: "You", text: input, time: new Date().toLocaleTimeString("en-IN") }]);
     setInput("");
   };
 

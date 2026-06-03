@@ -3,13 +3,13 @@
 import { useState, useEffect, useRef } from "react";
 import { getLists, addProductToList } from "@/server/actions/list-actions";
 import { Button } from "@/components/ui/button";
-import { List, Plus, Check } from "lucide-react";
+import { List, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 export function AddToListButton({ productId }: { productId: string }) {
   const [open, setOpen] = useState(false);
-  const [lists, setLists] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [lists, setLists] = useState<{ id: string; name: string; _count?: { items: number } }[]>([]);
+  const [_loading, _setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -27,7 +27,7 @@ export function AddToListButton({ productId }: { productId: string }) {
 
   const handleAdd = async (listId: string) => {
     const result = await addProductToList(listId, productId);
-    if ((result as any).error) { toast.error((result as any).error); return; }
+    if ("error" in result && result.error) { toast.error(result.error as string); return; }
     toast.success("Added to list");
     setOpen(false);
   };

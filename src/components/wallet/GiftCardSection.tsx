@@ -17,7 +17,7 @@ export function GiftCardSection({ giftCardBalance = 0, onRedeemed }: GiftCardSec
   const [code, setCode] = useState("");
   const [validating, setValidating] = useState(false);
   const [redeeming, setRedeeming] = useState(false);
-  const [validation, setValidation] = useState<any>(null);
+  const [validation, setValidation] = useState<{ valid: boolean; message?: string; balance?: number; faceValue?: number; tier?: { name: string } | null } | null>(null);
 
   const handleValidate = async () => {
     if (!code.trim()) { toast.error("Enter gift card code"); return; }
@@ -26,8 +26,8 @@ export function GiftCardSection({ giftCardBalance = 0, onRedeemed }: GiftCardSec
       const result = await getGiftCardBalance(code.trim());
       setValidation(result);
       if (!result.valid) toast.error(result.message);
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed");
     } finally {
       setValidating(false);
     }
@@ -42,8 +42,8 @@ export function GiftCardSection({ giftCardBalance = 0, onRedeemed }: GiftCardSec
       setCode("");
       setValidation(null);
       onRedeemed?.();
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed");
     } finally {
       setRedeeming(false);
     }

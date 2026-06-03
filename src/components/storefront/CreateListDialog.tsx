@@ -17,12 +17,12 @@ export function CreateListDialog({ onCreated }: { onCreated: (name: string) => v
     setSaving(true);
     try {
       const result = await createList({ name: name.trim(), description: description.trim() || undefined });
-      if ((result as any).error) { toast.error((result as any).error); return; }
+      if ("error" in result && result.error) { toast.error(result.error as string); return; }
       toast.success("List created");
       setName("");
       setDescription("");
       setOpen(false);
-      onCreated((result as any).name);
+      onCreated(("name" in result ? result.name : name.trim()) as string);
     } catch { toast.error("Failed to create list"); }
     finally { setSaving(false); }
   };

@@ -1,16 +1,18 @@
+# Development docker-compose.
+# Secrets/config come from your local .env file (never hardcoded here).
+# Usage: cp .env.example .env  &&  edit .env  &&  docker compose up -d
+
 services:
   app:
     build: .
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/ecommerce
       - NODE_ENV=production
-      - NEXTAUTH_SECRET=dev-secret-change-in-production
-      - NEXTAUTH_URL=http://localhost:3000
-      - RAZORPAY_KEY_ID=rzp_test_dummy
-      - RAZORPAY_KEY_SECRET=dummy
-      - NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_dummy
+      # Inside the compose network the DB host is "db", so override the host portion.
+      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-ecommerce}?schema=public
     depends_on:
       db:
         condition: service_healthy
@@ -19,15 +21,15 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: ecommerce
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-ecommerce}
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
       interval: 5s
       timeout: 5s
       retries: 5

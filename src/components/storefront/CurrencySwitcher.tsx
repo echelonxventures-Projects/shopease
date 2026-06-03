@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { convertCurrency, listCurrencies } from "@/server/actions/commerce-actions";
-import { DollarSign, RefreshCw } from "lucide-react";
+import { useState, useEffect } from "react";
+import { listCurrencies } from "@/server/actions/commerce-actions";
+import { RefreshCw } from "lucide-react";
 import { useRegionStore } from "@/stores/useRegionStore";
 
 export function CurrencySwitcher() {
-  const [currencies, setCurrencies] = useState<any[]>([]);
+  const [currencies, setCurrencies] = useState<{ code: string; symbol: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const { currency, setRegion } = useRegionStore();
 

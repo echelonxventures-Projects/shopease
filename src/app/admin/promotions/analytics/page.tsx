@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAllPromoAnalytics, getPromoAnalytics } from "@/server/actions/promo-analytics";
+import { getPromoAnalytics } from "@/server/actions/promo-analytics";
 import { listPromotions } from "@/server/actions/promotion-actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,9 +14,11 @@ import {
 } from "@/components/ui/dialog";
 
 export default function PromoAnalyticsPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [promoList, setPromoList] = useState<any[]>([]);
   const [selectedPromo, setSelectedPromo] = useState<string>("");
-  const [analytics, setAnalytics] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- analytics response shape is complex and varies by promo type
+  const [analytics, setAnalytics] = useState<Record<string, any> | null>(null);
   const [loading, setLoading] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
 
@@ -31,7 +33,7 @@ export default function PromoAnalyticsPage() {
       const data = await getPromoAnalytics(selectedPromo, 30);
       setAnalytics(data);
       setDetailOpen(true);
-    } catch (e) {}
+    } catch (_e) {}
     setLoading(false);
   };
 
@@ -69,11 +71,11 @@ export default function PromoAnalyticsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <Card className="p-4">
                   <div className="text-sm text-gray-500">Impressions</div>
-                  <div className="text-2xl font-bold">{analytics.summary.impressions.toLocaleString()}</div>
+                  <div className="text-2xl font-bold">{analytics.summary.impressions.toLocaleString("en-IN")}</div>
                 </Card>
                 <Card className="p-4">
                   <div className="text-sm text-gray-500">Clicks</div>
-                  <div className="text-2xl font-bold">{analytics.summary.clicks.toLocaleString()}</div>
+                  <div className="text-2xl font-bold">{analytics.summary.clicks.toLocaleString("en-IN")}</div>
                 </Card>
                 <Card className="p-4">
                   <div className="text-sm text-gray-500">Redemptions</div>
@@ -106,9 +108,9 @@ export default function PromoAnalyticsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {analytics.data.map((d: any) => (
+                    {analytics.data.map((d: { date: string; impressions: number; clicks: number; redemptions: number; totalDiscount: number }) => (
                       <tr key={d.date} className="border-t">
-                        <td className="px-3 py-2">{new Date(d.date).toLocaleDateString()}</td>
+                        <td className="px-3 py-2">{new Date(d.date).toLocaleDateString("en-IN")}</td>
                         <td className="px-3 py-2">{d.impressions}</td>
                         <td className="px-3 py-2">{d.clicks}</td>
                         <td className="px-3 py-2">{d.redemptions}</td>

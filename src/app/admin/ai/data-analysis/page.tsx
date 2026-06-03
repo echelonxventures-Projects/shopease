@@ -10,7 +10,8 @@ import { BarChart3, Calculator, TrendingUp, Search, Eye } from "lucide-react";
 export default function DataAnalysisPage() {
   const [operation, setOperation] = useState("stats");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API response shape varies by operation type (stats/explore/predictive)
+  const [result, setResult] = useState<Record<string, any> | null>(null);
   const [input, setInput] = useState("");
 
   const operations = [
@@ -23,7 +24,8 @@ export default function DataAnalysisPage() {
   const handleRun = async () => {
     setLoading(true);
     try {
-      let body: any = { operation };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex type from external source
+      const body: any = { operation };
 
       switch (operation) {
         case "stats":
@@ -55,9 +57,7 @@ export default function DataAnalysisPage() {
       const data = await res.json();
       setResult(data);
       toast.success("Analysis complete");
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); } finally {
       setLoading(false);
     }
   };
@@ -163,15 +163,15 @@ export default function DataAnalysisPage() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b">
-                          {result.columns?.map((col: any) => (
+                          {result.columns?.map((col: { name: string }) => (
                             <th key={col.name} className="text-left p-2 font-medium">{col.name}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
-                        {result.sample?.map((row: any, i: number) => (
+                        {result.sample?.map((row: Record<string, unknown>, i: number) => (
                           <tr key={i} className="border-b last:border-0">
-                            {result.columns?.map((col: any) => (
+                            {result.columns?.map((col: { name: string }) => (
                               <td key={col.name} className="p-2 truncate max-w-[200px]">
                                 {typeof row[col.name] === "object" ? JSON.stringify(row[col.name]).slice(0, 50) : String(row[col.name] || "")}
                               </td>

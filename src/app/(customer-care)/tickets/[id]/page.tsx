@@ -10,7 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { ArrowLeft, Send, User, MessageSquare } from "lucide-react";
-import Link from "next/link";
+
 import { toast } from "sonner";
 
 const statusColors: Record<string, string> = {
@@ -101,7 +101,7 @@ export default function TicketDetailPage() {
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-medium text-sm">{m.sender?.name || "Unknown"}</span>
                       {m.isInternal && <Badge variant="outline" className="text-xs">Internal</Badge>}
-                      <span className="text-xs text-gray-400">{new Date(m.createdAt).toLocaleString()}</span>
+                      <span className="text-xs text-gray-400">{new Date(m.createdAt).toLocaleString("en-IN")}</span>
                     </div>
                     <p className="text-sm">{m.message}</p>
                   </div>
@@ -146,9 +146,9 @@ export default function TicketDetailPage() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-gray-500">Category</span><span>{ticket.category?.replace(/_/g, " ")}</span></div>
               <div className="flex justify-between"><span className="text-gray-500">Customer</span><span>{ticket.customer?.name}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Created</span><span>{new Date(ticket.createdAt).toLocaleDateString()}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Created</span><span>{new Date(ticket.createdAt).toLocaleDateString("en-IN")}</span></div>
               {ticket.assignedTo && <div className="flex justify-between"><span className="text-gray-500">Assigned to</span><span>{ticket.assignedTo.name}</span></div>}
-              {ticket.resolvedAt && <div className="flex justify-between"><span className="text-gray-500">Resolved</span><span>{new Date(ticket.resolvedAt).toLocaleDateString()}</span></div>}
+              {ticket.resolvedAt && <div className="flex justify-between"><span className="text-gray-500">Resolved</span><span>{new Date(ticket.resolvedAt).toLocaleDateString("en-IN")}</span></div>}
             </div>
           </div>
         </div>

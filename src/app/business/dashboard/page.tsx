@@ -38,7 +38,7 @@ export default function BusinessDashboardPage() {
       <div className="text-center py-20">
         <Building2 className="w-16 h-16 mx-auto text-gray-300 mb-4" />
         <h2 className="text-2xl font-bold text-gray-700">No Business Account</h2>
-        <p className="text-gray-500 mt-2">You haven't registered a business yet.</p>
+        <p className="text-gray-500 mt-2">You haven&apos;t registered a business yet.</p>
         <Link href="/business/register">
           <Button className="mt-6">Register Your Business</Button>
         </Link>

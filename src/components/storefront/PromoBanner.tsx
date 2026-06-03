@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getPromos } from "@/server/actions/promo-actions";
 import { Sparkles, Clock, Tag } from "lucide-react";
 
-const typeIcons: Record<string, any> = {
+const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   FLASH_SALE: Clock,
   BANK_OFFER: Tag,
   FESTIVE_OFFER: Sparkles,
@@ -22,7 +22,7 @@ const typeColors: Record<string, string> = {
 };
 
 export function PromoBanner() {
-  const [promos, setPromos] = useState<any[]>([]);
+  const [promos, setPromos] = useState<{ id: string; type: string; title: string; discountType?: string | null; discountValue?: number | null; code?: string | null }[]>([]);
 
   useEffect(() => {
     getPromos({ status: "ACTIVE" }).then(setPromos).catch(() => {});

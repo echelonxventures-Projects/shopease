@@ -15,6 +15,7 @@ interface NotificationPayload {
   channel: NotificationChannel;
   title: string;
   message: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   metadata?: Record<string, any>;
 }
 

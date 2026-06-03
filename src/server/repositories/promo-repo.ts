@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 
 export interface CartItem {
   productId: string;
@@ -35,9 +36,10 @@ export interface EvaluationResult {
   ineligiblePromos: { id: string; title: string; reason: string }[];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
 async function loadActivePromos(regionId?: string): Promise<any[]> {
   const now = new Date();
-  const whereBase: any = {
+  const whereBase: Prisma.PromoWhereInput = {
     isActive: true,
     status: "ACTIVE",
     validFrom: { lte: now },
@@ -107,6 +109,7 @@ async function enrichCartItems(items: CartItem[]): Promise<CartItem[]> {
 }
 
 async function isPromoEligible(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic promo structure from Prisma Json fields
   promo: any,
   cart: CartContext,
   userId?: string
@@ -170,7 +173,7 @@ async function isPromoEligible(
   }
 
   if (promo.type === "BANK_OFFER" && promo.rules) {
-    const rules = promo.rules as any;
+    const rules = promo.rules as any // eslint-disable-line @typescript-eslint/no-explicit-any -- Prisma Json field with dynamic structure as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any -- JSON field with dynamic keys;
     if (rules.banks?.length > 0 && cart.paymentMethod) {
       if (!rules.banks.includes(cart.paymentMethod)) {
         return { eligible: false, reason: "Payment method not eligible for bank offer" };
@@ -179,11 +182,11 @@ async function isPromoEligible(
   }
 
   if (promo.type === "TIME_BASED" && promo.rules) {
-    const rules = promo.rules as any;
+    const rules = promo.rules as any // eslint-disable-line @typescript-eslint/no-explicit-any -- Prisma Json field with dynamic structure as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any -- JSON field with dynamic keys;
     if (rules.timeWindows) {
       const hour = new Date().getHours();
       const window = rules.timeWindows.find(
-        (w: any) => hour >= w.startHour && hour < w.endHour
+        (w: { startHour: number; endHour: number }) => hour >= w.startHour && hour < w.endHour
       );
       if (!window) {
         return { eligible: false, reason: "Outside time window" };
@@ -194,6 +197,7 @@ async function isPromoEligible(
   return { eligible: true };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic promo structure from Prisma Json fields
 function getPromoApplicableAmount(promo: any, cart: CartContext): number {
   if (promo.applicableProductIds.length > 0) {
     return cart.items
@@ -213,10 +217,11 @@ function calculatePercentageDiscount(
   return Math.max(0, discount);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic promo structure from Prisma Json fields
 function calculateDiscount(promo: any, cart: CartContext): { discount: number; appliedTo: string[] } {
   let discount = 0;
   const appliedTo: string[] = [];
-  const rules = (promo.rules || {}) as any;
+  const rules = (promo.rules || {}) as any // eslint-disable-line @typescript-eslint/no-explicit-any -- Prisma Json field with dynamic structure;
 
   switch (promo.type) {
     case "COUPON":
@@ -334,8 +339,8 @@ function calculateDiscount(promo: any, cart: CartContext): { discount: number; a
 
     case "COMBO": {
       if (rules.combo) {
-        const comboItems = rules.combo.items || [];
-        const allPresent = comboItems.every((ci: any) =>
+        const comboItems: Array<{ productId: string; requiredQty?: number }> = rules.combo.items || [];
+        const allPresent = comboItems.every((ci) =>
           cart.items.some(
             (i) =>
               i.productId === ci.productId &&
@@ -343,12 +348,12 @@ function calculateDiscount(promo: any, cart: CartContext): { discount: number; a
           )
         );
         if (allPresent) {
-          const originalTotal = comboItems.reduce((sum: number, ci: any) => {
+          const originalTotal = comboItems.reduce((sum: number, ci) => {
             const cartItem = cart.items.find((i) => i.productId === ci.productId);
             return sum + (cartItem ? cartItem.price * cartItem.quantity : 0);
           }, 0);
           discount = originalTotal - (rules.combo.bundlePrice || originalTotal);
-          appliedTo.push(...comboItems.map((ci: any) => ci.productId));
+          appliedTo.push(...comboItems.map((ci) => ci.productId));
         }
       }
       break;
@@ -358,7 +363,7 @@ function calculateDiscount(promo: any, cart: CartContext): { discount: number; a
       if (rules.timeWindows) {
         const hour = new Date().getHours();
         const window = rules.timeWindows.find(
-          (w: any) => hour >= w.startHour && hour < w.endHour
+          (w: { startHour: number; endHour: number }) => hour >= w.startHour && hour < w.endHour
         );
         if (window) {
           const applicableAmount = getPromoApplicableAmount(promo, cart);

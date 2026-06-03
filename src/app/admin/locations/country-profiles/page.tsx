@@ -57,6 +57,7 @@ const TIMEZONES = [
 
 export default function CountryProfilesPage() {
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [profiles, setProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -116,9 +117,7 @@ export default function CountryProfilesPage() {
       setDialogOpen(false);
       resetForm();
       fetch();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const toggleLocale = (locale: string) => {
@@ -253,7 +252,7 @@ export default function CountryProfilesPage() {
             </div>
             <div>
               <Label>Default Locale</Label>
-              <Select value={form.defaultLocale} onValueChange={(v) => setForm({ ...form, defaultLocale: v || "en" })}>
+              <Select value={form.defaultLocale} onValueChange={(v) => { if (v) setForm({ ...form, defaultLocale: v || "en" }); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {LOCALES.map((l) => (
@@ -286,7 +285,7 @@ export default function CountryProfilesPage() {
             </div>
             <div>
               <Label>Timezone</Label>
-              <Select value={form.timezone} onValueChange={(v) => setForm({ ...form, timezone: v || "Asia/Kolkata" })}>
+              <Select value={form.timezone} onValueChange={(v) => { if (v) setForm({ ...form, timezone: v || "Asia/Kolkata" }); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {TIMEZONES.map((tz) => (

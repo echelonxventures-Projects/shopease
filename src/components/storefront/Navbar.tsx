@@ -11,7 +11,7 @@ import { RegionSelector } from "./RegionSelector";
 import { CurrencySwitcher } from "./CurrencySwitcher";
 import { ThemeToggle } from "./ThemeToggle";
 
-export function Navbar({ banners, categories }: any) {
+export function Navbar({ _banners, _categories, banners, categories }: { _banners?: unknown; _categories?: unknown; banners?: unknown; categories?: unknown }) {
   const [cartOpen, setCartOpen] = useState(false);
   const totalItems = useCartStore((s) => s.totalItems);
 
@@ -34,6 +34,12 @@ export function Navbar({ banners, categories }: any) {
             <ThemeToggle />
             <Link href="/groceries" className="text-sm hover:text-primary transition-colors hidden md:block">
               Fresh
+            </Link>
+            <Link href="/streaming" className="text-sm hover:text-primary transition-colors hidden md:block">
+              Streaming
+            </Link>
+            <Link href="/trading" className="text-sm hover:text-primary transition-colors hidden md:block">
+              Trading
             </Link>
             <Link href="/brands" className="text-sm hover:text-primary transition-colors hidden md:block">
               Brands

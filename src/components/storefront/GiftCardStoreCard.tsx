@@ -1,14 +1,31 @@
 import Link from "next/link";
-import { Star, Truck, Gift, Zap } from "lucide-react";
+import { Truck, Gift, Zap } from "lucide-react";
+
+interface GiftCard {
+  id: string;
+  name: string;
+  imageUrl: string;
+  minAmount: number | string;
+  maxAmount: number | string;
+  deliveryTypes?: string;
+  fixedAmounts?: number[];
+  customAmount?: boolean;
+  isBestseller?: boolean;
+  isNewArrival?: boolean;
+  isFeatured?: boolean;
+  seller?: string;
+  occasions?: { slug: string; name: string; icon?: string }[];
+  recipients?: { slug: string; name: string }[];
+}
 
 interface GiftCardStoreCardProps {
-  card: any;
+  card: GiftCard;
   compact?: boolean;
 }
 
 export function GiftCardStoreCard({ card, compact = false }: GiftCardStoreCardProps) {
   const minAmount = Number(card.minAmount);
-  const maxAmount = Number(card.maxAmount);
+  const _maxAmount = Number(card.maxAmount);
   const deliveryTypes = card.deliveryTypes?.split(",") || [];
   const isEGift = deliveryTypes.includes("E_GIFT");
   const isPhysical = deliveryTypes.includes("PHYSICAL");
@@ -34,7 +51,7 @@ export function GiftCardStoreCard({ card, compact = false }: GiftCardStoreCardPr
               {card.name}
             </p>
             <p className="text-xs text-gray-500 mt-0.5">
-              ₹{minAmount.toLocaleString()} onwards
+              ₹{minAmount.toLocaleString("en-IN")} onwards
             </p>
             {card.isBestseller && (
               <span className="inline-block mt-1 px-1.5 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-bold rounded">
@@ -118,7 +135,7 @@ export function GiftCardStoreCard({ card, compact = false }: GiftCardStoreCardPr
           {/* Occasions */}
           {card.occasions && card.occasions.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1">
-              {card.occasions.slice(0, 2).map((o: any) => (
+              {card.occasions.slice(0, 2).map((o) => (
                 <span key={o.slug} className="text-xs text-gray-500">
                   {o.icon} {o.name}
                 </span>
@@ -129,7 +146,7 @@ export function GiftCardStoreCard({ card, compact = false }: GiftCardStoreCardPr
           {/* Recipients */}
           {card.recipients && card.recipients.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1">
-              {card.recipients.slice(0, 3).map((r: any) => (
+              {card.recipients.slice(0, 3).map((r) => (
                 <span key={r.slug} className="text-xs px-1.5 py-0.5 bg-gray-100 rounded">
                   {r.name}
                 </span>
@@ -140,7 +157,7 @@ export function GiftCardStoreCard({ card, compact = false }: GiftCardStoreCardPr
           {/* Price */}
           <div className="mt-auto pt-2">
             <p className="text-sm text-gray-600">
-              From <span className="font-bold text-gray-900">₹{minAmount.toLocaleString()}</span>
+              From <span className="font-bold text-gray-900">₹{minAmount.toLocaleString("en-IN")}</span>
               {card.customAmount && (
                 <span className="text-xs text-gray-400 ml-1">or custom</span>
               )}
@@ -154,7 +171,7 @@ export function GiftCardStoreCard({ card, compact = false }: GiftCardStoreCardPr
                     key={amt}
                     className="text-xs px-1.5 py-0.5 bg-orange-50 text-orange-700 rounded font-medium"
                   >
-                    ₹{amt.toLocaleString()}
+                    ₹{amt.toLocaleString("en-IN")}
                   </span>
                 ))}
               </div>

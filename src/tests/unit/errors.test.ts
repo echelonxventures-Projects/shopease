@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { AppError, serializeError, isAppError, ErrorCode } from "@/lib/errors";
+import { AppError, serializeError, isAppError } from "@/lib/errors";
 
 describe("AppError", () => {
   it("creates error with code and status", () => {

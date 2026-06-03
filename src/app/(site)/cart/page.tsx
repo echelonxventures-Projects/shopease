@@ -91,7 +91,7 @@ export default function CartPage() {
                 {item.variantOptions && (
                   <p className="text-xs text-gray-500 mt-0.5">{item.variantOptions}</p>
                 )}
-                <p className="font-bold mt-1">₹{item.price.toLocaleString()}</p>
+                <p className="font-bold mt-1">₹{item.price.toLocaleString("en-IN")}</p>
                 <div className="flex items-center gap-2 mt-3">
                   <Button
                     variant="outline"
@@ -129,7 +129,7 @@ export default function CartPage() {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span>Subtotal</span>
-              <span>₹{subtotal.toLocaleString()}</span>
+              <span>₹{subtotal.toLocaleString("en-IN")}</span>
             </div>
             <div className="flex justify-between">
               <span>Shipping</span>
@@ -137,12 +137,12 @@ export default function CartPage() {
             </div>
             <div className="flex justify-between">
               <span>Tax (18%)</span>
-              <span>₹{Math.round(subtotal * 0.18).toLocaleString()}</span>
+              <span>₹{Math.round(subtotal * 0.18).toLocaleString("en-IN")}</span>
             </div>
             <div className="border-t pt-2 mt-2">
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span>₹{(Math.round(subtotal * 1.18)).toLocaleString()}</span>
+                <span>₹{(Math.round(subtotal * 1.18)).toLocaleString("en-IN")}</span>
               </div>
             </div>
           </div>

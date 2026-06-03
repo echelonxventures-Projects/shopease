@@ -24,7 +24,7 @@ export async function searchImages(query: string, page: number = 1, perPage: num
     const data = await res.json();
 
     return {
-      results: (data.results || []).map((img: any) => ({
+      results: (data.results || []).map((img: { id?: string; urls?: { regular?: string; thumb?: string; full?: string }; alt_description?: string; user?: { name?: string } }) => ({
         id: img.id,
         url: img.urls?.regular,
         thumb: img.urls?.thumb,

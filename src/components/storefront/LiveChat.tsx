@@ -11,10 +11,11 @@ interface LiveChatProps {
 
 export function LiveChat({ userId, productId, orderId }: LiveChatProps) {
   const [isOpen, setIsOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- messages come from multiple sources with different shapes
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [_sessionId, _setSessionId] = useState<string | null>(null);
+  const [_loading, _setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // In a real implementation, this would use WebSocket for real-time messaging

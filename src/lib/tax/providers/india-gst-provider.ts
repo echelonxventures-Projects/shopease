@@ -97,7 +97,8 @@ export class IndiaGSTProvider implements TaxProvider {
 
   // ─── Private helpers ──────────────────────────────────────────────────────
 
-  private determineTaxType(entry: typeof INDIA_GST_RATES[number]): string {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private determineTaxType(_entry: typeof INDIA_GST_RATES[number]): string {
     // We store IGST as the type for inter-state; CGST/SGST pairs for intra-state
     return "GST";
   }

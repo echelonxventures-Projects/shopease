@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Package } from "lucide-react";
 
 export function ComboPacksSection() {
-  const [bundles, setBundles] = useState<any[]>([]);
+  const [bundles, setBundles] = useState<{ id: string; name: string; description?: string | null; bannerImage?: string | null; discountType: string; discountValue: number | string | { toString(): string }; items: { product?: { slug: string } | null }[] }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

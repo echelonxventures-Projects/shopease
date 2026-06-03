@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createVideoReview, listVideoReviews } from "@/server/actions/commerce-actions";
 import { Button } from "@/components/ui/button";
-import { Video, Play, X, Loader2, Link as LinkIcon } from "lucide-react";
+import { Video, Play, Loader2, Link as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
 
 interface VideoReviewUploadProps {

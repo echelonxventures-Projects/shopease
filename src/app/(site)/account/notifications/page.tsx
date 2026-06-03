@@ -121,7 +121,7 @@ export default function NotificationsPage() {
             <div className="text-center py-16 bg-gray-50 rounded-xl">
               <BellOff className="w-12 h-12 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-500">No notifications</h3>
-              <p className="text-sm text-gray-400 mt-2">You'll see notifications here when there are updates.</p>
+              <p className="text-sm text-gray-400 mt-2">You&apos;ll see notifications here when there are updates.</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -142,7 +142,7 @@ export default function NotificationsPage() {
                     <div className="flex-1 min-w-0">
                       <p className="font-medium">{n.title}</p>
                       <p className="text-sm text-gray-600">{n.message}</p>
-                      <p className="text-xs text-gray-400 mt-1">{new Date(n.createdAt).toLocaleString()}</p>
+                      <p className="text-xs text-gray-400 mt-1">{new Date(n.createdAt).toLocaleString("en-IN")}</p>
                     </div>
                     {!n.isRead && (
                       <Button

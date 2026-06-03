@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Shield, Check, X } from "lucide-react";
+import { Shield } from "lucide-react";
 
 interface ProductInsuranceProps {
   price: number;

@@ -8,7 +8,9 @@ import { toast } from "sonner";
 const TIERS = ["BRONZE", "SILVER", "GOLD", "PLATINUM"];
 
 export default function VIPDealsPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [deals, setDeals] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [promos, setPromos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -36,18 +38,18 @@ export default function VIPDealsPage() {
       setShowForm(false);
       setForm({ promoId: "", requiredTier: "GOLD", requiredTag: "", maxRedemptions: "" });
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete?")) return;
     try { await deleteVIPDeal(id); toast.success("Deleted"); fetch(); }
-    catch (err: any) { toast.error(err.message); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleToggle = async (id: string, active: boolean) => {
     try { await updateVIPDeal(id, { isActive: !active }); toast.success("Updated"); fetch(); }
-    catch (err: any) { toast.error(err.message); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const tierBadge = (tier: string) => {

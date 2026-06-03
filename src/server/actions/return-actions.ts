@@ -74,7 +74,8 @@ export async function updateReturnStatus(id: string, status: string, refundAmoun
 
 // ===================== ORDER RETURNS (LEGACY) =====================
 
-export async function createReturn(orderId: string, reason: string, items: any[]) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic array from Prisma Json field
+export async function createReturn(orderId: string, reason: string, _items: any[]) {
   const session = await getSession();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
@@ -114,7 +115,7 @@ export async function getMyReturns() {
     orderBy: { createdAt: "desc" },
   });
 
-  return refunds.map((r: any) => ({
+  return refunds.map((r) => ({
     ...r,
     order: {
       ...r.order,

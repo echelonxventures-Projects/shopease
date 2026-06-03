@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Gift, ArrowLeft, Mail, Truck, Check, Loader2 } from "lucide-react";
+import { Gift, Mail, Truck, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function PurchaseGiftCardPage() {
@@ -60,7 +60,7 @@ export default function PurchaseGiftCardPage() {
 
     setPurchaseLoading(true);
     try {
-      const result = await purchaseGiftCard({
+      const _result = await purchaseGiftCard({
         storeCardId: card.id,
         amount: form.amount,
         recipientName: form.recipientName,
@@ -123,7 +123,7 @@ export default function PurchaseGiftCardPage() {
           )}
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
             <p className="text-sm text-gray-600">
-              Amount: <span className="font-bold text-gray-900">₹{form.amount.toLocaleString()}</span>
+              Amount: <span className="font-bold text-gray-900">₹{form.amount.toLocaleString("en-IN")}</span>
             </p>
             {form.message && (
               <p className="text-sm text-gray-600 mt-2">
@@ -242,13 +242,13 @@ export default function PurchaseGiftCardPage() {
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     }`}
                   >
-                    ₹{amt.toLocaleString()}
+                    ₹{amt.toLocaleString("en-IN")}
                   </button>
                 ))}
               </div>
             )}
             <p className="text-xs text-gray-400 mt-1">
-              Range: ₹{minAmount.toLocaleString()} — ₹{maxAmount.toLocaleString()}
+              Range: ₹{minAmount.toLocaleString("en-IN")} — ₹{maxAmount.toLocaleString("en-IN")}
               {card.customAmount && " · Custom amounts allowed"}
             </p>
           </div>
@@ -353,7 +353,7 @@ export default function PurchaseGiftCardPage() {
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
             <div className="flex items-center justify-between">
               <span className="text-gray-600">Total Amount</span>
-              <span className="text-xl font-bold text-gray-900">₹{form.amount.toLocaleString()}</span>
+              <span className="text-xl font-bold text-gray-900">₹{form.amount.toLocaleString("en-IN")}</span>
             </div>
             {form.deliveryType === "E_GIFT" && (
               <p className="text-xs text-green-600 mt-1">Free delivery via email</p>
@@ -372,7 +372,7 @@ export default function PurchaseGiftCardPage() {
                 Processing...
               </>
             ) : (
-              `Send Gift Card — ₹${form.amount.toLocaleString()}`
+              `Send Gift Card — ₹${form.amount.toLocaleString("en-IN")}`
             )}
           </Button>
 

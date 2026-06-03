@@ -7,6 +7,7 @@ export const paymentMethodHandler: PromotionHandler = {
     return "TOTAL";
   },
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PromotionHandler interface contract
   async evaluate(promo: any, context: PromotionContext) {
     const pmp = promo.paymentMethodPromo;
     if (!pmp) return null;

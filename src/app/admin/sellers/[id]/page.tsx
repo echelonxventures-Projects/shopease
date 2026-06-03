@@ -1,27 +1,32 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getSellerReviews, updateSellerStatus, getSellerPayouts } from "@/server/actions/seller-actions";
+import { updateSellerStatus } from "@/server/actions/seller-actions";
 import { listSellers } from "@/server/actions/seller-actions";
 import { notFound, useParams } from "next/navigation";
-import { CheckCircle, XCircle, Star, Package, Truck, DollarSign, FileText } from "lucide-react";
+import { CheckCircle, XCircle, Star, Package, Truck, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export default function SellerDetailPage() {
   const params = useParams();
   const sellerId = params.id as string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [seller, setSeller] = useState<any>(null);
   const [tab, setTab] = useState("products");
-  const [products, setProducts] = useState<any[]>([]);
-  const [orders, setOrders] = useState<any[]>([]);
-  const [reviews, setReviews] = useState<any[]>([]);
-  const [payouts, setPayouts] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
+  const [_products, _setProducts] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
+  const [_orders, _setOrders] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
+  const [_reviews, _setReviews] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
+  const [_payouts, _setPayouts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     listSellers().then((all) => {
-      const found = all.find((s: any) => s.id === sellerId);
+      const found = all.find((s) => s.id === sellerId);
       if (!found) {
         setLoading(false);
         return;
@@ -29,7 +34,7 @@ export default function SellerDetailPage() {
       setSeller(found);
       // Load seller products and orders using the seller ID
       Promise.all([
-        import("@/server/actions/seller-actions").then(async (m) => {
+        import("@/server/actions/seller-actions").then(async (_m) => {
           // We need a way to fetch by sellerId, not just current user
           // Using prisma directly via a temporary action
           return [];
@@ -44,9 +49,7 @@ export default function SellerDetailPage() {
       await updateSellerStatus(sellerId, status);
       toast.success(`Seller ${status.toLowerCase()}`);
       setSeller({ ...seller, status });
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const statusColors: Record<string, string> = {
@@ -99,7 +102,7 @@ export default function SellerDetailPage() {
           </div>
           <div>
             <p className="text-sm text-gray-500">Total Revenue</p>
-            <p>₹{Number(seller.totalRevenue).toLocaleString()}</p>
+            <p>₹{Number(seller.totalRevenue).toLocaleString("en-IN")}</p>
           </div>
         </div>
 

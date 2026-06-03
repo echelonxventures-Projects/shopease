@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { encryptPIIFields, decryptPIIFields } from "@/lib/encryption";
 import { AddressType } from "@prisma/client";
+import { addressSchema } from "@/lib/validations/address";
 
 export async function getAddresses() {
   const session = await getSession();
@@ -50,6 +51,8 @@ export async function createAddress(data: {
   const session = await getSession();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
+  // Validate input
+  const validated = addressSchema.parse(data);
   const userId = session.user.id as string;
 
   // Encrypt PII fields
@@ -145,7 +148,7 @@ export async function updateAddress(
     });
   }
 
-  const updateData: any = { ...data };
+  const updateData: Record<string, unknown> = { ...data };
 
   // Encrypt PII fields if being updated
   if (data.fullName || data.phone) {

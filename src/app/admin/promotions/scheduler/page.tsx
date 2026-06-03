@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { listSchedulers, createScheduler, updateScheduler, deleteScheduler, processScheduledPromos, listAllPromos } from "@/server/actions/phaseA-actions";
+import { listSchedulers, createScheduler, deleteScheduler, processScheduledPromos, listAllPromos } from "@/server/actions/phaseA-actions";
 import { toast } from "sonner";
 
 export default function SchedulerPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [schedulers, setSchedulers] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [promos, setPromos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -32,25 +34,25 @@ export default function SchedulerPage() {
       toast.success("Created");
       setShowForm(false); setForm({ promoId: "", scheduledStart: "", scheduledEnd: "", autoPublish: true });
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete?")) return;
     try { await deleteScheduler(id); toast.success("Deleted"); fetch(); }
-    catch (err: any) { toast.error(err.message); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleProcess = async () => {
     try {
       const results = await processScheduledPromos();
       if (results.length === 0) toast.info("No promos to process");
-      else { results.forEach((r: any) => toast.success(`${r.promoId} → ${r.action}`)); }
+      else { results.forEach((r) => toast.success(`${r.promoId} → ${r.action}`)); }
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
-  const formatDate = (d: string) => new Date(d).toLocaleString();
+  const formatDate = (d: string) => new Date(d).toLocaleString("en-IN");
 
   return (
     <div>

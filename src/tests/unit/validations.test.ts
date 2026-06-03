@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { addToCartSchema, updateCartSchema, removeFromCartSchema } from "@/lib/validations/cart";
+import { addToCartSchema } from "@/lib/validations/cart";
 import { addressSchema } from "@/lib/validations/address";
 import { paymentSchema } from "@/lib/validations/payment";
 import { reviewSchema } from "@/lib/validations/review";
-import { walletSchema, voucherRedeemSchema } from "@/lib/validations/wallet";
+import { voucherRedeemSchema } from "@/lib/validations/wallet";
 import { paginationSchema } from "@/lib/validations/common";
 
 describe("Cart Validation Schemas", () => {

@@ -33,7 +33,7 @@ export default function ReviewsPage() {
       {reviews.length === 0 ? (
         <div className="text-center py-16">
           <Star className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500 text-lg mb-4">You haven't written any reviews yet</p>
+          <p className="text-gray-500 text-lg mb-4">You haven&apos;t written any reviews yet</p>
           <Link href="/products" className="text-blue-600 hover:underline">Browse Products</Link>
         </div>
       ) : (

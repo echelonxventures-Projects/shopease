@@ -8,7 +8,9 @@ import { listAllPromos } from "@/server/actions/phaseA-actions";
 import { toast } from "sonner";
 
 export default function MultiBuyPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [tiers, setTiers] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [promos, setPromos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -57,19 +59,20 @@ export default function MultiBuyPage() {
       setForm({ promoId: "", appliesToScope: "CART" });
       setTierRows([{ minQty: "3", discountType: "PERCENTAGE", discountValue: "10", maxDiscount: "" }]);
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete?")) return;
     try { await deleteMultiBuyTier(id); toast.success("Deleted"); fetch(); }
-    catch (err: any) { toast.error(err.message); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex type from external source
   const getDiscountLabel = (tierData: any) => {
     if (!tierData) return "-";
     const tiers: any[] = typeof tierData === "string" ? JSON.parse(tierData) : tierData;
-    return tiers.map((t: any) => `Buy ${t.minQty}+ → ${t.discount.type === "PERCENTAGE" ? `${t.discount.value}%` : `₹${t.discount.value}`} off`).join(", ");
+    return tiers.map((t) => `Buy ${t.minQty}+ → ${t.discount.type === "PERCENTAGE" ? `${t.discount.value}%` : `₹${t.discount.value}`} off`).join(", ");
   };
 
   return (

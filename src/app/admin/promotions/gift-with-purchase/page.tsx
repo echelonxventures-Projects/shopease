@@ -5,8 +5,11 @@ import { listGiftWithPurchases, createGiftWithPurchase, updateGiftWithPurchase, 
 import { toast } from "sonner";
 
 export default function GiftWithPurchasePage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [items, setItems] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [products, setProducts] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [promos, setPromos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -36,18 +39,18 @@ export default function GiftWithPurchasePage() {
       toast.success("Created");
       setShowForm(false); setForm({ promoId: "", minOrderValue: "", giftProductId: "", maxGifts: "1", maxRedemptions: "" });
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete?")) return;
     try { await deleteGiftWithPurchase(id); toast.success("Deleted"); fetch(); }
-    catch (err: any) { toast.error(err.message); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleToggleActive = async (id: string, current: boolean) => {
     try { await updateGiftWithPurchase(id, { isActive: !current }); toast.success("Updated"); fetch(); }
-    catch (err: any) { toast.error(err.message); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   return (
@@ -120,10 +123,10 @@ export default function GiftWithPurchasePage() {
                   <td className="px-4 py-3">
                     <div>
                       <div className="font-medium">{item.giftProduct?.name}</div>
-                      <div className="text-xs text-gray-500">₹{Number(item.giftProduct?.price).toLocaleString()}</div>
+                      <div className="text-xs text-gray-500">₹{Number(item.giftProduct?.price).toLocaleString("en-IN")}</div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm">₹{Number(item.minOrderValue).toLocaleString()}</td>
+                  <td className="px-4 py-3 text-sm">₹{Number(item.minOrderValue).toLocaleString("en-IN")}</td>
                   <td className="px-4 py-3 text-sm">
                     {item.maxRedemptions ? `${item.redeemedCount} / ${item.maxRedemptions}` : item.redeemedCount}
                   </td>

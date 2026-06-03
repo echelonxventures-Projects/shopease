@@ -9,7 +9,25 @@ import { useCartStore } from "@/stores/useCartStore";
 import { ShoppingCart, Heart, Minus, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-export function ProductCard({ product, badgeData, deliveryInfo }: { product: any; badgeData?: { bestSeller?: boolean; boughtLastMonth?: number; lowStock?: number | null }; deliveryInfo?: { deliveryDate?: string; isFree?: boolean; fee?: number } }) {
+interface ProductCardProduct {
+  id: string;
+  slug: string;
+  name: string;
+  price: number | string;
+  comparePrice?: number | string | null;
+  stock?: number | string | null;
+  images?: string[];
+  productType?: string;
+  brand?: { name: string } | null;
+  hasVariants?: boolean;
+  variantPriceRange?: { min: number; max: number } | null;
+  avgRating?: number | string | null;
+  reviewCount?: number;
+  offerStartDate?: string | null;
+  offerEndDate?: string | null;
+}
+
+export function ProductCard({ product, badgeData, deliveryInfo }: { product: ProductCardProduct; badgeData?: { bestSeller?: boolean; boughtLastMonth?: number; lowStock?: number | null }; deliveryInfo?: { deliveryDate?: string; isFree?: boolean; fee?: number } }) {
   const now = new Date();
   const offerStartDate = product.offerStartDate ? new Date(product.offerStartDate) : null;
   const offerEndDate = product.offerEndDate ? new Date(product.offerEndDate) : null;
@@ -147,12 +165,12 @@ export function ProductCard({ product, badgeData, deliveryInfo }: { product: any
           <div className="flex items-center gap-2 mt-2">
             <span className="font-bold">
               {product.hasVariants && product.variantPriceRange
-                ? `From ₹${product.variantPriceRange.min.toLocaleString()}`
-                : `₹${Number(product.price).toLocaleString()}`}
+                ? `From ₹${product.variantPriceRange.min.toLocaleString("en-IN")}`
+                : `₹${Number(product.price).toLocaleString("en-IN")}`}
             </span>
             {!product.hasVariants && product.comparePrice && (
               <span className="text-sm text-gray-400 line-through">
-                ₹{Number(product.comparePrice).toLocaleString()}
+                ₹{Number(product.comparePrice).toLocaleString("en-IN")}
               </span>
             )}
           </div>
@@ -196,7 +214,7 @@ export function ProductCard({ product, badgeData, deliveryInfo }: { product: any
             <Button
               size="sm"
               className="w-full mt-3"
-              onClick={(e: any) => { e.preventDefault(); e.stopPropagation(); }}
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.preventDefault(); e.stopPropagation(); }}
             >
               <ShoppingCart className="w-4 h-4 mr-1" /> Select Options
             </Button>
@@ -206,7 +224,7 @@ export function ProductCard({ product, badgeData, deliveryInfo }: { product: any
                 size="sm"
                 variant="ghost"
                 className="w-10 h-9 rounded-none p-0"
-                onClick={(e: any) => handleQtyChange(-1, e)}
+                onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleQtyChange(-1, e)}
               >
                 <Minus className="w-4 h-4" />
               </Button>
@@ -215,7 +233,7 @@ export function ProductCard({ product, badgeData, deliveryInfo }: { product: any
                 size="sm"
                 variant="ghost"
                 className="w-10 h-9 rounded-none p-0"
-                onClick={(e: any) => handleQtyChange(1, e)}
+                onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleQtyChange(1, e)}
                 disabled={cartQty >= stock}
               >
                 <Plus className="w-4 h-4" />

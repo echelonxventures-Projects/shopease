@@ -13,7 +13,8 @@ export default defineConfig({
     globals: true,
     environment: "jsdom",
     setupFiles: ["./src/tests/setup.ts"],
-    include: ["src/tests/**/*.test.ts", "src/tests/**/*.test.tsx"],
+    // Integration tests run via vitest.integration.config.ts (real DB, no mock).
+    include: ["src/tests/unit/**/*.test.{ts,tsx}", "src/tests/actions/**/*.test.{ts,tsx}"],
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getAllOrders, updateOrderStatus } from "@/server/actions/admin-actions";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -44,7 +44,7 @@ export default function AdminOrdersPage() {
       await updateOrderStatus(orderId, newStatus);
       toast.success("Order status updated");
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   if (loading) return <div className="p-6"><p className="text-gray-500">Loading...</p></div>;
@@ -83,7 +83,7 @@ export default function AdminOrdersPage() {
             {data?.orders.length === 0 ? (
               <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-500">No orders found</td></tr>
             ) : (
-              data?.orders.map((order: any) => (
+              data?.orders.map((order) => (
                 <tr key={order.id} className="border-t">
                   <td className="px-4 py-3">
                     <Link href={`/admin/orders/${order.id}`} className="font-medium hover:underline text-blue-600">
@@ -103,7 +103,7 @@ export default function AdminOrdersPage() {
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-500">
-                    {new Date(order.createdAt).toLocaleDateString()}
+                    {new Date(order.createdAt).toLocaleDateString("en-IN")}
                   </td>
                   <td className="px-4 py-3">
                     <Select onValueChange={(v) => handleStatusChange(order.id, v as string)}>

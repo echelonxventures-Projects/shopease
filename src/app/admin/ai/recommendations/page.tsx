@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import Link from "next/link";
+
 
 export default async function RecommendationsPage() {
   const totalRecs = await prisma.aIRecommendation.count().catch(() => 0);
@@ -29,7 +29,7 @@ export default async function RecommendationsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow p-6">
           <div className="text-sm text-gray-500">Total Recommendations</div>
-          <div className="text-3xl font-bold text-violet-600">{totalRecs.toLocaleString()}</div>
+          <div className="text-3xl font-bold text-violet-600">{totalRecs.toLocaleString("en-IN")}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
           <div className="text-sm text-gray-500">Active Strategies</div>
@@ -49,7 +49,7 @@ export default async function RecommendationsPage() {
               </tr>
             </thead>
             <tbody>
-              {strategies.map((s: any) => (
+              {strategies.map((s) => (
                 <tr key={s.strategy} className="border-b last:border-0">
                   <td className="p-3 font-medium">{strategiesWithNames[s.strategy] || s.strategy}</td>
                   <td className="p-3 text-center">{s._count}</td>
@@ -65,13 +65,13 @@ export default async function RecommendationsPage() {
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-bold mb-4">Recent Recommendations</h2>
         <div className="space-y-2">
-          {recentRecs.map((r: any) => (
+          {recentRecs.map((r) => (
             <div key={r.id} className="flex items-center justify-between py-2 border-b last:border-0 text-sm">
               <div>
                 <span className="font-medium">{r.strategy}</span>
                 <span className="text-gray-500 ml-2">{r.userId ? `User: ${r.userId.slice(0, 8)}...` : "Anonymous"}</span>
               </div>
-              <span className="text-gray-400">{new Date(r.createdAt).toLocaleString()}</span>
+              <span className="text-gray-400">{new Date(r.createdAt).toLocaleString("en-IN")}</span>
             </div>
           ))}
           {!recentRecs.length && <p className="text-gray-500 text-sm">No recommendations yet</p>}

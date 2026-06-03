@@ -23,10 +23,10 @@ interface ProductPriceDisplayProps {
     subscriptionInterval?: string | null;
     subscriptionTrialDays?: number | null;
   };
-  brand: any;
+  brand: { name: string } | null;
   shortDesc: string | null;
   description: string | null;
-  specs: any;
+  specs: Record<string, unknown> | null;
   avgRating: number;
   reviewCount: number;
   hasTranslation: boolean;
@@ -35,9 +35,9 @@ interface ProductPriceDisplayProps {
   displayComparePrice: number | null;
   displayDiscount: number;
   displayImages: string[];
-  tierPrices?: any[];
-  subscription?: any;
-  bundleItems?: any[];
+  tierPrices?: { id: string; minQty: number; maxQty?: number | null; price?: number | string | null; discountPercentage?: number | string | null }[];
+  subscription?: { interval?: string; trialDays?: number } | null;
+  bundleItems?: { id: string; quantity: number; isRequired?: boolean; product?: { name: string; images?: string[] } | null }[];
 }
 
 export function ProductPriceDisplay({
@@ -132,12 +132,12 @@ export function ProductPriceDisplay({
         {/* Price Display */}
         <div className="mt-4 flex items-center gap-3 flex-wrap">
           <span className="text-3xl font-bold">
-            ₹{displayPrice.toLocaleString()}
+            ₹{displayPrice.toLocaleString("en-IN")}
           </span>
           {displayComparePrice && (
             <>
               <span className="text-lg text-gray-400 line-through">
-                ₹{displayComparePrice.toLocaleString()}
+                ₹{displayComparePrice.toLocaleString("en-IN")}
               </span>
               <span className="text-green-600 font-semibold">{displayDiscount}% off</span>
             </>
@@ -191,13 +191,13 @@ export function ProductPriceDisplay({
                 </tr>
               </thead>
               <tbody>
-                {tierPrices.map((tp: any) => (
+                {tierPrices.map((tp) => (
                   <tr key={tp.id} className="border-t">
                     <td className="p-3">
                       {tp.minQty}{tp.maxQty ? `–${tp.maxQty}` : `+`}
                     </td>
                     <td className="p-3 text-right font-semibold">
-                      {tp.price ? `₹${Number(tp.price).toLocaleString()}` : "—"}
+                      {tp.price ? `₹${Number(tp.price).toLocaleString("en-IN")}` : "—"}
                     </td>
                     <td className="p-3 text-right text-green-600">
                       {tp.discountPercentage ? `${Number(tp.discountPercentage)}% off` : "—"}
@@ -214,7 +214,7 @@ export function ProductPriceDisplay({
           <div className="mt-6 border-t pt-6">
             <h2 className="text-lg font-semibold mb-3">Bundle Contents</h2>
             <div className="space-y-2">
-              {bundleItems.map((item: any) => (
+              {bundleItems.map((item) => (
                 <div key={item.id} className="flex items-center gap-3 border rounded-lg p-3">
                   {item.product?.images?.[0] && (
                     <img src={item.product.images[0]} alt={item.product.name} className="w-12 h-12 object-cover rounded" />

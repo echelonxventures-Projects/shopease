@@ -22,6 +22,7 @@ const STRATEGIES = [
 ];
 
 export default function StackRulesPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [rules, setRules] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ group: "", strategy: "BEST_WINS", maxPromos: "1", description: "" });
@@ -40,9 +41,7 @@ export default function StackRulesPage() {
       setOpen(false);
       setForm({ group: "", strategy: "BEST_WINS", maxPromos: "1", description: "" });
       fetch();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleDelete = async (group: string) => {

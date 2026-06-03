@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -163,7 +163,7 @@ export default function ApprovalRulesPage() {
               {rules.map((rule) => (
                 <TableRow key={rule.id}>
                   <TableCell><Badge>{rule.type.replace("_", " ")}</Badge></TableCell>
-                  <TableCell>{rule.minOrderAmount ? `$${Number(rule.minOrderAmount).toLocaleString()}` : "—"}</TableCell>
+                  <TableCell>{rule.minOrderAmount ? `$${Number(rule.minOrderAmount).toLocaleString("en-IN")}` : "—"}</TableCell>
                   <TableCell>{rule.maxDiscount ? `${Number(rule.maxDiscount)}%` : "—"}</TableCell>
                   <TableCell>{rule.approverRole}</TableCell>
                   <TableCell>

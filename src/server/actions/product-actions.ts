@@ -1,16 +1,18 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getSession, isAdminRole } from "@/lib/auth";
 import { DiscountType } from "@prisma/client";
 import slugify from "slugify";
 import { z } from "zod";
 import { productSchema } from "@/lib/validations/product";
+import { validateBrandCategory } from "@/lib/validations/product";
 import { getProductWithLocale, getProductsByLocale, getFeaturedProductsWithLocale } from "@/server/repositories/product-repo";
 
 // Convert Decimal fields to numbers for client components
 function serializeProduct<T>(product: T): T {
   if (!product) return product;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
   const p = product as any;
   return {
     ...p,
@@ -20,6 +22,7 @@ function serializeProduct<T>(product: T): T {
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
 function serializeProducts<T extends any[]>(products: T): T {
   return products.map(p => serializeProduct(p)) as T;
 }
@@ -44,6 +47,7 @@ export async function getProducts({
   minPrice?: number;
   maxPrice?: number;
 }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic Prisma where filter
   const where: any = { isActive: true };
 
   if (search) {
@@ -61,6 +65,7 @@ export async function getProducts({
     if (maxPrice !== undefined) where.price.lte = maxPrice;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   const sortOptions: Record<string, any> = {
     newest: { createdAt: "desc" },
     price_asc: { price: "asc" },
@@ -105,7 +110,9 @@ export async function getProduct(slug: string) {
   });
   if (!product) return null;
   const serialized = serializeProduct(product);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- enum string cast
   delete (serialized as any).optionTypes;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
   delete (serialized as any).variants;
   return serialized;
 }
@@ -135,14 +142,30 @@ export async function getBrands() {
 }
 
 // Create product (admin)
-export async function createProduct(data: z.infer<typeof productSchema>) {
+export async function createProduct(data: z.input<typeof productSchema>) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const parsed = productSchema.safeParse(data);
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Invalid product data");
 
+  await validateBrandCategory(parsed.data.brandId, parsed.data.categoryId);
+
+  // Duplicate prevention: SKU uniqueness
+  if (parsed.data.sku) {
+    const skuExists = await prisma.product.findFirst({ where: { sku: parsed.data.sku }, select: { id: true } });
+    if (skuExists) throw new Error("A product with this SKU already exists");
+  }
+
+  // Duplicate prevention: same name in same category
+  const nameExists = await prisma.product.findFirst({
+    where: { name: { equals: parsed.data.name as string, mode: "insensitive" }, categoryId: parsed.data.categoryId },
+    select: { id: true },
+  });
+  if (nameExists) throw new Error("A product with this name already exists in this category");
+
   const { brandId, sku, tags, images, discountType, bundleItems, tierPricing, ...rest } = parsed.data;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   const cleaned: any = {
     ...rest,
     uom: rest.uom || null,
@@ -165,32 +188,39 @@ export async function createProduct(data: z.infer<typeof productSchema>) {
 }
 
 // Update product (admin)
-export async function updateProduct(id: string, data: z.infer<typeof productSchema>) {
+export async function updateProduct(id: string, data: Partial<z.infer<typeof productSchema>>) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
-  const parsed = productSchema.safeParse(data);
+  const parsed = productSchema.partial().safeParse(data);
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Invalid product data");
 
+  // Validate brand-category match
+  if (parsed.data.brandId || parsed.data.categoryId) {
+    const existing = await prisma.product.findUnique({ where: { id }, select: { brandId: true, categoryId: true } });
+    const brandId = parsed.data.brandId ?? existing?.brandId;
+    const categoryId = parsed.data.categoryId ?? existing?.categoryId;
+    if (categoryId) await validateBrandCategory(brandId, categoryId);
+  }
+
   const { brandId, sku, tags, images, discountType, bundleItems, tierPricing, ...rest } = parsed.data;
-  const cleaned: any = {
-    ...rest,
-    uom: rest.uom || null,
-    freightClass: rest.freightClass || null,
-    hsCode: rest.hsCode || null,
-  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
+  const cleaned: any = { ...rest };
+  if ("uom" in rest) cleaned.uom = rest.uom || null;
+  if ("freightClass" in rest) cleaned.freightClass = rest.freightClass || null;
+  if ("hsCode" in rest) cleaned.hsCode = rest.hsCode || null;
   return prisma.product.update({
     where: { id },
     data: {
       ...cleaned,
-      brandId: brandId || null,
-      sku: sku || null,
+      ...(brandId !== undefined && { brandId: brandId || null }),
+      ...(sku !== undefined && { sku: sku || null }),
       ...(data.name && { slug: slugify(data.name, { lower: true }) }),
-      tags: typeof tags === "string" ? tags.split(",").map((t: string) => t.trim()).filter(Boolean) : tags ?? undefined,
-      images: typeof images === "string" ? [images] : images,
-      discountType: discountType ? (discountType as DiscountType) : undefined,
-      bundleItems: bundleItems ? JSON.stringify(bundleItems) : undefined,
-      tierPricing: tierPricing ? JSON.stringify(tierPricing) : undefined,
+      ...(tags !== undefined && { tags: typeof tags === "string" ? tags.split(",").map((t: string) => t.trim()).filter(Boolean) : tags ?? undefined }),
+      ...(images !== undefined && { images: typeof images === "string" ? [images] : images }),
+      ...(discountType !== undefined && { discountType: discountType ? (discountType as DiscountType) : undefined }),
+      ...(bundleItems !== undefined && { bundleItems: bundleItems ? JSON.stringify(bundleItems) : undefined }),
+      ...(tierPricing !== undefined && { tierPricing: tierPricing ? JSON.stringify(tierPricing) : undefined }),
     },
   });
 }
@@ -198,7 +228,7 @@ export async function updateProduct(id: string, data: z.infer<typeof productSche
 // Delete product (admin)
 export async function deleteProduct(id: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   return prisma.product.delete({ where: { id } });
 }
@@ -218,6 +248,10 @@ export async function getProductsLocalized({
   limit = 12,
   locale,
   regionId,
+  condition,
+  gender,
+  dietary,
+  freeShipping,
 }: {
   search?: string;
   category?: string;
@@ -227,8 +261,12 @@ export async function getProductsLocalized({
   limit?: number;
   locale?: string;
   regionId?: string;
+  condition?: string;
+  gender?: string;
+  dietary?: string;
+  freeShipping?: string;
 }) {
-  return getProductsByLocale({ search, category, brand, sort, page, limit }, { locale, regionId });
+  return getProductsByLocale({ search, category, brand, sort, page, limit, condition, gender, dietary, freeShipping }, { locale, regionId });
 }
 
 export async function getFeaturedProductsLocalized(locale?: string, regionId?: string) {

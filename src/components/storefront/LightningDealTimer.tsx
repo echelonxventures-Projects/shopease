@@ -14,7 +14,7 @@ interface LightningDealTimerProps {
 }
 
 export function LightningDealTimer({ dealId, userId, onClaimed }: LightningDealTimerProps) {
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<{ startTime: string | Date; endTime: string | Date; totalSlots: number; claimedSlots: number } | null>(null);
   const [timeLeft, setTimeLeft] = useState("");
   const [claiming, setClaiming] = useState(false);
   const [hasEarlyAccess, setHasEarlyAccess] = useState(false);
@@ -60,8 +60,8 @@ export function LightningDealTimer({ dealId, userId, onClaimed }: LightningDealT
       toast.success("Deal claimed!");
       fetch();
       onClaimed?.();
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed");
     }
     setClaiming(false);
   };
@@ -76,7 +76,7 @@ export function LightningDealTimer({ dealId, userId, onClaimed }: LightningDealT
   const effectiveStartTime = hasEarlyAccess ? startTime - 60 * 60 * 1000 : startTime;
   const isEarlyAccessActive = hasEarlyAccess && now >= effectiveStartTime && now < startTime;
   const isDealStarted = now >= effectiveStartTime;
-  const isDealEnded = now > endTime;
+  const _isDealEnded = now > endTime;
   const remaining = stats.totalSlots - stats.claimedSlots;
   const progress = Math.round((stats.claimedSlots / stats.totalSlots) * 100);
 
@@ -89,7 +89,7 @@ export function LightningDealTimer({ dealId, userId, onClaimed }: LightningDealT
           <span className="font-bold text-gray-500">Deal starts soon</span>
         </div>
         <p className="text-sm text-gray-400">
-          Starts at {new Date(startTime).toLocaleTimeString()}
+          Starts at {new Date(startTime).toLocaleTimeString("en-IN")}
         </p>
       </div>
     );

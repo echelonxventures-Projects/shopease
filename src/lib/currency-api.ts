@@ -29,8 +29,8 @@ export async function listCurrencies(): Promise<Record<string, string>> {
     const currencies: Record<string, string> = {};
 
     if (data.success) {
-      Object.entries(data.currencies as Record<string, any>).forEach(([code, info]) => {
-        currencies[code] = (info as any).description || code;
+      Object.entries(data.currencies as Record<string, unknown>).forEach(([code, info]) => {
+        currencies[code] = (info as { description?: string }).description || code;
       });
     }
 

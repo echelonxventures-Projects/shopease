@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { PaymentMethodType, PaymentStatus } from "@prisma/client";
 
 // ===================== PAYMENT PROVIDER INTERFACE =====================
 
@@ -6,12 +7,12 @@ export interface PaymentIntentParams {
   amount: number;
   currency: string;
   userId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface PaymentConfirmParams {
   paymentId: string;
-  params?: Record<string, any>;
+  params?: Record<string, unknown>;
 }
 
 export interface PaymentResult {
@@ -22,7 +23,7 @@ export interface PaymentResult {
   clientSecret?: string;
   redirectUrl?: string;
   error?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface RefundResult {
@@ -37,15 +38,15 @@ export interface WebhookEvent {
   type: string;
   paymentId: string;
   status: string;
-  raw: any;
+  raw: unknown;
 }
 
 export interface PaymentProvider {
   readonly provider: string;
   createPaymentIntent(params: PaymentIntentParams): Promise<PaymentResult>;
-  confirmPayment(paymentId: string, params?: any): Promise<PaymentResult>;
+  confirmPayment(paymentId: string, params?: Record<string, unknown>): Promise<PaymentResult>;
   refund(paymentId: string, amount?: number): Promise<RefundResult>;
-  handleWebhook(body: any, signature?: string): Promise<WebhookEvent>;
+  handleWebhook(body: unknown, signature?: string): Promise<WebhookEvent>;
   getSupportedMethods(): Promise<string[]>;
 }
 
@@ -83,7 +84,7 @@ export async function resolveGateways(regionId: string) {
     orderBy: { priority: "asc" },
   });
 
-  return gatewayRegions.map((gr: any) => ({
+  return gatewayRegions.map((gr) => ({
     gatewayId: gr.gateway.id,
     provider: gr.gateway.provider,
     name: gr.gateway.name,
@@ -91,7 +92,7 @@ export async function resolveGateways(regionId: string) {
     priority: gr.priority,
     currency: gr.currency,
     config: gr.config,
-    methods: gr.gateway.methods.map((m: any) => ({
+    methods: gr.gateway.methods.map((m) => ({
       method: m.method,
       name: m.name,
       icon: m.icon,
@@ -124,19 +125,19 @@ export async function createPaymentTransaction(data: {
   currency: string;
   status?: string;
   providerTxnId?: string;
-  metadata?: any;
+  metadata?: unknown;
 }) {
   return prisma.paymentTransaction.create({
     data: {
       orderId: data.orderId,
       gatewayId: data.gatewayId,
-      method: data.method as any,
+      method: data.method as PaymentMethodType,
       provider: data.provider,
       amount: data.amount,
       currency: data.currency,
-      status: (data.status || "PENDING") as any,
+      status: (data.status || "PENDING") as PaymentStatus,
       providerTxnId: data.providerTxnId,
-      metadata: data.metadata,
+      metadata: data.metadata as object | undefined,
     },
   });
 }
@@ -147,14 +148,14 @@ export async function updatePaymentTransaction(
     status?: string;
     providerTxnId?: string;
     failureReason?: string;
-    metadata?: any;
+    metadata?: unknown;
   }
 ) {
-  const updateData: any = { ...data };
-  if (data.status) updateData.status = data.status as any;
+  const updateData: Record<string, unknown> = { ...data };
+  if (data.status) updateData.status = data.status as PaymentStatus;
   return prisma.paymentTransaction.update({
     where: { id },
-    data: updateData,
+    data: updateData as { status?: PaymentStatus; providerTxnId?: string; failureReason?: string; metadata?: object },
   });
 }
 

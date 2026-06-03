@@ -2,7 +2,8 @@
 // Connect with SAP, Oracle NetSuite, Microsoft Dynamics, etc.
 
 const ERP_ENDPOINT = process.env.ERP_ENDPOINT || "";
-const ERP_API_KEY = process.env.ERP_API_KEY || "";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _ERP_API_KEY = process.env.ERP_API_KEY || "";
 
 export interface ERPSyncResult {
   success: boolean;
@@ -20,8 +21,8 @@ export async function syncProductToERP(productId: string): Promise<ERPSyncResult
     // TODO: Implement actual ERP product sync
     console.log(`[ERP] Syncing product ${productId} to ${ERP_ENDPOINT}`);
     return { success: true, errors: [], syncedAt: new Date().toISOString() };
-  } catch (err: any) {
-    return { success: false, errors: [err.message], syncedAt: new Date().toISOString() };
+  } catch (err) {
+    return { success: false, errors: [(err instanceof Error ? err.message : String(err))], syncedAt: new Date().toISOString() };
   }
 }
 
@@ -35,8 +36,8 @@ export async function syncOrderToERP(orderId: string): Promise<ERPSyncResult> {
     // TODO: Implement actual ERP order sync (financial recording, invoicing)
     console.log(`[ERP] Syncing order ${orderId} to ${ERP_ENDPOINT}`);
     return { success: true, errors: [], syncedAt: new Date().toISOString() };
-  } catch (err: any) {
-    return { success: false, errors: [err.message], syncedAt: new Date().toISOString() };
+  } catch (err) {
+    return { success: false, errors: [(err instanceof Error ? err.message : String(err))], syncedAt: new Date().toISOString() };
   }
 }
 
@@ -50,7 +51,7 @@ export async function syncInventoryToERP(productId: string, quantity: number): P
     // TODO: Implement actual ERP inventory sync
     console.log(`[ERP] Syncing inventory for product ${productId}: qty ${quantity}`);
     return { success: true, errors: [], syncedAt: new Date().toISOString() };
-  } catch (err: any) {
-    return { success: false, errors: [err.message], syncedAt: new Date().toISOString() };
+  } catch (err) {
+    return { success: false, errors: [(err instanceof Error ? err.message : String(err))], syncedAt: new Date().toISOString() };
   }
 }

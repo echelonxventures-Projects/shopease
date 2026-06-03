@@ -80,6 +80,7 @@ export async function listLoyaltyPrograms() {
 
 // ===================== LOYALTY PROGRAM ADMIN =====================
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic form data from client
 export async function createLoyaltyProgram(data: any) {
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");
@@ -95,6 +96,7 @@ export async function createLoyaltyProgram(data: any) {
   });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic form data from client
 export async function updateLoyaltyProgram(id: string, data: any) {
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");
@@ -125,6 +127,7 @@ export async function allLoyaltyPrograms() {
 
 // ===================== REFERRAL ADMIN =====================
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic form data from client
 export async function createReferralPromo(data: any) {
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");

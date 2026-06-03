@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 // Helper: upsert a page content record
-async function upsertPage(slug: string, data: any) {
+async function upsertPage(slug: string, data: Omit<Parameters<typeof prisma.pageContent.create>[0]["data"], "slug">) {
   await prisma.pageContent.upsert({
     where: { slug },
     update: data,

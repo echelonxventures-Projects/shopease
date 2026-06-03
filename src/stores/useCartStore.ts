@@ -34,7 +34,8 @@ function itemKey(item: CartItem) {
 
 export const useCartStore = create<CartStore>()(
   persist(
-    (set, get) => ({
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    (set, _get) => ({
       items: [],
       savedItems: [],
       totalItems: 0,

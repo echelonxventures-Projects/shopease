@@ -23,7 +23,8 @@ async function seedCountry(code: string, name: string, states: Record<string, S>
   }
 }
 
-async function seedUK() {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function _seedUK() {
   console.log("Seeding United Kingdom...");
   const countryId = await upsert({ name: "United Kingdom", code: "GB", type: LocationType.COUNTRY });
   const data: Record<string, Array<{ name: string; cities: string[] }>> = {

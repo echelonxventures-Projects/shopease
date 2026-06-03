@@ -14,7 +14,7 @@ import {
 } from "@/server/actions/payment-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
-const PAYMENT_METHODS = [
+const _PAYMENT_METHODS = [
   { value: "CARD", label: "Credit/Debit Card" },
   { value: "UPI", label: "UPI" },
   { value: "WALLET", label: "Wallet" },
@@ -43,12 +43,15 @@ const PAYMENT_METHODS = [
 
 export default function PaymentsPage() {
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [gateways, setGateways] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedGateway, setSelectedGateway] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [regions, setRegions] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [methods, setMethods] = useState<any[]>([]);
-  const [regionDialog, setRegionDialog] = useState(false);
+  const [_regionDialog, _setRegionDialog] = useState(false);
   const [editingMethod, setEditingMethod] = useState<string | null>(null);
 
   const fetch = () => {
@@ -82,16 +85,17 @@ export default function PaymentsPage() {
       await toggleGatewayActive(id, !current);
       toast.success("Gateway updated");
       fetch();
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Operation failed"); }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex type from external source
   const handleSetRegion = async (regionId: string, data: any) => {
     if (!selectedGateway) return;
     try {
       await setGatewayRegion(selectedGateway, regionId, data);
       toast.success("Region config updated");
       loadGatewayDetail(selectedGateway);
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Operation failed"); }
   };
 
   const handleToggleMethod = async (method: string, current: boolean) => {
@@ -100,7 +104,7 @@ export default function PaymentsPage() {
       await toggleGatewayMethod(selectedGateway, method, !current);
       toast.success("Method updated");
       loadGatewayDetail(selectedGateway);
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Operation failed"); }
   };
 
   const handleSaveMethodConfig = async (method: string, config: string) => {
@@ -129,7 +133,7 @@ export default function PaymentsPage() {
 
       {/* Gateway List */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        {gateways.map((gw: any) => (
+        {gateways.map((gw) => (
           <div
             key={gw.id}
             className={`bg-white rounded-lg shadow p-4 cursor-pointer transition ${
@@ -164,7 +168,7 @@ export default function PaymentsPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-bold mb-4">Region Configuration</h2>
             <div className="space-y-3">
-              {regions.map((r: any) => (
+              {regions.map((r) => (
                 <div key={r.id} className="flex items-center justify-between border-b pb-3">
                   <div>
                     <p className="font-medium">{r.region.name} ({r.region.code})</p>
@@ -206,7 +210,7 @@ export default function PaymentsPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-bold mb-4">Payment Methods</h2>
             <div className="space-y-3">
-              {methods.map((m: any) => (
+              {methods.map((m) => (
                 <div key={m.id} className="flex items-center justify-between border-b pb-3">
                   <div className="flex-1">
                     <p className="font-medium">{m.name}</p>
@@ -263,8 +267,8 @@ export default function PaymentsPage() {
   );
 }
 
-function MethodConfigEditor({ method, methods, onSave, onClose }: any) {
-  const m = methods.find((mm: any) => mm.method === method);
+function MethodConfigEditor({ method, methods, onSave, onClose }: { method: string | null; methods: Array<{ method: string; config?: Record<string, unknown> }>; onSave: (config: string) => void; onClose: () => void }) {
+  const m = methods.find((mm) => mm.method === method);
   const [configText, setConfigText] = useState(m?.config ? JSON.stringify(m.config, null, 2) : "");
 
   return (

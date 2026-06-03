@@ -11,8 +11,18 @@ interface AIRecommendationCarouselProps {
   limit?: number;
 }
 
+interface RecommendedProduct {
+  id: string;
+  slug: string;
+  name: string;
+  price: number | string;
+  images?: string[];
+  avgRating?: number | string;
+}
+
 export function AIRecommendationCarousel({ title, context, limit = 8 }: AIRecommendationCarouselProps) {
-  const { products, loading, error } = useAIRecommendations(context, limit);
+  const { products: rawProducts, loading, error } = useAIRecommendations(context, limit);
+  const products = rawProducts as RecommendedProduct[];
 
   if (loading) {
     return (
@@ -47,10 +57,10 @@ export function AIRecommendationCarousel({ title, context, limit = 8 }: AIRecomm
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4" role="list">
         {products
-          .filter((product: any, index: number, self: any[]) =>
+          .filter((product, index: number, self) =>
             index === self.findIndex((p) => p.id === product.id)
           )
-          .map((product: any) => (
+          .map((product) => (
           <Link key={product.id} href={`/products/${product.slug}`} className="group" role="listitem">
             <div className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
               {product.images?.[0] && (
@@ -60,7 +70,7 @@ export function AIRecommendationCarousel({ title, context, limit = 8 }: AIRecomm
               )}
               <div className="p-3">
                 <p className="text-sm font-medium truncate">{product.name}</p>
-                <p className="text-sm font-bold text-violet-600 mt-1">₹{Number(product.price).toLocaleString()}</p>
+                <p className="text-sm font-bold text-violet-600 mt-1">₹{Number(product.price).toLocaleString("en-IN")}</p>
                 {Number(product.avgRating) > 0 && (
                   <p className="text-xs text-yellow-500 mt-1">{"★".repeat(Math.round(Number(product.avgRating)))}</p>
                 )}

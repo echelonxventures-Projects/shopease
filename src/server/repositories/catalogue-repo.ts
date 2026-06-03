@@ -36,12 +36,13 @@ export async function getSiteProducts(
 
   // Handle sorting with custom site sortOrder first
   const [sortField, sortDir] = [sortBy, sortOrder.toUpperCase()];
-  const [products, total] = await Promise.all([
+  const [products, _total] = await Promise.all([
     prisma.product.findMany({
       where,
       include: { category: true, brand: true },
       skip: (page - 1) * limit,
       take: limit,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
       orderBy: sortField === "createdAt" ? { [sortField]: sortDir as any } : { [sortField]: sortDir as any },
     }),
     prisma.product.count({ where }),
@@ -107,6 +108,7 @@ export async function getSiteProduct(siteId: string, slug: string) {
   return product || null;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- generic Prisma result transformer
 function applyOverrides(sp: any) {
   return {
     ...sp.product,

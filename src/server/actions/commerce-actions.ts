@@ -1,7 +1,9 @@
 "use server";
 
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { validate, vId, vStr } from "@/lib/validate";
 
 // ===================== REVIEW VOTING =====================
 
@@ -18,8 +20,8 @@ export async function voteReviewHelpful(reviewId: string) {
       data: { helpfulVotes: { increment: 1 } },
     });
     return { voted: true };
-  } catch (err: any) {
-    if (err.code === "P2002") throw new Error("Already voted");
+  } catch (err) {
+    if (err instanceof Error && "code" in err && (err as { code: string }).code === "P2002") throw new Error("Already voted");
     throw err;
   }
 }
@@ -38,12 +40,17 @@ export async function createQuestion(data: {
   productId: string; question: string; userName?: string;
 }) {
   const session = await getSession();
+  const input = validate(z.object({
+    productId: vId,
+    question: vStr(2000),
+    userName: z.string().trim().max(100).optional(),
+  }), data);
   return prisma.productQuestion.create({
     data: {
-      productId: data.productId,
+      productId: input.productId,
       userId: session?.user.id,
-      userName: data.userName || session?.user?.name || "Anonymous",
-      question: data.question,
+      userName: (input.userName as string) || session?.user?.name || "Anonymous",
+      question: input.question as string,
     },
   });
 }
@@ -52,12 +59,17 @@ export async function createAnswer(data: {
   questionId: string; answer: string; isSeller?: boolean;
 }) {
   const session = await getSession();
+  const input = validate(z.object({
+    questionId: vId,
+    answer: vStr(5000),
+    isSeller: z.boolean().optional(),
+  }), data);
   return prisma.productAnswer.create({
     data: {
-      questionId: data.questionId,
+      questionId: input.questionId,
       userId: session?.user.id,
-      isSeller: data.isSeller ?? false,
-      answer: data.answer,
+      isSeller: input.isSeller ?? false,
+      answer: input.answer as string,
     },
   });
 }
@@ -242,6 +254,7 @@ export async function getShareCount(productId: string) {
 // ===================== DELIVERY SLOTS =====================
 
 export async function listDeliverySlots(from?: string, to?: string) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic Prisma where filter
   const where: any = { isActive: true };
   if (from) {
     const start = new Date(from);

@@ -47,7 +47,7 @@ export default function OrdersPage() {
       {orders.length === 0 ? (
         <div className="text-center py-16">
           <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500 text-lg mb-4">You haven't placed any orders yet</p>
+          <p className="text-gray-500 text-lg mb-4">You haven&apos;t placed any orders yet</p>
           <Button onClick={() => router.push("/products")}>Browse Products</Button>
         </div>
       ) : (
@@ -65,7 +65,7 @@ export default function OrdersPage() {
                       <Badge className={statusColors[order.status] || "bg-gray-100 text-gray-800"}>{order.status.replace(/_/g, " ")}</Badge>
                     </div>
                     <p className="text-sm text-gray-500 mt-1">
-                      {order.items ? (order.items as any[]).length : 0} item(s) · ₹{order.total != null ? (typeof order.total?.toLocaleString === 'function' ? order.total.toLocaleString() : Number(order.total).toLocaleString()) : '0'}
+                      {order.items ? (order.items as any[]).length : 0} item(s) · ₹{order.total != null ? (typeof order.total?.toLocaleString === 'function' ? order.total.toLocaleString("en-IN") : Number(order.total).toLocaleString("en-IN")) : '0'}
                     </p>
                     <p className="text-xs text-gray-400">
                       {new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}

@@ -124,6 +124,7 @@ export async function generateVariants(productId: string) {
   await prisma.productVariant.deleteMany({ where: { productId } });
 
   // Create variants
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic array from Prisma Json field
   const created: any[] = [];
   for (const combo of combinations) {
     const variant = await prisma.productVariant.create({
@@ -334,6 +335,7 @@ export async function bulkUpdateVariants(
   const session = await getSession();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   const cleanFields: any = {};
   if (fields.price !== undefined) cleanFields.price = fields.price;
   if (fields.stock !== undefined) cleanFields.stock = fields.stock;
@@ -558,6 +560,7 @@ export async function getVariantsWithFilters(
     pageSize?: number;
   },
 ) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic Prisma where filter
   const where: any = { productId };
 
   if (filters?.search) {
@@ -577,6 +580,7 @@ export async function getVariantsWithFilters(
     where.options = { some: { optionValueId: filters.optionValueId } };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   const orderBy: any = {};
   if (filters?.sortBy) {
     orderBy[filters.sortBy] = filters.sortOrder || "asc";
@@ -663,11 +667,11 @@ export async function importVariantsCSV(productId: string, csvContent: string) {
   if (lines.length < 2) throw new Error("CSV must have header and at least one data row");
 
   const headers = lines[0].split(",").map((h) => h.replace(/"/g, "").trim());
-  const optionTypeColumns = headers.filter(
+  const _optionTypeColumns = headers.filter(
     (h) => !["id", "sku", "price", "comparePrice", "stock", "isActive", "isDefault", "discountType", "discountValue", "weight", "images", "barcodes"].includes(h),
   );
 
-  const optionTypes = await prisma.productOptionType.findMany({
+  const _optionTypes = await prisma.productOptionType.findMany({
     where: { productId },
     include: { values: true },
   });
@@ -686,7 +690,7 @@ export async function importVariantsCSV(productId: string, csvContent: string) {
         const existing = await prisma.productVariant.findUnique({ where: { id: variantId } });
         if (existing) {
           // Update existing variant
-          const updateData: any = {};
+          const updateData: Record<string, unknown> = {};
           if (row.sku) updateData.sku = row.sku;
           if (row.price) updateData.price = parseFloat(row.price);
           if (row.comparePrice) updateData.comparePrice = parseFloat(row.comparePrice);

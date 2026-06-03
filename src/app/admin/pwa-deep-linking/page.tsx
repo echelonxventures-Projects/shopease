@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getConfig, bulkSetConfigs } from "@/server/actions/settings-actions";
-import { Smartphone, Globe, Package, Save, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { Smartphone, Globe, Package, Save, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

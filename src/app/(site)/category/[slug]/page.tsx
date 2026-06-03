@@ -3,7 +3,7 @@ import { getLocaleRegion } from "@/lib/cookies";
 import { serializeForClient } from "@/lib/serialize";
 import { ProductGrid } from "@/components/storefront/ProductGrid";
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+
 
 export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

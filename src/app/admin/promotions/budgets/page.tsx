@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { listBudgetCaps, createBudgetCap, updateBudgetCap, deleteBudgetCap, listAllPromos } from "@/server/actions/phaseA-actions";
+import { listBudgetCaps, createBudgetCap, deleteBudgetCap, listAllPromos } from "@/server/actions/phaseA-actions";
 import { toast } from "sonner";
 
 export default function BudgetCapsPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [caps, setCaps] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [promos, setPromos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -31,15 +33,16 @@ export default function BudgetCapsPage() {
       toast.success("Created");
       setShowForm(false); setForm({ promoId: "", totalBudget: "", dailyLimit: "" });
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete?")) return;
     try { await deleteBudgetCap(id); toast.success("Deleted"); fetch(); }
-    catch (err: any) { toast.error(err.message); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex type from external source
   const pctSpent = (cap: any) => {
     if (!cap.totalBudget || Number(cap.totalBudget) === 0) return 0;
     return Math.min(100, (Number(cap.spent) / Number(cap.totalBudget)) * 100);
@@ -102,9 +105,9 @@ export default function BudgetCapsPage() {
                 return (
                   <tr key={cap.id} className="border-t hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium">{cap.promo?.title}</td>
-                    <td className="px-4 py-3 text-sm">₹{Number(cap.totalBudget).toLocaleString()}</td>
-                    <td className="px-4 py-3 text-sm">₹{Number(cap.spent).toLocaleString()}</td>
-                    <td className="px-4 py-3 text-sm">{cap.dailyLimit ? `₹${Number(cap.dailySpent).toLocaleString()} / ₹${Number(cap.dailyLimit).toLocaleString()}` : "-"}</td>
+                    <td className="px-4 py-3 text-sm">₹{Number(cap.totalBudget).toLocaleString("en-IN")}</td>
+                    <td className="px-4 py-3 text-sm">₹{Number(cap.spent).toLocaleString("en-IN")}</td>
+                    <td className="px-4 py-3 text-sm">{cap.dailyLimit ? `₹${Number(cap.dailySpent).toLocaleString("en-IN")} / ₹${Number(cap.dailyLimit).toLocaleString("en-IN")}` : "-"}</td>
                     <td className="px-4 py-3">
                       <div className="w-32 bg-gray-200 rounded-full h-2">
                         <div className={`h-2 rounded-full ${pct > 90 ? "bg-red-500" : pct > 70 ? "bg-yellow-500" : "bg-green-500"}`}

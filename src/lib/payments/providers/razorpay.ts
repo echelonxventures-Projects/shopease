@@ -17,8 +17,8 @@ class RazorpayProvider implements PaymentProvider {
     if (this.keyId) return;
     if (regionId) {
       const config = await getGatewayConfig("razorpay", regionId);
-      this.keyId = (config?.config as any)?.keyId || process.env.RAZORPAY_KEY_ID || null;
-      this.keySecret = (config?.config as any)?.keySecret || process.env.RAZORPAY_KEY_SECRET || null;
+      this.keyId = (config?.config as { keyId?: string })?.keyId || process.env.RAZORPAY_KEY_ID || null;
+      this.keySecret = (config?.config as { keySecret?: string })?.keySecret || process.env.RAZORPAY_KEY_SECRET || null;
     }
     if (!this.keyId) {
       this.keyId = process.env.RAZORPAY_KEY_ID || null;
@@ -27,7 +27,7 @@ class RazorpayProvider implements PaymentProvider {
   }
 
   async createPaymentIntent(params: PaymentIntentParams): Promise<PaymentResult> {
-    await this.init(params.metadata?.regionId);
+    await this.init(params.metadata?.regionId as string | undefined);
     if (!this.keyId) {
       return { success: false, paymentId: "", status: "failed", error: "Razorpay API keys not configured" };
     }
@@ -43,12 +43,13 @@ class RazorpayProvider implements PaymentProvider {
         clientSecret: `rzp_${Math.random().toString(36).slice(2, 15)}`,
         metadata: { provider: "razorpay", amount: params.amount, currency: params.currency },
       };
-    } catch (error: any) {
-      return { success: false, paymentId: "", status: "failed", error: error.message };
+    } catch (error) {
+      return { success: false, paymentId: "", status: "failed", error: (error instanceof Error ? error.message : String(error)) };
     }
   }
 
-  async confirmPayment(paymentId: string, params?: any): Promise<PaymentResult> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async confirmPayment(paymentId: string, _params?: Record<string, unknown>): Promise<PaymentResult> {
     await this.init();
     if (!this.keyId) {
       return { success: false, paymentId, status: "failed", error: "Razorpay API keys not configured" };
@@ -63,8 +64,8 @@ class RazorpayProvider implements PaymentProvider {
         status: "succeeded",
         metadata: { provider: "razorpay" },
       };
-    } catch (error: any) {
-      return { success: false, paymentId, status: "failed", error: error.message };
+    } catch (error) {
+      return { success: false, paymentId, status: "failed", error: (error instanceof Error ? error.message : String(error)) };
     }
   }
 
@@ -82,17 +83,18 @@ class RazorpayProvider implements PaymentProvider {
         amount: amount || 0,
         status: "processed",
       };
-    } catch (error: any) {
-      return { success: false, refundId: "", amount: 0, status: "failed", error: error.message };
+    } catch (error) {
+      return { success: false, refundId: "", amount: 0, status: "failed", error: (error instanceof Error ? error.message : String(error)) };
     }
   }
 
-  async handleWebhook(body: any, signature?: string): Promise<WebhookEvent> {
+  async handleWebhook(body: unknown, signature?: string): Promise<WebhookEvent> {
     if (!signature) {
       throw new Error("Razorpay webhook requires signature");
     }
     // In production: verify webhook signature using razorpay.webhookVerify()
-    const raw = typeof body === "string" ? JSON.parse(body) : body;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- webhook payload shape varies
+    const raw: any = typeof body === "string" ? JSON.parse(body) : body;
     return {
       type: raw.event || "unknown",
       paymentId: raw.payload?.payment?.entity?.id || "",

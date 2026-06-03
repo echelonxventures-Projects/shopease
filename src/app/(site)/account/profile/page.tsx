@@ -7,11 +7,11 @@ import { exportUserData, deleteAccount, getConsents, recordConsent, withdrawCons
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { User, Lock, Package, MapPin, Star, ArrowRight, Download, Shield, Trash2 } from "lucide-react";
+import { User, Package, MapPin, Star, ArrowRight, Download, Shield, Trash2 } from "lucide-react";
 import Link from "next/link";
 
 type Profile = {
@@ -253,7 +253,7 @@ export default function ProfilePage() {
                     <div>
                       <p className="font-medium text-sm">{label}</p>
                       <p className="text-xs text-gray-400">
-                        {c.active ? "Active since " + new Date(c.consentedAt).toLocaleDateString() : "Withdrawn on " + new Date(c.withdrawnAt!).toLocaleDateString()}
+                        {c.active ? "Active since " + new Date(c.consentedAt).toLocaleDateString("en-IN") : "Withdrawn on " + new Date(c.withdrawnAt!).toLocaleDateString("en-IN")}
                       </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -306,7 +306,7 @@ export default function ProfilePage() {
           <DialogHeader>
             <DialogTitle className="text-red-600">Delete Account</DialogTitle>
             <DialogDescription>
-              This action is permanent. Type "DELETE MY ACCOUNT" to confirm.
+              This action is permanent. Type &quot;DELETE MY ACCOUNT&quot; to confirm.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">

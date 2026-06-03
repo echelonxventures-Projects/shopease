@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 export const giftHandler: PromotionHandler = {
   types: ["COUPON", "MINIMUM_SPEND"],
   scope() { return "ITEM"; },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PromotionHandler interface contract
   async evaluate(promo: any, context: PromotionContext) {
     const gwp = await prisma.giftWithPurchase.findUnique({ where: { promoId: promo.id } });
     if (!gwp || !gwp.isActive) return null;

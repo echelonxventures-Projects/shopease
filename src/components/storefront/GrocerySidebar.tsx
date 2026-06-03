@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
+
 
 export function GrocerySidebar({ category, subcategories, selectedSubcategoryId, onSelect }: {
   category?: { id: string; name: string; slug: string };
-  subcategories: any[];
+  subcategories: { id: string; name: string; slug: string; _count?: { products: number } }[];
   selectedSubcategoryId?: string;
   onSelect?: (id: string) => void;
 }) {

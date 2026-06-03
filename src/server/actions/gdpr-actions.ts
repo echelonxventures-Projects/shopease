@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getSession, isAdminRole } from "@/lib/auth";
 import { isGdprRegion } from "@/lib/gdpr";
 
 // ===================== CONSENT MANAGEMENT =====================
@@ -15,17 +15,19 @@ export async function recordConsent(
 ) {
   // Allow self-consent or admin consent on behalf of user
   const session = await getSession();
-  const sessionUserId = (session as any)?.user?.id;
-  const sessionRole = (session as any)?.user?.role;
+  const sessionUserId = session?.user?.id;
+  const sessionRole = session?.user?.role;
   if (sessionUserId !== userId && sessionRole !== "ADMIN") throw new Error("Unauthorized");
 
   // Mark any previous active consent as withdrawn
   await prisma.consentRecord.updateMany({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- enum string cast
     where: { userId, type: type as any, withdrawnAt: null },
     data: { withdrawnAt: new Date() },
   });
 
   const record = await prisma.consentRecord.create({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- enum string cast
     data: { userId, type: type as any, version, ipAddress, userAgent },
   });
 
@@ -46,11 +48,12 @@ export async function recordConsent(
 
 export async function withdrawConsent(userId: string, type: string) {
   const session = await getSession();
-  const sessionUserId = (session as any)?.user?.id;
-  const sessionRole = (session as any)?.user?.role;
+  const sessionUserId = session?.user?.id;
+  const sessionRole = session?.user?.role;
   if (sessionUserId !== userId && sessionRole !== "ADMIN") throw new Error("Unauthorized");
 
   const updated = await prisma.consentRecord.updateMany({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- enum string cast
     where: { userId, type: type as any, withdrawnAt: null },
     data: { withdrawnAt: new Date() },
   });
@@ -71,8 +74,8 @@ export async function withdrawConsent(userId: string, type: string) {
 
 export async function getConsents(userId: string) {
   const session = await getSession();
-  const sessionUserId = (session as any)?.user?.id;
-  const sessionRole = (session as any)?.user?.role;
+  const sessionUserId = session?.user?.id;
+  const sessionRole = session?.user?.role;
   if (sessionUserId !== userId && sessionRole !== "ADMIN") throw new Error("Unauthorized");
 
   const records = await prisma.consentRecord.findMany({
@@ -90,8 +93,8 @@ export async function getConsents(userId: string) {
 
 export async function exportUserData(userId: string) {
   const session = await getSession();
-  const sessionUserId = (session as any)?.user?.id;
-  const sessionRole = (session as any)?.user?.role;
+  const sessionUserId = session?.user?.id;
+  const sessionRole = session?.user?.role;
   if (sessionUserId !== userId && sessionRole !== "ADMIN") throw new Error("Unauthorized");
 
   const [user, addresses, orders, reviews, wishlist, consents, wallet, notifications, supportTickets] =
@@ -136,8 +139,8 @@ export async function exportUserData(userId: string) {
 
 export async function deleteAccount(userId: string) {
   const session = await getSession();
-  const sessionUserId = (session as any)?.user?.id;
-  const sessionRole = (session as any)?.user?.role;
+  const sessionUserId = session?.user?.id;
+  const sessionRole = session?.user?.role;
   if (sessionUserId !== userId && sessionRole !== "ADMIN") throw new Error("Unauthorized");
 
   const existing = await prisma.user.findUnique({ where: { id: userId } });
@@ -149,6 +152,7 @@ export async function deleteAccount(userId: string) {
   const anonEmail = `deleted_${anonId}@deleted.local`;
   const anonName = "Deleted User";
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   await prisma.$transaction(async (tx: any) => {
     // Soft-delete user + anonymize PII
     await tx.user.update({
@@ -188,6 +192,7 @@ export async function deleteAccount(userId: string) {
     const orders = await tx.order.findMany({ where: { userId } });
     for (const order of orders) {
       if (order.shippingAddress && typeof order.shippingAddress === "object") {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
         const sa = order.shippingAddress as Record<string, any>;
         const anonymized = {
           ...sa,
@@ -232,13 +237,13 @@ export async function deleteAccount(userId: string) {
 
 export async function adminExportUserData(targetId: string) {
   const session = await getSession();
-  if (!((session as any)?.user?.role === "ADMIN")) throw new Error("Unauthorized");
+  if (!(session?.user?.role === "ADMIN")) throw new Error("Unauthorized");
   return exportUserData(targetId);
 }
 
 export async function adminDeleteUser(targetId: string) {
   const session = await getSession();
-  if ((session as any)?.user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (session?.user?.role !== "ADMIN") throw new Error("Unauthorized");
   return deleteAccount(targetId);
 }
 
@@ -267,7 +272,7 @@ export async function checkGdprRegion(regionId: string | null) {
  */
 export async function runDataRetention(retentionDays = 30) {
   const session = await getSession();
-  if ((session as any)?.user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (session?.user?.role !== "ADMIN") throw new Error("Unauthorized");
 
   const retentionDate = new Date(Date.now() - retentionDays * 86400000);
   const auditRetentionDate = new Date(Date.now() - 730 * 86400000); // 2 years
@@ -280,6 +285,7 @@ export async function runDataRetention(retentionDays = 30) {
     expiredConsentsPurged: 0,
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   await prisma.$transaction(async (tx: any) => {
     // 1. Hard-delete soft-deleted users older than retention period
     const deletedUsers = await tx.user.findMany({
@@ -318,7 +324,7 @@ export async function runDataRetention(retentionDays = 30) {
 
   await prisma.auditLog.create({
     data: {
-      userId: (session as any).user?.id,
+      userId: session!.user?.id,
       action: "DATA_RETENTION_RUN",
       entityType: "System",
       details: results,
@@ -333,7 +339,7 @@ export async function runDataRetention(retentionDays = 30) {
  */
 export async function getDataRetentionStatus(retentionDays = 30) {
   const session = await getSession();
-  if ((session as any)?.user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (session?.user?.role !== "ADMIN") throw new Error("Unauthorized");
 
   const retentionDate = new Date(Date.now() - retentionDays * 86400000);
   const auditRetentionDate = new Date(Date.now() - 730 * 86400000);

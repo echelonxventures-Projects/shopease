@@ -9,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 
 export default function ABTestingPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [tests, setTests] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [allPromos, setAllPromos] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
 
@@ -30,9 +32,7 @@ export default function ABTestingPage() {
       setOpen(false);
       setForm(formEmpty);
       fetch();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleDelete = async (id: string) => {
@@ -41,12 +41,11 @@ export default function ABTestingPage() {
       await deleteABTest(id);
       toast.success("Deleted");
       fetch();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
-  const formatDate = (d: any) => d ? new Date(d).toLocaleDateString() : "-";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex type from external source
+  const formatDate = (d: any) => d ? new Date(d).toLocaleDateString("en-IN") : "-";
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {

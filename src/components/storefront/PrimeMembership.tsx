@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { getMyMembership, subscribePrime, cancelMembership } from "@/server/actions/membership-actions";
 import { Button } from "@/components/ui/button";
-import { Crown, Check, X, Shield, Truck, Sparkles, Clock } from "lucide-react";
+import { Crown, Check, Shield, Truck, Sparkles, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 const PRIME_FEATURES = [
@@ -33,13 +33,13 @@ const TIERS = [
 ];
 
 export function PrimeMembership() {
-  const [membership, setMembership] = useState<any>(null);
+  const [membership, setMembership] = useState<{ status?: string; tier?: string; expiresAt?: string | Date; earlyAccess?: boolean; autoRenew?: boolean; endDate?: string | Date } | null>(null);
   const [selectedTier, setSelectedTier] = useState("PRIME");
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("annual");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    getMyMembership().then(setMembership).catch(() => {});
+    getMyMembership().then((data) => setMembership(data as unknown as typeof membership)).catch(() => {});
   }, []);
 
   const handleSubscribe = async () => {
@@ -50,7 +50,7 @@ export function PrimeMembership() {
       await subscribePrime({ tier: selectedTier, billingCycle, price });
       toast.success("Prime membership activated!");
       const updated = await getMyMembership();
-      setMembership(updated);
+      setMembership(updated as unknown as typeof membership);
     } catch {
       toast.error("Subscription failed");
     } finally {

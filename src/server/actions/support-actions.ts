@@ -2,11 +2,11 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { ActivitySeverity } from "@prisma/client";
+import { ActivitySeverity, Prisma } from "@prisma/client";
 
 export async function getSystemActivities({ severity, limit = 50 }: { severity?: string; limit?: number }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "SUPPORT") throw new Error("Unauthorized");
+  if (!session || session!.user?.role !== "SUPPORT") throw new Error("Unauthorized");
 
   const where = severity && severity !== "ALL" ? { severity: severity as ActivitySeverity } : {};
 
@@ -19,9 +19,9 @@ export async function getSystemActivities({ severity, limit = 50 }: { severity?:
 
 export async function getAuditLogs({ userId, entityType, limit = 50 }: { userId?: string; entityType?: string; limit?: number }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "SUPPORT") throw new Error("Unauthorized");
+  if (!session || session!.user?.role !== "SUPPORT") throw new Error("Unauthorized");
 
-  const where: any = {};
+  const where: Prisma.AuditLogWhereInput = {};
   if (userId) where.userId = userId;
   if (entityType) where.entityType = entityType;
 
@@ -35,14 +35,14 @@ export async function getAuditLogs({ userId, entityType, limit = 50 }: { userId?
 
 export async function getSystemConfigs() {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "SUPPORT") throw new Error("Unauthorized");
+  if (!session || session!.user?.role !== "SUPPORT") throw new Error("Unauthorized");
 
   return prisma.systemConfig.findMany({ orderBy: { key: "asc" } });
 }
 
 export async function updateSystemConfig(key: string, value: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "SUPPORT") throw new Error("Unauthorized");
+  if (!session || session!.user?.role !== "SUPPORT") throw new Error("Unauthorized");
 
   return prisma.systemConfig.upsert({
     where: { key },
@@ -53,14 +53,14 @@ export async function updateSystemConfig(key: string, value: string) {
 
 export async function deleteSystemConfig(key: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "SUPPORT") throw new Error("Unauthorized");
+  if (!session || session!.user?.role !== "SUPPORT") throw new Error("Unauthorized");
 
   return prisma.systemConfig.delete({ where: { key } });
 }
 
 export async function getSystemHealth() {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "SUPPORT") throw new Error("Unauthorized");
+  if (!session || session!.user?.role !== "SUPPORT") throw new Error("Unauthorized");
 
   try {
     await prisma.$queryRaw`SELECT 1`;

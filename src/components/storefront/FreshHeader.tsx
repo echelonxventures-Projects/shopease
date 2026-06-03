@@ -5,7 +5,7 @@ import { getFreshBanners } from "@/server/actions/grocery-actions";
 import Link from "next/link";
 
 export function FreshHeader() {
-  const [banners, setBanners] = useState<any[]>([]);
+  const [banners, setBanners] = useState<{ id: string; title: string; imageUrl: string; link?: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

@@ -18,7 +18,9 @@ import {
 import { toast } from "sonner";
 
 export default function LightningDealsPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [deals, setDeals] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [promos, setPromos] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ promoId: "", totalSlots: "", perUserLimit: "1", startTime: "", endTime: "" });
@@ -50,9 +52,7 @@ export default function LightningDealsPage() {
       setOpen(false);
       setForm({ promoId: "", totalSlots: "", perUserLimit: "1", startTime: "", endTime: "" });
       fetch();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleDelete = async (id: string) => {
@@ -105,8 +105,8 @@ export default function LightningDealsPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm">{new Date(d.startTime).toLocaleString()}</td>
-                    <td className="px-4 py-3 text-sm">{new Date(d.endTime).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-sm">{new Date(d.startTime).toLocaleString("en-IN")}</td>
+                    <td className="px-4 py-3 text-sm">{new Date(d.endTime).toLocaleString("en-IN")}</td>
                     <td className="px-4 py-3">
                       <Badge variant={status === "Live" ? "default" : "secondary"}>{status}</Badge>
                     </td>

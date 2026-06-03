@@ -44,8 +44,8 @@ export default function AdminSupplierListingsPage() {
     try {
       const res = await getAllSupplierListings({ status, limit: 100 });
       setListings(res.listings as Listing[]);
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Operation failed");
     } finally {
       setLoading(false);
     }
@@ -156,17 +156,17 @@ export default function AdminSupplierListingsPage() {
                     <div className="text-xs text-gray-500">{l.supplier?.code}</div>
                   </td>
                   <td className="p-3 text-right font-medium">
-                    ₹{Number(l.listingPrice).toLocaleString()}
+                    ₹{Number(l.listingPrice).toLocaleString("en-IN")}
                     {l.comparePrice && (
                       <div className="text-xs text-gray-400 line-through">
-                        ₹{Number(l.comparePrice).toLocaleString()}
+                        ₹{Number(l.comparePrice).toLocaleString("en-IN")}
                       </div>
                     )}
                   </td>
                   <td className="p-3 text-right text-sm">
-                    ₹{l.product?.price?.toLocaleString()}
+                    ₹{l.product?.price?.toLocaleString("en-IN")}
                   </td>
-                  <td className="p-3 text-center">{l.quantity.toLocaleString()}</td>
+                  <td className="p-3 text-center">{l.quantity.toLocaleString("en-IN")}</td>
                   <td className="p-3 text-center">
                     <span className={`text-xs px-2 py-1 rounded-full ${statusColor(l.status)}`}>
                       {l.status}

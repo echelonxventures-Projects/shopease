@@ -1,18 +1,25 @@
 import pino from "pino";
+import * as os from "node:os";
 
 const isProduction = process.env.NODE_ENV === "production";
 
+/** Use pino-pretty only in non-production AND only if it is installed. */
+function prettyTransport() {
+  if (isProduction) return undefined;
+  try {
+    require.resolve("pino-pretty");
+    return {
+      target: "pino-pretty",
+      options: { colorize: true, ignore: "pid,hostname" },
+    };
+  } catch {
+    return undefined; // fall back to default JSON output
+  }
+}
+
 export const logger = pino({
   level: isProduction ? "info" : "debug",
-  transport: isProduction
-    ? undefined
-    : {
-        target: "pino-pretty",
-        options: {
-          colorize: true,
-          ignore: "pid,hostname",
-        },
-      },
+  transport: prettyTransport(),
   redact: {
     paths: [
       "password",
@@ -27,7 +34,7 @@ export const logger = pino({
     remove: true,
   },
   base: isProduction
-    ? { pid: process.pid, host: require("os").hostname() }
+    ? { pid: process.pid, host: os.hostname() }
     : undefined,
   timestamp: pino.stdTimeFunctions.isoTime,
 });

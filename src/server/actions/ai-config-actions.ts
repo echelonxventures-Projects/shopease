@@ -14,6 +14,7 @@ export async function getAIConfig(feature?: string) {
   return prisma.aIConfig.findMany({ orderBy: { feature: "asc" } });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
 export async function updateAIConfig(feature: string, config: { enabled?: boolean; provider?: string; config?: any }) {
   const session = await getSession();
   if (!session?.user) throw new Error("Unauthorized");
@@ -24,11 +25,13 @@ export async function updateAIConfig(feature: string, config: { enabled?: boolea
       feature,
       enabled: config.enabled ?? false,
       provider: config.provider ?? "pattern",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma Json field cast
       config: config.config as any,
     },
     update: {
       ...(config.enabled !== undefined && { enabled: config.enabled }),
       ...(config.provider && { provider: config.provider }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma Json field cast
       ...(config.config !== undefined && { config: config.config as any }),
     },
   });
@@ -58,6 +61,7 @@ export async function getAIHealth() {
   // Check which DB-stored providers are configured
   const providers: string[] = [];
   for (const c of configs) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma Json field cast
     const cfg = (c.config as any) || {};
     if (cfg.apiKey && !providers.includes(c.provider)) {
       providers.push(c.provider);
@@ -86,6 +90,7 @@ export async function testAIProvider(feature: string) {
   if (!config) return { success: false, latency: 0, error: "No configuration found", provider: "unknown" };
 
   const provider = config.provider || "pattern";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma Json field cast
   const cfg = (config.config as any) || {};
 
   const startTime = Date.now();
@@ -132,8 +137,8 @@ export async function testAIProvider(feature: string) {
     }
 
     return { success: false, latency: Date.now() - startTime, error: `Provider ${provider} not configured — no API key stored in DB`, provider };
-  } catch (err: any) {
-    return { success: false, latency: Date.now() - startTime, error: err.message, provider };
+  } catch (err) {
+    return { success: false, latency: Date.now() - startTime, error: err instanceof Error ? err.message : String(err), provider };
   }
 }
 

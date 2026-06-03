@@ -13,12 +13,17 @@ interface BNPLCheckoutProps {
 export function BNPLCheckout({ totalAmount, orderId, onConfigure }: BNPLCheckoutProps) {
   const [provider, setProvider] = useState("Simpl");
   const [installments, setInstallments] = useState(3);
-  const [existing, setExisting] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [existing, setExisting] = useState<{
+    provider: string;
+    totalAmount: number | string;
+    downPayment: number | string;
+    installments?: { id: string; installmentNumber: number; dueDate: string | Date; amount: number | string; status: string }[];
+  } | null>(null);
+  const [loading, _setLoading] = useState(false);
 
   useEffect(() => {
     if (orderId) {
-      getBNPLOrder(orderId).then(setExisting).catch(() => {});
+      getBNPLOrder(orderId).then((data) => setExisting(data as unknown as typeof existing)).catch(() => {});
     }
   }, [orderId]);
 
@@ -37,20 +42,20 @@ export function BNPLCheckout({ totalAmount, orderId, onConfigure }: BNPLCheckout
         <div className="text-sm space-y-1">
           <div className="flex justify-between">
             <span>Total Amount</span>
-            <span className="font-bold">₹{Number(existing.totalAmount).toLocaleString()}</span>
+            <span className="font-bold">₹{Number(existing.totalAmount).toLocaleString("en-IN")}</span>
           </div>
           <div className="flex justify-between">
             <span>Down Payment</span>
-            <span className="font-bold">₹{Number(existing.downPayment).toLocaleString()}</span>
+            <span className="font-bold">₹{Number(existing.downPayment).toLocaleString("en-IN")}</span>
           </div>
         </div>
         <div className="border-t pt-2 mt-2">
           <p className="text-xs font-semibold text-gray-600 mb-2">Installment Schedule</p>
-          {existing.installments?.map((inst: any) => (
+          {existing.installments?.map((inst) => (
             <div key={inst.id} className="flex justify-between text-sm">
-              <span>#{inst.installmentNumber} — {new Date(inst.dueDate).toLocaleDateString()}</span>
+              <span>#{inst.installmentNumber} — {new Date(inst.dueDate).toLocaleDateString("en-IN")}</span>
               <span className={inst.status === "PAID" ? "text-green-600" : "text-gray-500"}>
-                ₹{Number(inst.amount).toLocaleString()} ({inst.status})
+                ₹{Number(inst.amount).toLocaleString("en-IN")} ({inst.status})
               </span>
             </div>
           ))}
@@ -106,19 +111,19 @@ export function BNPLCheckout({ totalAmount, orderId, onConfigure }: BNPLCheckout
       <div className="bg-white rounded-lg p-3 space-y-2 text-sm">
         <div className="flex justify-between">
           <span className="text-gray-600">Total Amount</span>
-          <span className="font-bold">₹{totalAmount.toLocaleString()}</span>
+          <span className="font-bold">₹{totalAmount.toLocaleString("en-IN")}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-gray-600">Down Payment (25%)</span>
-          <span className="font-bold text-orange-600">₹{downPayment.toLocaleString()}</span>
+          <span className="font-bold text-orange-600">₹{downPayment.toLocaleString("en-IN")}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-gray-600">Remaining</span>
-          <span className="font-bold">₹{remaining.toLocaleString()}</span>
+          <span className="font-bold">₹{remaining.toLocaleString("en-IN")}</span>
         </div>
         <div className="border-t pt-2 flex justify-between font-bold text-blue-700">
           <span>{installments} × Monthly Installment</span>
-          <span>₹{installmentAmount.toLocaleString()}</span>
+          <span>₹{installmentAmount.toLocaleString("en-IN")}</span>
         </div>
       </div>
 

@@ -1,9 +1,12 @@
 "use server";
 
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { encryptPII, decryptPII } from "@/lib/encryption";
+import { validate, vStr } from "@/lib/validate";
+import { stripHtml } from "@/lib/validations/common";
 
 export async function getProfile() {
   const session = await getSession();
@@ -29,17 +32,24 @@ export async function updateProfile(data: { name?: string; phone?: string; avata
   const session = await getSession();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
+  const input = validate(z.object({
+    name: z.string().trim().min(2).max(100).transform(stripHtml).optional(),
+    phone: z.string().trim().regex(/^[+0-9()\-\s.]{10,15}$/, "Invalid phone number").optional().or(z.literal("")),
+    avatar: z.string().trim().url().max(2048).optional().or(z.literal("")),
+  }), data);
+
   const userId = session.user.id as string;
 
   // Track what changed for audit
   const before = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, phone: true, avatar: true } });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   const changes: Record<string, { from: any; to: any }> = {};
   if (data.name !== undefined && before?.name !== data.name) changes.name = { from: before?.name, to: data.name };
   if (data.phone !== undefined && decryptPII(before?.phone || "") !== data.phone) changes.phone = { from: decryptPII(before?.phone), to: data.phone };
   if (data.avatar !== undefined && before?.avatar !== data.avatar) changes.avatar = { from: !!before?.avatar, to: !!data.avatar };
 
   // Encrypt phone if being updated
-  const updateData: any = { ...data };
+  const updateData: Record<string, unknown> = { ...data };
   if (data.phone !== undefined) {
     updateData.phone = encryptPII(data.phone);
   }
@@ -75,6 +85,15 @@ export async function updateProfile(data: { name?: string; phone?: string; avata
 export async function changePassword(currentPassword: string, newPassword: string) {
   const session = await getSession();
   if (!session?.user?.id) throw new Error("Unauthorized");
+
+  validate(z.object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: z.string().min(8).max(128)
+      .regex(/[A-Z]/, "Must contain uppercase")
+      .regex(/[a-z]/, "Must contain lowercase")
+      .regex(/[0-9]/, "Must contain a number")
+      .regex(/[^A-Za-z0-9]/, "Must contain a special character"),
+  }), { currentPassword, newPassword });
 
   const userId = session.user.id as string;
   const user = await prisma.user.findUnique({

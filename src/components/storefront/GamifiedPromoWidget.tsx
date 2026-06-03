@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { playGamifiedPromo, listGamifiedPromos, getGamifiedPromoStats } from "@/server/actions/gamified-actions";
+import { playGamifiedPromo, listGamifiedPromos } from "@/server/actions/gamified-actions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -11,8 +11,16 @@ interface GamifiedPromoWidgetProps {
   onWin?: (prizeType: string, prizeValue: number) => void;
 }
 
+interface GamifiedPromo {
+  id: string;
+  name: string;
+  totalPrizes: number;
+  claimedPrizes: number;
+  prizes: unknown;
+}
+
 export function GamifiedPromoWidget({ userId, onWin }: GamifiedPromoWidgetProps) {
-  const [promos, setPromos] = useState<any[]>([]);
+  const [promos, setPromos] = useState<GamifiedPromo[]>([]);
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [prize, setPrize] = useState<{ type: string; value: number } | null>(null);
@@ -40,8 +48,8 @@ export function GamifiedPromoWidget({ userId, onWin }: GamifiedPromoWidgetProps)
         toast.success(`🎉 You won ${result.prizeType} ${result.prizeValue}!`);
         onWin?.(result.prizeType, Number(result.prizeValue));
       }
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed");
     }
     setSpinning(false);
   };

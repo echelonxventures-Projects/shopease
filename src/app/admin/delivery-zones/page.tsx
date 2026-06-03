@@ -8,12 +8,13 @@ import {
   deleteDeliveryZone,
 } from "@/server/actions/delivery-actions";
 import { DeliveryZoneMap } from "@/components/map/DeliveryZoneMap";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Plus, Loader2 } from "lucide-react";
+
+
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function DeliveryZonesPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [zones, setZones] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedZoneId, setSelectedZoneId] = useState<string>();
@@ -40,6 +41,7 @@ export default function DeliveryZonesPage() {
     loadZones();
   }, []);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex type from external source
   const handleSave = async (zone: any) => {
     try {
       if (zone.id) {

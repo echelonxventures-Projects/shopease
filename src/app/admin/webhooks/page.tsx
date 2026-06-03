@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import { listWebhooks, createWebhook } from "@/server/actions/commerce-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Webhook, Plus, Trash2, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { Webhook, Plus, Loader2, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 export default function WebhooksPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [webhooks, setWebhooks] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -77,7 +78,7 @@ export default function WebhooksPage() {
       )}
 
       <div className="space-y-3">
-        {webhooks.map((w: any) => (
+        {webhooks.map((w) => (
           <div key={w.id} className="bg-white rounded-lg shadow border p-4">
             <div className="flex items-start justify-between">
               <div>
@@ -94,7 +95,7 @@ export default function WebhooksPage() {
               </div>
             </div>
             <div className="text-xs text-gray-400 mt-2">
-              Created {new Date(w.createdAt).toLocaleDateString()}
+              Created {new Date(w.createdAt).toLocaleDateString("en-IN")}
             </div>
           </div>
         ))}

@@ -26,19 +26,19 @@ import {
 import { calculateTax } from "@/server/actions/tax-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
 import { LocationCascadingSelector } from "@/components/storefront/LocationSelector";
 import { LocationPicker } from "@/components/storefront/LocationPicker";
 import { DeliverySlotPicker } from "@/components/storefront/DeliverySlotPicker";
 import { BNPLCheckout } from "@/components/storefront/BNPLCheckout";
 import { EMICalculator } from "@/components/storefront/EMICalculator";
 import { SplitPaymentPicker } from "@/components/storefront/SplitPaymentPicker";
-import { CheckCircle, Loader2, Gift, Wallet, Sparkles, X, Gem, Package, Zap, FileText, Crown, Shield } from "lucide-react";
+import { Loader2, Gift, Wallet, Sparkles, X, Gem, Package, Zap, FileText, Crown, Shield } from "lucide-react";
 import { toast } from "sonner";
 
 declare global {
   interface Window {
-    Razorpay: any;
+    Razorpay: unknown;
   }
 }
 
@@ -104,7 +104,7 @@ export default function CheckoutPage() {
   const [primeFreeDelivery, setPrimeFreeDelivery] = useState(false);
 
   // Split payment
-  const [splitAmounts, setSplitAmounts] = useState<{ walletAmount: number; cardAmount: number; upiAmount: number; codAmount: number }>({
+  const [_splitAmounts, setSplitAmounts] = useState<{ walletAmount: number; cardAmount: number; upiAmount: number; codAmount: number }>({
     walletAmount: 0, cardAmount: 0, upiAmount: 0, codAmount: 0,
   });
 
@@ -189,7 +189,7 @@ export default function CheckoutPage() {
   // Express fee: free for Prime members
   const effectiveExpressFee = primeFreeDelivery ? 0 : EXPRESS_FEE;
   // Shipping is free for Prime members
-  const effectiveShippingFee = 0; // Shipping already handled by discount engine
+  const _effectiveShippingFee = 0; // Shipping already handled by discount engine
 
   // Preview tier deductions (client-side, actual deductions happen server-side)
   const previewTierDeductions = tierBalances.reduce((sum: number, tier: any) => {
@@ -255,7 +255,7 @@ export default function CheckoutPage() {
     if (!window.Razorpay) return;
     const { razorpayOrderId } = await createRazorpayOrder(orderId);
 
-    const rzp = new window.Razorpay({
+    const rzp = new (window.Razorpay as any)({
       key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
       amount: Math.round(Math.abs(finalTotal) * 100),
       currency: currency,
@@ -263,7 +263,7 @@ export default function CheckoutPage() {
       name: "ShopEase",
       description: `Order ${orderId}`,
       handler: async function (response: any) {
-        await confirmPayment(orderId, response.razorpay_payment_id);
+        await confirmPayment(orderId, response.razorpay_payment_id, response.razorpay_order_id, response.razorpay_signature);
         clearCart();
         router.push("/checkout/success");
       },
@@ -791,7 +791,7 @@ export default function CheckoutPage() {
             {items.map((item: any) => (
               <div key={item.productId} className="flex justify-between text-sm">
                 <span>{item.name} × {item.quantity}</span>
-                <span className="font-medium">{currencySymbol}{(item.price * item.quantity).toLocaleString()}</span>
+                <span className="font-medium">{currencySymbol}{(item.price * item.quantity).toLocaleString("en-IN")}</span>
               </div>
             ))}
           </div>
@@ -836,13 +836,13 @@ export default function CheckoutPage() {
 
           {/* Order Summary */}
           <div className="border-t pt-4 space-y-2">
-            <div className="flex justify-between text-sm"><span>Subtotal</span><span>{currencySymbol}{subtotal.toLocaleString()}</span></div>
+            <div className="flex justify-between text-sm"><span>Subtotal</span><span>{currencySymbol}{subtotal.toLocaleString("en-IN")}</span></div>
             {totalPromoDiscount > 0 && (
               <div className="flex justify-between text-sm text-green-600"><span>Promo Discount</span><span>-{currencySymbol}{totalPromoDiscount.toFixed(2)}</span></div>
             )}
             <div className="flex justify-between text-sm">
               <span>{taxJurisdiction ? `Tax (${taxJurisdiction})` : taxLoading ? "Calculating tax…" : "Tax"}</span>
-              <span>{currencySymbol}{tax.toLocaleString()}</span>
+              <span>{currencySymbol}{tax.toLocaleString("en-IN")}</span>
             </div>
             {taxBreakdown.length > 0 && (
               <div className="text-xs text-gray-500 -mt-1">
@@ -904,7 +904,7 @@ export default function CheckoutPage() {
             )}
             <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
               <span>Total</span>
-              <span>{currencySymbol}{Math.abs(finalTotal).toLocaleString()}</span>
+              <span>{currencySymbol}{Math.abs(finalTotal).toLocaleString("en-IN")}</span>
             </div>
           </div>
 
@@ -915,7 +915,7 @@ export default function CheckoutPage() {
               disabled={loading}
               className="flex-1 bg-green-600 hover:bg-green-700"
             >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : `Pay ${currencySymbol}${Math.abs(finalTotal).toLocaleString()}`}
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : `Pay ${currencySymbol}${Math.abs(finalTotal).toLocaleString("en-IN")}`}
             </Button>
           </div>
         </div>

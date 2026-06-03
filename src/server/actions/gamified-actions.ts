@@ -15,6 +15,7 @@ export async function listGamifiedPromos() {
 export async function createGamifiedPromo(data: {
   name: string;
   type: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   prizes: any;
   maxPerUser: number;
   validFrom: Date;
@@ -27,6 +28,7 @@ export async function createGamifiedPromo(data: {
   return prisma.gamifiedPromo.create({
     data: {
       name: data.name,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- enum string cast
       type: data.type as any,
       prizes: data.prizes,
       maxPerUser: data.maxPerUser,

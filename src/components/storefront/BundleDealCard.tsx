@@ -7,8 +7,17 @@ interface BundleDealCardProps {
   cartItems: Array<{ productId: string; quantity: number }>;
 }
 
+interface BundleDeal {
+  id: string;
+  bundleDiscountType: string;
+  bundleDiscountValue: number | string | { toString(): string };
+  maxDiscount?: number | string | { toString(): string } | null;
+  categoryNames: string[];
+  promo?: { title: string } | null;
+}
+
 export function BundleDealCard({ cartItems }: BundleDealCardProps) {
-  const [bundles, setBundles] = useState<any[]>([]);
+  const [bundles, setBundles] = useState<BundleDeal[]>([]);
   const [applied, setApplied] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -36,7 +45,7 @@ export function BundleDealCard({ cartItems }: BundleDealCardProps) {
         const isApplied = applied.includes(b.id);
         const discountLabel = b.bundleDiscountType === "PERCENTAGE"
           ? `${b.bundleDiscountValue}% off`
-          : `₹${Number(b.bundleDiscountValue).toLocaleString()} off`;
+          : `₹${Number(b.bundleDiscountValue).toLocaleString("en-IN")} off`;
 
         return (
           <div key={b.id} className={`rounded-lg p-4 border-2 transition ${
@@ -51,7 +60,7 @@ export function BundleDealCard({ cartItems }: BundleDealCardProps) {
                 </div>
                 <p className="text-sm text-indigo-600 mt-1">
                   Buy from {b.categoryNames.join(" + ")} and get <strong>{discountLabel}</strong>
-                  {b.maxDiscount && <span className="text-indigo-400"> (max ₹{Number(b.maxDiscount).toLocaleString()})</span>}
+                  {b.maxDiscount && <span className="text-indigo-400"> (max ₹{Number(b.maxDiscount).toLocaleString("en-IN")})</span>}
                 </p>
                 <div className="flex flex-wrap gap-1 mt-2">
                   {b.categoryNames.map((n: string) => (

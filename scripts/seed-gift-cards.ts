@@ -405,7 +405,7 @@ async function main() {
   const designMap = new Map(allDesigns.map((d) => [d.slug, d.id]));
 
   for (const sc of storeCards) {
-    const { occasionSlugs, recipientSlugs, designSlug, ...cardData } = sc as any;
+    const { occasionSlugs, recipientSlugs, designSlug, ...cardData } = sc as typeof sc & { occasionSlugs?: string[]; recipientSlugs?: string[]; designSlug?: string };
 
     // Parse fixedAmounts to Decimal
     const fixedAmounts = (cardData.fixedAmounts as number[]).map((a) => a);

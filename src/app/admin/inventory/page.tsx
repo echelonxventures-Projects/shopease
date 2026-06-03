@@ -11,7 +11,7 @@ import {
   getInventoryLogs,
   adjustStock,
 } from "@/server/actions/inventory-actions";
-import { updateStock } from "@/server/actions/admin-actions";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,8 +36,11 @@ const MOVEMENT_TYPES = [
 
 export default function InventoryPage() {
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [inventory, setInventory] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [movements, setMovements] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -45,6 +48,7 @@ export default function InventoryPage() {
   const [movementDialogOpen, setMovementDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [auditLogOpen, setAuditLogOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [supplierFilter, setSupplierFilter] = useState<string>("");
   const [valuation, setValuation] = useState<{ totalValue: number; bySupplier: any[]; byLocation: any[] }>({ totalValue: 0, bySupplier: [], byLocation: [] });
@@ -107,7 +111,7 @@ export default function InventoryPage() {
       toast.success("Stock updated");
       setEditingId(null);
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleMovement = async () => {
@@ -136,13 +140,13 @@ export default function InventoryPage() {
       setMovementDialogOpen(false);
       setMovementForm({ productId: "", supplierId: "", locationId: "", type: "IN", quantity: "", reference: "", notes: "" });
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   if (loading) return <div className="p-6"><p className="text-gray-500">Loading...</p></div>;
 
-  const lowStock = inventory.filter((i: any) => i.quantity <= (i.lowStock || 5));
-  const outOfStock = inventory.filter((i: any) => i.quantity <= 0);
+  const lowStock = inventory.filter((i) => i.quantity <= (i.lowStock || 5));
+  const outOfStock = inventory.filter((i) => i.quantity <= 0);
 
   return (
     <div className="p-6">
@@ -170,7 +174,7 @@ export default function InventoryPage() {
         </div>
         <div className="bg-blue-50 rounded-lg shadow p-4">
           <p className="text-sm text-blue-700">Inventory Value</p>
-          <p className="text-2xl font-bold text-blue-800">₹{Math.round(valuation.totalValue).toLocaleString()}</p>
+          <p className="text-2xl font-bold text-blue-800">₹{Math.round(valuation.totalValue).toLocaleString("en-IN")}</p>
         </div>
       </div>
 
@@ -179,10 +183,10 @@ export default function InventoryPage() {
         <div className="bg-white rounded-lg shadow p-4 mb-6">
           <h3 className="font-bold text-sm text-gray-500 mb-2">Stock Value by Supplier</h3>
           <div className="flex flex-wrap gap-3">
-            {valuation.bySupplier.map((s: any) => (
+            {valuation.bySupplier.map((s) => (
               <div key={s.supplierId} className="bg-gray-50 rounded-lg px-4 py-2">
                 <p className="text-xs text-gray-500">{s.supplierName}</p>
-                <p className="font-bold">₹{Math.round(s.value).toLocaleString()}</p>
+                <p className="font-bold">₹{Math.round(s.value).toLocaleString("en-IN")}</p>
               </div>
             ))}
           </div>
@@ -193,7 +197,7 @@ export default function InventoryPage() {
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
           <h3 className="font-bold text-yellow-800 mb-2">Low Stock Alerts</h3>
           <div className="flex flex-wrap gap-2">
-            {lowStock.map((i: any) => (
+            {lowStock.map((i) => (
               <Badge key={i.id} variant="outline" className="bg-yellow-100">
                 {i.product?.name}
                 {i.supplier?.name && ` (${i.supplier.name})`}
@@ -206,7 +210,7 @@ export default function InventoryPage() {
 
       {/* Supplier Filter */}
       <div className="mb-4">
-        <Select value={supplierFilter} onValueChange={(v: any) => setSupplierFilter(v)}>
+        <Select value={supplierFilter} onValueChange={(v) => { if (v) setSupplierFilter(v); }}>
           <SelectTrigger className="max-w-xs">
             <SelectValue placeholder="Filter by supplier" />
           </SelectTrigger>
@@ -239,7 +243,7 @@ export default function InventoryPage() {
             {inventory.length === 0 ? (
               <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-500">No inventory data</td></tr>
             ) : (
-              inventory.map((item: any) => (
+              inventory.map((item) => (
                 <tr key={item.id} className="border-t">
                   <td className="px-4 py-3 font-medium">
                     <div>
@@ -280,9 +284,9 @@ export default function InventoryPage() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-sm">{item.lowStock}</td>
-                  <td className="px-4 py-3 text-sm">₹{item.avgCost?.toLocaleString() || "—"}</td>
+                  <td className="px-4 py-3 text-sm">₹{item.avgCost?.toLocaleString("en-IN") || "—"}</td>
                   <td className="px-4 py-3 text-sm font-bold">
-                    ₹{Math.round((item.quantity || 0) * (item.avgCost || 0)).toLocaleString()}
+                    ₹{Math.round((item.quantity || 0) * (item.avgCost || 0)).toLocaleString("en-IN")}
                   </td>
                   <td className="px-4 py-3">
                     <Badge className={
@@ -342,7 +346,7 @@ export default function InventoryPage() {
             </div>
             <div>
               <Label>Supplier</Label>
-              <Select value={movementForm.supplierId} onValueChange={(v: any) => setMovementForm({ ...movementForm, supplierId: v })}>
+              <Select value={movementForm.supplierId} onValueChange={(v) => setMovementForm({ ...movementForm, supplierId: v || "" })}>
                 <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
                 <SelectContent>
                   {suppliers.map((s) => (
@@ -402,7 +406,7 @@ export default function InventoryPage() {
             {movements.length === 0 ? (
               <p className="text-sm text-gray-500 text-center py-8">No movements recorded</p>
             ) : (
-              movements.map((m: any) => (
+              movements.map((m) => (
                 <div key={m.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                   {m.quantity > 0 ? (
                     <ArrowDownLeft className="w-5 h-5 text-green-600 shrink-0" />
@@ -421,7 +425,7 @@ export default function InventoryPage() {
                     <Badge variant="outline" className="text-xs">{m.location.name}</Badge>
                   )}
                   <p className="text-xs text-gray-400 shrink-0">
-                    {new Date(m.createdAt).toLocaleDateString()}
+                    {new Date(m.createdAt).toLocaleDateString("en-IN")}
                   </p>
                 </div>
               ))
@@ -440,7 +444,7 @@ export default function InventoryPage() {
             {auditLogs.length === 0 ? (
               <p className="text-sm text-gray-500 text-center py-8">No audit logs found</p>
             ) : (
-              auditLogs.map((log: any) => (
+              auditLogs.map((log) => (
                 <div key={log.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg text-sm">
                   {log.quantity > 0 ? (
                     <Check className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
@@ -464,7 +468,7 @@ export default function InventoryPage() {
                     <div className="flex items-center gap-2 mt-1">
                       {log.user && <span className="text-xs text-gray-400">By: {log.user.name || log.user.email}</span>}
                       <span className="text-xs text-gray-300">•</span>
-                      <span className="text-xs text-gray-400">{new Date(log.createdAt).toLocaleString()}</span>
+                      <span className="text-xs text-gray-400">{new Date(log.createdAt).toLocaleString("en-IN")}</span>
                     </div>
                   </div>
                 </div>

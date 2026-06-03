@@ -144,7 +144,7 @@ export async function listTaxRates() {
     orderBy: [{ country: "asc" }, { state: "asc" }],
   });
 
-  return rates.map((r: any) => ({
+  return rates.map((r) => ({
     ...r,
     rate: typeof r.rate?.toNumber === "function" ? r.rate.toNumber() : r.rate,
   }));

@@ -120,7 +120,7 @@ export default function AddressesPage() {
       {addresses.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center border rounded-lg">
           <MapPin className="w-16 h-16 text-gray-300 mb-4" />
-          <h2 className="text-lg font-semibold text-gray-700 mb-2">You don't have any addresses yet</h2>
+          <h2 className="text-lg font-semibold text-gray-700 mb-2">You don&apos;t have any addresses yet</h2>
           <p className="text-gray-500 mb-6">Add an address to make your checkout easier</p>
           <Link href="/account/addresses/new">
             <Button>

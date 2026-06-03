@@ -75,7 +75,7 @@ export default function RefundsPage() {
                       "bg-yellow-100 text-yellow-800"
                     }>{r.status}</Badge>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{new Date(r.createdAt).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{new Date(r.createdAt).toLocaleDateString("en-IN")}</td>
                   <td className="px-4 py-3">
                     {r.status === "PENDING" && (
                       <div className="flex gap-2">

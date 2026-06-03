@@ -12,7 +12,7 @@ import {
   getCountryProfile,
   getLocationChain,
 } from "@/server/actions/location-actions";
-import { getCountriesForDropdown } from "@/server/actions/localization-actions";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,13 +90,17 @@ export default function LocationsPage() {
   const [tree, setTree] = useState<LocationNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [selectedLocation, setSelectedLocation] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
+  const [selectedLocation, _setSelectedLocation] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [countryProfile, setCountryProfile] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [chain, setChain] = useState<any[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [countryDialogOpen, setCountryDialogOpen] = useState(false);
   const [filterType, setFilterType] = useState<string>("");
   const [search, setSearch] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [parentLocations, setParentLocations] = useState<any[]>([]);
 
   const [form, setForm] = useState({
@@ -177,9 +181,7 @@ export default function LocationsPage() {
       setDialogOpen(false);
       resetForm();
       fetch();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleToggleActive = async (id: string, isActive: boolean) => {
@@ -187,7 +189,7 @@ export default function LocationsPage() {
       await toggleLocationActive(id, !isActive);
       toast.success(isActive ? "Location disabled" : "Location enabled");
       fetch();
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Operation failed"); }
   };
 
   const handleSubmitCountryProfile = async () => {
@@ -210,9 +212,7 @@ export default function LocationsPage() {
       setCountryProfile(profile);
       toast.success("Country profile saved");
       setCountryDialogOpen(false);
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const toggleLocale = (locale: string) => {
@@ -409,7 +409,7 @@ export default function LocationsPage() {
             </div>
             <div>
               <Label>Type</Label>
-              <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v || "COUNTRY" })}>
+              <Select value={form.type} onValueChange={(v) => { if (v) setForm({ ...form, type: v || "COUNTRY" }); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {LOCATION_TYPES.map((t) => (
@@ -420,7 +420,7 @@ export default function LocationsPage() {
             </div>
             <div>
               <Label>Parent (optional)</Label>
-              <Select value={form.parentId} onValueChange={(v) => setForm({ ...form, parentId: v || "" })}>
+              <Select value={form.parentId} onValueChange={(v) => { if (v) setForm({ ...form, parentId: v || "" }); }}>
                 <SelectTrigger><SelectValue placeholder="None (root level)" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">None (root level)</SelectItem>

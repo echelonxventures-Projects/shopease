@@ -5,7 +5,9 @@ import { listPincodePromos, createPincodePromo, updatePincodePromo, deletePincod
 import { toast } from "sonner";
 
 export default function PincodePromosPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [pincodePromos, setPincodePromos] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [promos, setPromos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -36,15 +38,16 @@ export default function PincodePromosPage() {
       }
       setShowForm(false); setEditingId(null); setForm({ promoId: "", pincodes: "" });
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete?")) return;
     try { await deletePincodePromo(id); toast.success("Deleted"); fetch(); }
-    catch (err: any) { toast.error(err.message); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex type from external source
   const handleEdit = (item: any) => {
     setEditingId(item.id);
     setForm({ promoId: item.promoId, pincodes: item.pincodes.join(", ") });

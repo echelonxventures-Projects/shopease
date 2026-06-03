@@ -46,8 +46,8 @@ export function ReturnPickupScheduler({ orderId, productId, productName }: Retur
       await createReturnRequest({ orderId, productId, reason, preferredDate, pickupAddress });
       setStep("success");
       toast.success("Return request submitted!");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to create return request");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to create return request");
     } finally {
       setLoading(false);
     }

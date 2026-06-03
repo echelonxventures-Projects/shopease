@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { getConversionFunnel } from "@/server/actions/conversion-actions";
-import { BarChart3, TrendingUp, Users } from "lucide-react";
+import { BarChart3, TrendingUp } from "lucide-react";
 
 export default function ConversionFunnelPage() {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<Awaited<ReturnType<typeof getConversionFunnel>> | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -15,7 +15,7 @@ export default function ConversionFunnelPage() {
   if (loading) return <p className="text-gray-500 px-6 py-4">Loading...</p>;
   if (!data) return null;
 
-  const maxCount = Math.max(...data.funnel.map((f: any) => f.count), 1);
+  const maxCount = Math.max(...data.funnel.map((f) => f.count), 1);
 
   return (
     <div className="p-6">
@@ -36,6 +36,7 @@ export default function ConversionFunnelPage() {
         </div>
 
         <div className="space-y-4">
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex type from external source
           {data.funnel.map((step: any, idx: number) => {
             const prevCount = idx > 0 ? data.funnel[idx - 1].count : step.count;
             const stepRate = prevCount > 0 ? ((step.count / prevCount) * 100).toFixed(1) : "100";
@@ -49,7 +50,7 @@ export default function ConversionFunnelPage() {
                     className="h-full bg-blue-500 flex items-center justify-end pr-2 text-xs text-white font-bold rounded-full transition-all"
                     style={{ width: `${Math.max(barWidth, 5)}%` }}
                   >
-                    {step.count.toLocaleString()}
+                    {step.count.toLocaleString("en-IN")}
                   </div>
                 </div>
                 <div className="w-20 text-sm text-gray-500 text-right">{stepRate}%</div>

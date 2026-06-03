@@ -30,7 +30,7 @@ export function DealBreakdown({ applied, totalDiscount, subtotal, currency = "�
   return (
     <div className="space-y-3 p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200">
       <h3 className="font-semibold text-green-800 text-lg flex items-center gap-2">
-        <span>🎉</span> You're saving {currency}{totalDiscount.toFixed(2)}!
+        <span>🎉</span> You&apos;re saving {currency}{totalDiscount.toFixed(2)}!
       </h3>
 
       <div className="space-y-2">

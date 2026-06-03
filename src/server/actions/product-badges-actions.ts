@@ -39,7 +39,7 @@ export async function getProductBadgeData(productIds: string[]): Promise<Record<
 
   const boughtCount: Record<string, number> = {};
   for (const order of recentOrders) {
-    const items = (order.items as any[]) || [];
+    const items = (order.items as Array<{ productId: string; quantity?: number }>) || [];
     for (const item of items) {
       if (item.productId && productIds.includes(item.productId)) {
         boughtCount[item.productId] = (boughtCount[item.productId] || 0) + (item.quantity || 1);

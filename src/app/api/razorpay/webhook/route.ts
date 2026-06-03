@@ -29,7 +29,9 @@ export async function POST(req: Request) {
       const orderId = payment.notes?.orderId;
 
       if (!orderId) {
-        return NextResponse.json({ error: "No orderId in payment notes" }, { status: 400 });
+        // Not a product-order payment (e.g. wallet top-up, confirmed client-side
+        // with signature verification). Acknowledge so Razorpay doesn't retry.
+        return NextResponse.json({ received: true });
       }
 
       const order = await prisma.order.findUnique({ where: { id: orderId } });

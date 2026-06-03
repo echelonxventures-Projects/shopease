@@ -1,7 +1,9 @@
 "use server";
 import { prisma } from "@/lib/prisma";
 import { getAIProvider, isAIFeatureEnabled } from "@/lib/ai/orchestrator";
+import type { Prisma } from "@prisma/client";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
 export async function runAIFeature(feature: string, input: any) {
   const enabled = await isAIFeatureEnabled(feature);
   if (!enabled) return { error: `AI feature '${feature}' is not enabled` };
@@ -16,9 +18,9 @@ export async function runAIFeature(feature: string, input: any) {
 
     await logAIUsage(feature, input.userId || "anonymous", Date.now() - startTime);
     return { result: result.content, latency: Date.now() - startTime };
-  } catch (err: any) {
+  } catch (err) {
     await logAIUsage(feature, input.userId || "anonymous", Date.now() - startTime);
-    return { error: err.message, latency: Date.now() - startTime };
+    return { error: err instanceof Error ? err.message : String(err), latency: Date.now() - startTime };
   }
 }
 
@@ -27,7 +29,7 @@ export async function logAIUsage(feature: string, userId: string, latency: numbe
     data: {
       sessionId: `ai-${userId}-${Date.now()}`,
       type: "AI_USAGE",
-      metadata: { feature, latency, timestamp: new Date().toISOString() } as any,
+      metadata: { feature, latency, timestamp: new Date().toISOString() } as Prisma.InputJsonValue,
     },
   });
 }

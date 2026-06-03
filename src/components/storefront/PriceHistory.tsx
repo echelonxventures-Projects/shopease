@@ -9,7 +9,7 @@ interface PriceHistoryProps {
 }
 
 export function PriceHistory({ productId, days = 30 }: PriceHistoryProps) {
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<{ id: string; price: number | string | { toString(): string }; recordedAt: string | Date }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,7 +39,7 @@ export function PriceHistory({ productId, days = 30 }: PriceHistoryProps) {
               key={h.id}
               className="absolute w-2 h-2 bg-blue-600 rounded-full"
               style={{ left: `${x}%`, top: `${y}%` }}
-              title={`₹${Number(h.price)} on ${new Date(h.recordedAt).toLocaleDateString()}`}
+              title={`₹${Number(h.price)} on ${new Date(h.recordedAt).toLocaleDateString("en-IN")}`}
             />
           );
         })}

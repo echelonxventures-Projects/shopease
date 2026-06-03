@@ -1,11 +1,13 @@
 import type { PromotionHandler, PromotionContext } from "@/server/repositories/promotion-engine";
 
-function resolveProductIds(promo: any): Set<string> {
-  if (promo.links?.length > 0) {
+interface PromoLink { targetType: string; targetId: string }
+
+function resolveProductIds(promo: { links?: PromoLink[]; applicableProductIds?: string[] }): Set<string> {
+  if (promo.links?.length) {
     return new Set(
       promo.links
-        .filter((l: any) => l.targetType === "PRODUCT")
-        .map((l: any) => l.targetId)
+        .filter((l) => l.targetType === "PRODUCT")
+        .map((l) => l.targetId)
     );
   }
   return new Set(promo.applicableProductIds || []);
@@ -18,8 +20,9 @@ export const bogoHandler: PromotionHandler = {
     return "TOTAL";
   },
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PromotionHandler interface contract
   async evaluate(promo: any, context: PromotionContext) {
-    const rules = (promo.rules || {}) as any;
+    const rules = (promo.rules || {}) as any // eslint-disable-line @typescript-eslint/no-explicit-any -- Prisma Json field with dynamic structure;
     if (!rules.bogo) return null;
 
     const buyQty = rules.bogo.buy || 1;

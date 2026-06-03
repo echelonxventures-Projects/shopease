@@ -139,6 +139,7 @@ export async function createVIPDeal(data: {
   return prisma.vIPDeal.create({
     data: {
       promoId: data.promoId,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
       requiredTier: data.requiredTier as any,
       requiredTag: data.requiredTag,
       maxRedemptions: data.maxRedemptions,
@@ -154,6 +155,7 @@ export async function updateVIPDeal(id: string, data: {
   return prisma.vIPDeal.update({
     where: { id },
     data: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
       ...(data.requiredTier && { requiredTier: data.requiredTier as any }),
       ...(typeof data.requiredTag === "string" && { requiredTag: data.requiredTag || null }),
       ...(typeof data.isActive === "boolean" && { isActive: data.isActive }),

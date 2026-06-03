@@ -19,8 +19,8 @@ export function GiftCardClaim({ onRedeem }: GiftCardClaimProps) {
       const result = await getGiftCardBalance(code.trim());
       if (!result) { toast.error("Invalid gift card code"); return; }
       setBalance(result.balance);
-      toast.success(`Balance: ₹${result.balance.toLocaleString()}`);
-    } catch (err: any) { toast.error(err.message); }
+      toast.success(`Balance: ₹${result.balance.toLocaleString("en-IN")}`);
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Failed"); }
   };
 
   const handleRedeem = async () => {
@@ -28,10 +28,10 @@ export function GiftCardClaim({ onRedeem }: GiftCardClaimProps) {
     setLoading(true);
     try {
       const result = await redeemGiftCard(code.trim());
-      toast.success(`₹${Number(result.credited).toLocaleString()} added to your wallet!`);
+      toast.success(`₹${Number(result.credited).toLocaleString("en-IN")} added to your wallet!`);
       setCode(""); setBalance(null);
       onRedeem?.(Number(result.credited));
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Failed"); }
     setLoading(false);
   };
 
@@ -63,7 +63,7 @@ export function GiftCardClaim({ onRedeem }: GiftCardClaimProps) {
 
       {balance !== null && (
         <p className="mt-2 text-sm text-green-700">
-          Available balance: <strong>₹{balance.toLocaleString()}</strong>
+          Available balance: <strong>₹{balance.toLocaleString("en-IN")}</strong>
         </p>
       )}
     </div>

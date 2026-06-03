@@ -135,7 +135,7 @@ export function SplitPaymentPicker({ totalAmount, onSplitChange }: SplitPaymentP
       <div className="bg-white rounded-lg p-3 space-y-1 text-sm">
         <div className="flex justify-between">
           <span className="text-gray-600">Total Order</span>
-          <span className="font-bold">₹{totalAmount.toLocaleString()}</span>
+          <span className="font-bold">₹{totalAmount.toLocaleString("en-IN")}</span>
         </div>
         <div className="flex justify-between text-green-600">
           <span>Wallet</span>

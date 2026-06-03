@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getMultiBuyStats } from "@/server/actions/lightning-actions";
-import { Button } from "@/components/ui/button";
+
 
 interface MultiBuyProgressProps {
   promoId: string;
@@ -11,30 +11,37 @@ interface MultiBuyProgressProps {
   onUpgrade?: (tier: string) => void;
 }
 
+interface MultiBuyStats {
+  tiers: unknown;
+}
+
 export function MultiBuyProgress({ promoId, cartQty, cartTotal, onUpgrade }: MultiBuyProgressProps) {
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<MultiBuyStats | null>(null);
 
   useEffect(() => {
     getMultiBuyStats(promoId).then(setStats).catch(() => {});
   }, [promoId]);
 
-  if (!stats || !stats.tiers || stats.tiers.length === 0) return null;
+  if (!stats || !stats.tiers) return null;
 
+  const rawTiers = stats.tiers;
   const tiers: { minQty: number; minSpend?: number; discount: { type: string; value: number; maxDiscount?: number }; label?: string }[] =
-    typeof stats.tiers === "string" ? JSON.parse(stats.tiers) : stats.tiers;
+    typeof rawTiers === "string" ? JSON.parse(rawTiers) : Array.isArray(rawTiers) ? rawTiers : [];
+
+  if (tiers.length === 0) return null;
 
   const sorted = [...tiers].sort((a, b) => a.minQty - b.minQty);
   const currentTier = sorted.filter((t) => cartQty >= t.minQty).pop();
   const nextTier = sorted.find((t) => cartQty < t.minQty);
   const itemsNeeded = nextTier ? nextTier.minQty - cartQty : 0;
 
-  const getDiscountText = (d: any) => {
+  const getDiscountText = (d: { type: string; value: number; maxDiscount?: number; label?: string }) => {
     if (d.type === "PERCENTAGE") return `${d.value}% off`;
     if (d.type === "FLAT") return `₹${d.value} off`;
     return d.label || "";
   };
 
-  const getMaxText = (d: any) => d.maxDiscount ? ` (max ₹${d.maxDiscount})` : "";
+  const getMaxText = (d: { maxDiscount?: number }) => d.maxDiscount ? ` (max ₹${d.maxDiscount})` : "";
 
   return (
     <div className="p-4 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl border border-cyan-200">
@@ -89,7 +96,7 @@ export function MultiBuyProgress({ promoId, cartQty, cartTotal, onUpgrade }: Mul
 
       {currentTier && (
         <p className="text-xs text-center text-gray-500">
-          You're saving {getDiscountText(currentTier.discount)}{getMaxText(currentTier.discount)} on this order
+          You&apos;re saving {getDiscountText(currentTier.discount)}{getMaxText(currentTier.discount)} on this order
         </p>
       )}
     </div>

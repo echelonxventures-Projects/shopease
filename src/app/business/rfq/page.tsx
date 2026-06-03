@@ -94,10 +94,10 @@ export default function RFQListPage() {
                     <TableCell>{rfq._count?.items || 0}</TableCell>
                     <TableCell>{rfq._count?.responses || 0}</TableCell>
                     <TableCell className="text-sm text-gray-500">
-                      {new Date(rfq.createdAt).toLocaleDateString()}
+                      {new Date(rfq.createdAt).toLocaleDateString("en-IN")}
                     </TableCell>
                     <TableCell className="text-sm text-gray-500">
-                      {rfq.deadline ? new Date(rfq.deadline).toLocaleDateString() : "—"}
+                      {rfq.deadline ? new Date(rfq.deadline).toLocaleDateString("en-IN") : "—"}
                     </TableCell>
                   </Link>
                 </TableRow>

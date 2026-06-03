@@ -1,9 +1,12 @@
 "use server";
 
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
-import { UserRole, OrderStatus } from "@prisma/client";
+import { getSession, isAdminRole } from "@/lib/auth";
+import { UserRole, OrderStatus, Prisma } from "@prisma/client";
+import { validate, vId, vStr, vOptStr, vUrl } from "@/lib/validate";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- generic Prisma result serializer
 function serializeProduct(p: any) {
   if (!p) return p;
   return {
@@ -16,7 +19,7 @@ function serializeProduct(p: any) {
 
 export async function getDashboardStats() {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const [totalRevenue, totalOrders, totalCustomers, pendingOrders, lowStockProducts, outOfStockProducts, pendingPOs] = await Promise.all([
     prisma.order.aggregate({
@@ -54,7 +57,7 @@ export async function getDashboardStats() {
 
 export async function getSalesData() {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const orders = await prisma.order.findMany({
     where: { paymentStatus: "PAID" },
@@ -75,7 +78,7 @@ export async function getSalesData() {
 // Order management
 export async function getAllOrders({ page = 1, limit = 20, status }: { page?: number; limit?: number; status?: string }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const where = status && status !== "ALL" ? { status: status as OrderStatus } : {};
 
@@ -95,15 +98,20 @@ export async function getAllOrders({ page = 1, limit = 20, status }: { page?: nu
 
 export async function updateOrderStatus(orderId: string, status: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
+
+  const input = validate(z.object({
+    orderId: vId,
+    status: z.enum(["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "RETURNED", "REFUNDED"]),
+  }), { orderId, status });
 
   await prisma.order.update({
-    where: { id: orderId },
-    data: { status: status as OrderStatus },
+    where: { id: input.orderId },
+    data: { status: input.status as OrderStatus },
   });
 
   await prisma.orderStatusHistory.create({
-    data: { orderId, status: status as OrderStatus, message: `Status changed to ${status}` },
+    data: { orderId: input.orderId, status: input.status as OrderStatus, message: `Status changed to ${input.status}` },
   });
 
   return { success: true };
@@ -112,7 +120,7 @@ export async function updateOrderStatus(orderId: string, status: string) {
 // Customer management
 export async function getAllCustomers({ page = 1, limit = 20 }: { page?: number; limit?: number }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const [customers, total] = await Promise.all([
     prisma.user.findMany({
@@ -130,7 +138,7 @@ export async function getAllCustomers({ page = 1, limit = 20 }: { page?: number;
 
 export async function toggleBlockCustomer(userId: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new Error("User not found");
@@ -141,22 +149,28 @@ export async function toggleBlockCustomer(userId: string) {
 // Category management
 export async function createCategory(data: { name: string; description?: string; parentId?: string }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
-  const slug = data.name.toLowerCase().replace(/\s+/g, "-");
-  return prisma.category.create({ data: { ...data, slug } });
+  const input = validate(z.object({
+    name: vStr(200),
+    description: vOptStr(2000),
+    parentId: z.string().trim().optional().or(z.literal("")),
+  }), data);
+
+  const slug = (input.name as string).toLowerCase().replace(/\s+/g, "-");
+  return prisma.category.create({ data: { name: input.name as string, description: input.description as string | undefined, parentId: input.parentId || undefined, slug } });
 }
 
 export async function updateCategory(id: string, data: { name?: string; description?: string; slug?: string; parentId?: string; position?: number }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   return prisma.category.update({ where: { id }, data });
 }
 
 export async function deleteCategory(id: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   return prisma.category.delete({ where: { id } });
 }
@@ -167,22 +181,29 @@ export async function deleteCategory(id: string) {
 // Banner management
 export async function createBanner(data: { title: string; imageUrl: string; description?: string; link?: string }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
+
+  const input = validate(z.object({
+    title: vStr(200),
+    imageUrl: z.string().trim().url().max(2048),
+    description: vOptStr(1000),
+    link: z.string().trim().max(2048).refine((v) => !v || /^https?:\/\//.test(v) || v.startsWith("/"), "Invalid link").optional().or(z.literal("")),
+  }), data);
 
   const maxPosition = await prisma.banner.aggregate({ _max: { position: true } });
-  return prisma.banner.create({ data: { ...data, position: (maxPosition._max.position || 0) + 1 } });
+  return prisma.banner.create({ data: { title: input.title as string, imageUrl: input.imageUrl, description: input.description as string | undefined, link: input.link || undefined, position: (maxPosition._max.position || 0) + 1 } });
 }
 
 export async function updateBanner(id: string, data: { title?: string; imageUrl?: string; description?: string; link?: string; position?: number; isActive?: boolean }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   return prisma.banner.update({ where: { id }, data });
 }
 
 export async function deleteBanner(id: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   return prisma.banner.delete({ where: { id } });
 }
@@ -194,9 +215,9 @@ export async function getBanners() {
 // Inventory
 export async function getInventory(locationId?: string | null) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
-  const where: any = {};
+  const where: Prisma.InventoryWhereInput = {};
   if (locationId) where.locationId = locationId;
 
   const items = await prisma.inventory.findMany({
@@ -218,7 +239,7 @@ export async function getInventory(locationId?: string | null) {
 
 export async function getAllInventory() {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const items = await prisma.inventory.findMany({
     include: { product: true, location: { select: { name: true, code: true, type: true } } },
@@ -238,7 +259,7 @@ export async function getAllInventory() {
 
 export async function updateStock(productId: string, quantity: number, locationId?: string | null) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const locId = locationId || null;
 
@@ -252,6 +273,7 @@ export async function updateStock(productId: string, quantity: number, locationI
     where: { productId, locationId: locId },
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic result accumulator
   let result: any;
   if (existing) {
     result = await prisma.inventory.update({
@@ -280,9 +302,9 @@ export async function updateStock(productId: string, quantity: number, locationI
 
 export async function getStockMovements(productId?: string, locationId?: string, limit = 50) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
-  const where: any = {};
+  const where: Prisma.StockMovementWhereInput = {};
   if (productId) where.productId = productId;
   if (locationId) where.locationId = locationId;
 
@@ -296,7 +318,7 @@ export async function getStockMovements(productId?: string, locationId?: string,
     take: limit,
   });
 
-  return movements.map((m: any) => ({
+  return movements.map((m) => ({
     id: m.id,
     productId: m.productId,
     locationId: m.locationId,
@@ -319,7 +341,7 @@ export async function createStockMovement(data: {
   notes?: string;
 }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   if (!["IN", "OUT", "TRANSFER", "ADJUSTMENT", "ORDER_FULFILLMENT"].includes(data.type)) {
     throw new Error("Invalid movement type");
@@ -369,7 +391,7 @@ export async function createStockMovement(data: {
 // Brand management
 export async function getBrands({ page = 1, limit = 20 }: { page?: number; limit?: number } = {}) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const [brands, total] = await Promise.all([
     prisma.brand.findMany({
@@ -386,28 +408,36 @@ export async function getBrands({ page = 1, limit = 20 }: { page?: number; limit
 
 export async function createBrand(data: { name: string; slug: string; logo?: string; description?: string; isActive?: boolean }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
-  return prisma.brand.create({ data });
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
+  const input = validate(z.object({
+    name: vStr(200),
+    slug: z.string().trim().min(1).max(200).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+    logo: z.string().trim().url().max(2048).optional().or(z.literal("")),
+    description: vOptStr(2000),
+    isActive: z.boolean().optional(),
+  }), data);
+  return prisma.brand.create({ data: { name: input.name as string, slug: input.slug, logo: input.logo || undefined, description: input.description as string | undefined, isActive: input.isActive ?? true } });
 }
 
 export async function updateBrand(id: string, data: { name?: string; slug?: string; logo?: string; description?: string; isActive?: boolean }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
+  validate(z.object({ id: vId }), { id });
   return prisma.brand.update({ where: { id }, data });
 }
 
 export async function deleteBrand(id: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
   return prisma.brand.delete({ where: { id } });
 }
 
 // Admin product list with pagination
 export async function getAllProducts({ page = 1, limit = 20, search, category, status }: { page?: number; limit?: number; search?: string; category?: string; status?: string }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
-  const where: any = {};
+  const where: Prisma.ProductWhereInput = {};
   if (search) {
     where.OR = [
       { name: { contains: search, mode: "insensitive" } },
@@ -429,6 +459,7 @@ export async function getAllProducts({ page = 1, limit = 20, search, category, s
     prisma.product.count({ where }),
   ]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   const serializeProduct = (p: any) => {
     if (!p) return p;
     return {
@@ -444,6 +475,6 @@ export async function getAllProducts({ page = 1, limit = 20, search, category, s
 
 export async function deleteProduct(id: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
   return prisma.product.delete({ where: { id } });
 }

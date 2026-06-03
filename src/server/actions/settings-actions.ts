@@ -45,6 +45,7 @@ export async function setConfig(key: string, value: string, description?: string
 
 export async function bulkSetConfigs(pairs: Array<{ key: string; value: string; description?: string; category?: string }>) {
   await requireAdmin();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic result accumulator
   const results: any[] = [];
   for (const { key, value, description, category } of pairs) {
     const updated = await prisma.systemConfig.upsert({

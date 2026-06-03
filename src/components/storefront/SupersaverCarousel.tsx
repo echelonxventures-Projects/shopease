@@ -6,12 +6,12 @@ import { ProductCard } from "@/components/storefront/ProductCard";
 import { Zap } from "lucide-react";
 
 export function SupersaverCarousel({ categoryId }: { categoryId?: string }) {
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<{ id: string; slug: string; name: string; price: number | string; comparePrice?: number | string | null; images?: string[]; stock?: number; discountPercentage?: number; productType?: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getSupersaverProducts({ categoryId, limit: 12, minDiscount: 10 })
-      .then(setProducts)
+      .then((data) => setProducts(data as unknown as typeof products))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [categoryId]);
@@ -36,7 +36,7 @@ export function SupersaverCarousel({ categoryId }: { categoryId?: string }) {
             <ProductCard
               product={{
                 ...product,
-                productType: product.discountPercentage >= 30 ? "PHYSICAL" : product.productType,
+                productType: (product.discountPercentage ?? 0) >= 30 ? "PHYSICAL" : product.productType,
               }}
             />
           </div>

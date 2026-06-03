@@ -8,6 +8,7 @@ import { Phone, CheckCircle, XCircle, Loader2, Clock, MessageSquare } from "luci
 import { toast } from "sonner";
 
 export default function CallbacksPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [requests, setRequests] = useState<any[]>([]);
   const [filter, setFilter] = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -36,6 +37,7 @@ export default function CallbacksPage() {
     CANCELLED: "bg-red-100 text-red-700",
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic object shape
   const statusIcon: Record<string, any> = {
     PENDING: Clock,
     ASSIGNED: Phone,
@@ -66,7 +68,7 @@ export default function CallbacksPage() {
       </div>
 
       <div className="space-y-3">
-        {requests.map((r: any) => {
+        {requests.map((r) => {
           const Icon = statusIcon[r.status] || Clock;
           return (
             <div key={r.id} className="bg-white rounded-lg shadow border p-4">
@@ -91,7 +93,7 @@ export default function CallbacksPage() {
                     {r.preferredTime && (
                       <span className="ml-3">
                         <Clock className="w-3.5 h-3.5 inline mr-1" />
-                        {new Date(r.preferredTime).toLocaleString()}
+                        {new Date(r.preferredTime).toLocaleString("en-IN")}
                       </span>
                     )}
                   </p>

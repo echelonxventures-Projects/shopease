@@ -6,7 +6,9 @@ import { listAllPromos } from "@/server/actions/phaseA-actions";
 import { toast } from "sonner";
 
 export default function NoCostEMIPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [emis, setEmis] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [promos, setPromos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -38,18 +40,18 @@ export default function NoCostEMIPage() {
       setShowForm(false);
       setForm({ promoId: "", bankName: "", bankCode: "", cardType: "ALL", emiTenures: "3,6,9,12", minOrderValue: "" });
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete?")) return;
     try { await deleteNoCostEMI(id); toast.success("Deleted"); fetch(); }
-    catch (err: any) { toast.error(err.message); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleToggle = async (id: string, active: boolean) => {
     try { await updateNoCostEMI(id, { isActive: !active }); toast.success("Updated"); fetch(); }
-    catch (err: any) { toast.error(err.message); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   return (
@@ -129,7 +131,7 @@ export default function NoCostEMIPage() {
                   <td className="px-4 py-3 text-sm">{e.bankName}</td>
                   <td className="px-4 py-3 text-sm">{e.cardType}</td>
                   <td className="px-4 py-3 text-sm">{e.emiTenure ? `${e.emiTenure} months` : "-"}</td>
-                  <td className="px-4 py-3 text-sm">{e.minOrderValue ? `₹${Number(e.minOrderValue).toLocaleString()}` : "-"}</td>
+                  <td className="px-4 py-3 text-sm">{e.minOrderValue ? `₹${Number(e.minOrderValue).toLocaleString("en-IN")}` : "-"}</td>
                   <td className="px-4 py-3">
                     <button onClick={() => handleToggle(e.id, e.isActive)}
                       className={`px-2 py-0.5 rounded text-xs font-medium ${e.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>

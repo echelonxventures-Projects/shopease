@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { DynamicMap } from "@/components/map/MapProvider";
-import { Button } from "@/components/ui/button";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -44,6 +44,7 @@ export function LocationPicker({
   const [addressLabel, setAddressLabel] = useState(value?.addressLabel || "Home");
   const [deliveryNote, setDeliveryNote] = useState(value?.deliveryNote || "");
   const [formattedAddress, setFormattedAddress] = useState(value?.formattedAddress || "");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- zone shape varies between initial value and resolved zone
   const [zone, setZone] = useState<any>(value?.zone || undefined);
   const [loading, setLoading] = useState(false);
   const [resolving, setResolving] = useState(false);
@@ -145,7 +146,7 @@ export function LocationPicker({
         await checkZone(latitude, longitude);
         setLoading(false);
       },
-      (err) => {
+      (_err) => {
         setLoading(false);
         toast.error("Location access denied. Please enable GPS or select manually.");
       },

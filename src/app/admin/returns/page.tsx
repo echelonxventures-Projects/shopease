@@ -23,7 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { History, Package } from "lucide-react";
+
 
 const RETURN_STATUS_COLORS: Record<string, string> = {
   DRAFT: "bg-gray-100 text-gray-700",
@@ -35,12 +35,16 @@ const RETURN_STATUS_COLORS: Record<string, string> = {
   CANCELLED: "bg-gray-100 text-gray-500",
 };
 
+interface ReturnItem { id: string; productId: string; quantity: number; notes?: string; unitPrice?: number; subtotal?: number; product?: { name: string } | null }
+interface SupplierReturn { id: string; returnNumber: string; status: string; reason?: string | null; notes?: string | null; supplierId: string; purchaseOrderId: string; approvedAt?: string | null; shippedDate?: string | null; receivedBySupplierDate?: string | null; approvalNotes?: string | null; supplier?: { name: string } | null; items: ReturnItem[]; createdAt: string | Date; _count?: { items: number } }
+interface POData { id: string; poNumber: string; status: string; supplier?: { name: string } | null; items: Array<{ productId: string; quantity: number; receivedQuantity: number; returnQuantity: number; product?: { name: string } | null }> }
+
 export default function ReturnsPage() {
   const router = useRouter();
-  const [returns, setReturns] = useState<any[]>([]);
+  const [returns, setReturns] = useState<SupplierReturn[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [selectedReturn, setSelectedReturn] = useState<any>(null);
+  const [selectedReturn, setSelectedReturn] = useState<SupplierReturn | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
   // Create return dialog
@@ -48,7 +52,7 @@ export default function ReturnsPage() {
   const [createPoId, setCreatePoId] = useState("");
   const [createReason, setCreateReason] = useState("");
   const [createItems, setCreateItems] = useState<{ productId: string; quantity: string; notes?: string }[]>([]);
-  const [poData, setPoData] = useState<any>(null);
+  const [poData, setPoData] = useState<POData | null>(null);
 
   // Reject dialog
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -60,7 +64,7 @@ export default function ReturnsPage() {
       const data = await getAllSupplierReturns({
         status: statusFilter === "ALL" ? undefined : statusFilter,
       });
-      setReturns(data.returns);
+      setReturns(data.returns as unknown as SupplierReturn[]);
     } catch {
       router.push("/auth/login");
     } finally {
@@ -74,7 +78,7 @@ export default function ReturnsPage() {
     setDetailLoading(true);
     try {
       const data = await getSupplierReturn(id);
-      setSelectedReturn(data);
+      setSelectedReturn(data as unknown as SupplierReturn | null);
     } catch {
       toast.error("Failed to load return details");
     } finally {
@@ -104,13 +108,13 @@ export default function ReturnsPage() {
       setCreateItems([]);
       setPoData(null);
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleLoadPO = async () => {
     if (!createPoId) return;
     try {
-      const po = await getPurchaseOrder(createPoId);
+      const po = await getPurchaseOrder(createPoId) as unknown as POData | null;
       if (!po) { toast.error("PO not found"); return; }
       if (po.status !== "RECEIVED" && po.status !== "PARTIALLY_RECEIVED") {
         toast.error("Can only create returns from received or partially received orders");
@@ -120,8 +124,8 @@ export default function ReturnsPage() {
       setPoData(po);
       setCreateItems(
         po.items
-          .filter((item: any) => item.receivedQuantity > item.returnQuantity)
-          .map((item: any) => ({
+          .filter((item) => item.receivedQuantity > item.returnQuantity)
+          .map((item) => ({
             productId: item.productId,
             quantity: (item.receivedQuantity - item.returnQuantity).toString(),
             notes: "",
@@ -138,7 +142,7 @@ export default function ReturnsPage() {
       toast.success("Return submitted");
       fetch();
       viewReturn(id);
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleApproveReturn = async (id: string) => {
@@ -147,7 +151,7 @@ export default function ReturnsPage() {
       toast.success("Return approved");
       fetch();
       viewReturn(id);
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleRejectReturn = async () => {
@@ -160,7 +164,7 @@ export default function ReturnsPage() {
       setRejectingId(null);
       fetch();
       if (selectedReturn?.id === rejectingId) viewReturn(rejectingId);
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleShipReturn = async (id: string) => {
@@ -169,7 +173,7 @@ export default function ReturnsPage() {
       toast.success("Return shipped — inventory updated");
       fetch();
       viewReturn(id);
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleCompleteReturn = async (id: string) => {
@@ -178,7 +182,7 @@ export default function ReturnsPage() {
       toast.success("Return completed");
       fetch();
       viewReturn(id);
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleCancelReturn = async (id: string) => {
@@ -187,7 +191,7 @@ export default function ReturnsPage() {
       toast.success("Return cancelled");
       fetch();
       if (selectedReturn?.id === id) viewReturn(id);
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   if (loading) return <div className="p-6"><p className="text-gray-500">Loading...</p></div>;
@@ -202,7 +206,7 @@ export default function ReturnsPage() {
       </div>
 
       <div className="mb-4">
-        <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
+        <Select value={statusFilter} onValueChange={(v) => { if (v) setStatusFilter(v); }}>
           <SelectTrigger className="max-w-xs">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
@@ -236,7 +240,7 @@ export default function ReturnsPage() {
                     <p>Supplier: {r.supplier?.name || "—"}</p>
                     <p>PO: {r.purchaseOrderId ? r.purchaseOrderId.slice(0, 8) + "..." : "—"}</p>
                     <p>Items: {r._count?.items || 0}</p>
-                    <p>Created: {new Date(r.createdAt).toLocaleDateString()}</p>
+                    <p>Created: {new Date(r.createdAt).toLocaleDateString("en-IN")}</p>
                     {r.reason && <p className="col-span-3">Reason: {r.reason}</p>}
                   </div>
                 </div>
@@ -291,19 +295,19 @@ export default function ReturnsPage() {
                 {selectedReturn.approvedAt && (
                   <div>
                     <span className="text-gray-500">Approved:</span>{" "}
-                    {new Date(selectedReturn.approvedAt).toLocaleDateString()}
+                    {new Date(selectedReturn.approvedAt).toLocaleDateString("en-IN")}
                   </div>
                 )}
                 {selectedReturn.shippedDate && (
                   <div>
                     <span className="text-gray-500">Shipped:</span>{" "}
-                    {new Date(selectedReturn.shippedDate).toLocaleDateString()}
+                    {new Date(selectedReturn.shippedDate).toLocaleDateString("en-IN")}
                   </div>
                 )}
                 {selectedReturn.receivedBySupplierDate && (
                   <div>
                     <span className="text-gray-500">Received by Supplier:</span>{" "}
-                    {new Date(selectedReturn.receivedBySupplierDate).toLocaleDateString()}
+                    {new Date(selectedReturn.receivedBySupplierDate).toLocaleDateString("en-IN")}
                   </div>
                 )}
               </div>
@@ -329,12 +333,12 @@ export default function ReturnsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedReturn.items.map((item: any) => (
+                  {selectedReturn.items.map((item) => (
                     <tr key={item.id} className="border-b">
                       <td className="py-2">{item.product?.name || item.productId}</td>
                       <td className="py-2 text-right">{item.quantity}</td>
-                      <td className="py-2 text-right">₹{item.unitPrice.toLocaleString()}</td>
-                      <td className="py-2 text-right font-bold">₹{item.subtotal.toLocaleString()}</td>
+                      <td className="py-2 text-right">₹{(item.unitPrice ?? 0).toLocaleString("en-IN")}</td>
+                      <td className="py-2 text-right font-bold">₹{(item.subtotal ?? 0).toLocaleString("en-IN")}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -400,7 +404,7 @@ export default function ReturnsPage() {
                 <div>
                   <Label className="mb-2 block">Items to Return</Label>
                   {createItems.map((item, idx) => {
-                    const poItem = poData.items.find((i: any) => i.productId === item.productId);
+                    const poItem = poData.items.find((i) => i.productId === item.productId);
                     const available = poItem ? poItem.receivedQuantity - poItem.returnQuantity : 0;
                     return (
                       <div key={idx} className="flex gap-2 mb-2 items-center">

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, Check, Star } from "lucide-react";
+import { Check, Star } from "lucide-react";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
 
@@ -58,8 +58,8 @@ export default function RFQDetailPage() {
         </div>
         {rfq.description && <p className="text-gray-500 mt-2">{rfq.description}</p>}
         <div className="flex gap-6 mt-4 text-sm text-gray-500">
-          <span>Created: {new Date(rfq.createdAt).toLocaleDateString()}</span>
-          {rfq.deadline && <span>Deadline: {new Date(rfq.deadline).toLocaleDateString()}</span>}
+          <span>Created: {new Date(rfq.createdAt).toLocaleDateString("en-IN")}</span>
+          {rfq.deadline && <span>Deadline: {new Date(rfq.deadline).toLocaleDateString("en-IN")}</span>}
           <span>Currency: {rfq.currency}</span>
         </div>
       </div>
@@ -89,7 +89,7 @@ export default function RFQDetailPage() {
                     <TableCell className="font-medium">{item.productName}</TableCell>
                     <TableCell>{item.quantity} {item.unitOfMeasure}</TableCell>
                     <TableCell>{item.unitOfMeasure}</TableCell>
-                    <TableCell>{item.targetPrice ? `${rfq.currency} ${Number(item.targetPrice).toLocaleString()}` : "—"}</TableCell>
+                    <TableCell>{item.targetPrice ? `${rfq.currency} ${Number(item.targetPrice).toLocaleString("en-IN")}` : "—"}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -132,7 +132,7 @@ export default function RFQDetailPage() {
                             <span>{resp.seller?.rating || "—"}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="font-bold">{resp.currency} {Number(resp.totalAmount).toLocaleString()}</TableCell>
+                        <TableCell className="font-bold">{resp.currency} {Number(resp.totalAmount).toLocaleString("en-IN")}</TableCell>
                         <TableCell>
                           {resp.items?.reduce((min: number, item: any) => Math.min(min, item.deliveryDays || 999), 999) === 999
                             ? "—"
@@ -176,7 +176,7 @@ export default function RFQDetailPage() {
                           <TableRow key={item.id}>
                             <TableCell>{item.productName}</TableCell>
                             <TableCell>{item.quantity}</TableCell>
-                            <TableCell>{resp.currency} {Number(item.unitPrice).toLocaleString()}</TableCell>
+                            <TableCell>{resp.currency} {Number(item.unitPrice).toLocaleString("en-IN")}</TableCell>
                             <TableCell>{item.discount ? `${Number(item.discount)}%` : "—"}</TableCell>
                             <TableCell>{item.deliveryDays ? `${item.deliveryDays} days` : "—"}</TableCell>
                           </TableRow>

@@ -56,7 +56,7 @@ export default function SellerDashboardPage() {
             <DollarSign className="w-5 h-5 text-green-600" />
             <span className="text-sm text-gray-500">Revenue</span>
           </div>
-          <p className="text-3xl font-bold">₹{Number(analytics?.totalRevenue || 0).toLocaleString()}</p>
+          <p className="text-3xl font-bold">₹{Number(analytics?.totalRevenue || 0).toLocaleString("en-IN")}</p>
         </div>
         <div className="bg-white rounded-lg p-5 shadow border">
           <div className="flex items-center gap-3 mb-2">
@@ -95,7 +95,7 @@ export default function SellerDashboardPage() {
                 <div key={o.id} className="p-4 flex items-center justify-between">
                   <div>
                     <p className="font-medium text-sm">{o.order?.orderNumber || "—"}</p>
-                    <p className="text-xs text-gray-500">{new Date(o.createdAt).toLocaleDateString()}</p>
+                    <p className="text-xs text-gray-500">{new Date(o.createdAt).toLocaleDateString("en-IN")}</p>
                   </div>
                   <span className={`text-xs font-medium px-2 py-1 rounded ${
                     o.status === "DELIVERED" ? "bg-green-100 text-green-700"

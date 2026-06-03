@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Zap, Tag, ExternalLink } from "lucide-react";
+import { Zap, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 
@@ -23,7 +23,7 @@ export default function DealsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
-        <Zap className="w-7 h-7 text-amber-500" /> Today's Deals
+        <Zap className="w-7 h-7 text-amber-500" /> Today&apos;s Deals
       </h1>
       <p className="text-gray-500 mb-6">Exclusive deals updated daily — some are app-only!</p>
 

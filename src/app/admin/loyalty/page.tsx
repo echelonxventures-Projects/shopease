@@ -8,8 +8,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 
 export default function LoyaltyAdminPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [programs, setPrograms] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [editing, setEditing] = useState<any>(null);
 
   const formEmpty = { name: "", pointsPerRupee: 1, minRedeemPoints: 100, pointsExpiryDays: 365, isActive: true };
@@ -31,9 +33,7 @@ export default function LoyaltyAdminPage() {
       setEditing(null);
       setForm(formEmpty);
       fetch();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleDelete = async (id: string) => {
@@ -42,9 +42,7 @@ export default function LoyaltyAdminPage() {
       await deleteLoyaltyProgram(id);
       toast.success("Deleted");
       fetch();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   return (

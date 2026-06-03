@@ -1,8 +1,11 @@
 "use client";
 
 import { ProductCard } from "./ProductCard";
+import type { ComponentProps } from "react";
 
-export function ProductGrid({ products }: { products: any[] }) {
+type ProductCardProduct = ComponentProps<typeof ProductCard>["product"];
+
+export function ProductGrid({ products }: { products: ProductCardProduct[] }) {
   if (products.length === 0) {
     return (
       <div className="text-center py-12">

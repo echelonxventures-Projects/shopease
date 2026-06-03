@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { RefreshCw, Zap, Save, Settings, ChevronDown, ChevronUp, Key, Box } from "lucide-react";
+import { RefreshCw, Zap, Save, Settings, ChevronUp, Key, Box } from "lucide-react";
 
 const PROVIDERS = ["pattern", "groq", "huggingface", "openai", "replicate", "local"];
 
@@ -35,11 +35,12 @@ export default function AIConfigPage() {
 
   async function loadConfigs() {
     const data = await getAIConfig();
-    const map: Record<string, any> = {};
+    const map: Record<string, unknown> = {};
     const forms: Record<string, { apiKey: string; model: string }> = {};
     if (Array.isArray(data)) {
       for (const c of data) {
         map[c.feature] = c;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion needed for dynamic data
         const cfg = (c.config as any) || {};
         forms[c.feature] = { apiKey: cfg.apiKey || "", model: cfg.model || "" };
       }
@@ -56,7 +57,7 @@ export default function AIConfigPage() {
   }
 
   async function handleProviderChange(feature: string, provider: string) {
-    const current = configs[feature] || {};
+    const _current = configs[feature] || {};
     await updateAIConfig(feature, { provider });
     setConfigs((prev) => ({ ...prev, [feature]: { ...prev[feature], provider } }));
     toast.success(`Provider changed to ${provider}`);
@@ -66,6 +67,7 @@ export default function AIConfigPage() {
     setSaving(feature);
     try {
       const form = formState[feature] || { apiKey: "", model: "" };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex type from external source
       const config: any = {};
       if (form.apiKey) config.apiKey = form.apiKey;
       if (form.model) config.model = form.model;

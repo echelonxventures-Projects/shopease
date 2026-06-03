@@ -2,10 +2,10 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 interface PromoState {
-  appliedPromos: any[];
+  appliedPromos: unknown[];
   totalDiscount: number;
   promoCodes: string[];
-  setAppliedPromos: (promos: any[], discount: number) => void;
+  setAppliedPromos: (promos: unknown[], discount: number) => void;
   addPromoCode: (code: string) => void;
   removePromoCode: (code: string) => void;
   clearPromos: () => void;

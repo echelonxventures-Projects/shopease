@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { registerBusiness } from "@/server/actions/business-actions";
 import { getAllCountryProfiles } from "@/server/actions/location-actions";
-import { getSubLocations } from "@/server/actions/location-actions";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

@@ -7,6 +7,7 @@ interface NotificationPayload {
   channel: NotificationChannel;
   title: string;
   message: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   metadata?: Record<string, any>;
 }
 
@@ -97,7 +98,8 @@ async function sendWhatsApp(userId: string, msg: string): Promise<SendResult> {
   return { sent: true, channel: "WHATSAPP" };
 }
 
-async function sendPush(userId: string, title: string, msg: string, metadata?: Record<string, any>): Promise<SendResult> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
+async function sendPush(userId: string, title: string, msg: string, _metadata?: Record<string, any>): Promise<SendResult> {
   console.log(`[PUSH] To: ${userId}, Title: ${title}, Message: ${msg}`);
   return { sent: true, channel: "PUSH" };
 }

@@ -23,6 +23,7 @@ const statusOptions = [
 
 export default function AdminProductsPage() {
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [products, setProducts] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -31,14 +32,15 @@ export default function AdminProductsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [categories, setCategories] = useState<any[]>([]);
   const limit = 20;
 
   const fetch = () => {
     setLoading(true);
     getAllProducts({ page, limit, search: searchTerm, category: categoryFilter, status: statusFilter })
-      .then((data: any) => { setProducts(data.products); setTotal(data.total); })
-      .catch((e: any) => { if (e.message === "Unauthorized") router.push("/auth/login"); })
+      .then((data) => { setProducts(data.products); setTotal(data.total); })
+      .catch((e) => { if (e.message === "Unauthorized") router.push("/auth/login"); })
       .finally(() => setLoading(false));
   };
 
@@ -54,7 +56,7 @@ export default function AdminProductsPage() {
       await deleteProduct(id);
       toast.success("Product deleted");
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const totalPages = Math.ceil(total / limit);
@@ -83,7 +85,7 @@ export default function AdminProductsPage() {
             <SelectTrigger className="mt-1"><SelectValue placeholder="All Categories" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="">All Categories</SelectItem>
-              {categories.map((c: any) => (
+              {categories.map((c) => (
                 <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
               ))}
             </SelectContent>
@@ -123,7 +125,7 @@ export default function AdminProductsPage() {
             ) : products.length === 0 ? (
               <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-500">No products found</td></tr>
             ) : (
-              products.map((p: any) => (
+              products.map((p) => (
                 <tr key={p.id} className="border-t hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <Link href={`/admin/products/${p.id}`} className="font-medium hover:text-blue-600">
@@ -132,7 +134,7 @@ export default function AdminProductsPage() {
                   </td>
                   <td className="px-4 py-3 text-sm">{p.category?.name}</td>
                   <td className="px-4 py-3 text-sm">{p.brand?.name || "-"}</td>
-                  <td className="px-4 py-3 text-sm">₹{Number(p.price).toLocaleString()}</td>
+                  <td className="px-4 py-3 text-sm">₹{Number(p.price).toLocaleString("en-IN")}</td>
                   <td className="px-4 py-3 text-sm">
                     <span className={p.stock <= 5 ? "text-red-600 font-bold" : "text-green-600"}>
                       {p.stock}
@@ -146,6 +148,7 @@ export default function AdminProductsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <Link href={`/admin/products/${p.id}`} className="text-blue-600 hover:underline mr-3">Edit</Link>
+                    <Link href={`/admin/products/${p.id}/variants`} className="text-purple-600 hover:underline mr-3">Variants</Link>
                     <Button size="sm" variant="destructive" onClick={() => handleDelete(p.id)}>Delete</Button>
                   </td>
                 </tr>

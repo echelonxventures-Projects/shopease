@@ -2,20 +2,24 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { isAIFeatureEnabled } from "@/lib/ai/orchestrator";
+import { getConfigNumber } from "@/lib/config/services-config";
+import { CONFIG_KEYS } from "@/lib/config/config-keys";
+import type { Prisma } from "@prisma/client";
 
-function serialize<T>(data: unknown): T {
+function _serialize<T>(data: unknown): T {
   if (data == null) return data as T;
   if (typeof data === "object" && "toNumber" in data) return (data as { toNumber: () => number }).toNumber() as T;
   if (data instanceof Date) return data.toISOString() as T;
-  if (Array.isArray(data)) return data.map((v) => serialize(v)) as T;
+  if (Array.isArray(data)) return data.map((v) => _serialize(v)) as T;
   if (typeof data === "object") {
     const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(data)) out[k] = serialize(v);
+    for (const [k, v] of Object.entries(data)) out[k] = _serialize(v);
     return out as T;
   }
   return data as T;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- generic Prisma result serializer
 function serializeProduct(p: any) {
   if (!p) return p;
   return {
@@ -27,14 +31,16 @@ function serializeProduct(p: any) {
 }
 
 export interface RecommendationResult {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   product: any;
   strategy: string;
   score: number;
   reason?: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
 async function getTrendingProducts(categoryId?: string, limit: number = 10): Promise<any[]> {
-  const where: any = { isActive: true };
+  const where: Prisma.ProductWhereInput = { isActive: true };
   if (categoryId) where.categoryId = categoryId;
 
   return prisma.product.findMany({
@@ -44,6 +50,7 @@ async function getTrendingProducts(categoryId?: string, limit: number = 10): Pro
   });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
 async function getCollaborativeFilters(userId: string, limit: number = 10): Promise<any[]> {
   // Users who bought what you bought also bought
   const userOrders = await prisma.order.findMany({
@@ -52,7 +59,7 @@ async function getCollaborativeFilters(userId: string, limit: number = 10): Prom
 
   const productIds = new Set<string>();
   for (const order of userOrders) {
-    const items = (order.items as any[]) || [];
+    const items = (order.items as Array<{ productId: string; quantity?: number }>) || [];
     for (const item of items) {
       if (item.productId) productIds.add(item.productId);
     }
@@ -71,7 +78,7 @@ async function getCollaborativeFilters(userId: string, limit: number = 10): Prom
 
   const coPurchaseCount: Record<string, number> = {};
   for (const order of relatedOrders) {
-    const items = (order.items as any[]) || [];
+    const items = (order.items as Array<{ productId: string; quantity?: number }>) || [];
     for (const item of items) {
       if (item.productId && !productIds.has(item.productId)) {
         coPurchaseCount[item.productId] = (coPurchaseCount[item.productId] || 0) + 1;
@@ -87,6 +94,7 @@ async function getCollaborativeFilters(userId: string, limit: number = 10): Prom
   return prisma.product.findMany({ where: { id: { in: topProductIds }, isActive: true } });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
 async function getContentBased(productId: string, limit: number = 10): Promise<any[]> {
   const product = await prisma.product.findUnique({ where: { id: productId } });
   if (!product) return [];
@@ -105,6 +113,7 @@ async function getContentBased(productId: string, limit: number = 10): Promise<a
   });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
 async function getPersonalized(userId: string, limit: number = 10): Promise<any[]> {
   // Based on user behavior history
   const behaviors = await prisma.userBehavior.findMany({
@@ -130,6 +139,7 @@ async function getPersonalized(userId: string, limit: number = 10): Promise<any[
   return prisma.product.findMany({ where: { id: { in: topProductIds }, isActive: true } });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
 async function getCrossSell(productId: string, limit: number = 10): Promise<any[]> {
   // Find products frequently ordered together
   const orders = await prisma.order.findMany({
@@ -139,8 +149,8 @@ async function getCrossSell(productId: string, limit: number = 10): Promise<any[
 
   const coOccurrence: Record<string, number> = {};
   for (const order of orders) {
-    const items = (order.items as any[]) || [];
-    const hasProduct = items.some((i: any) => i.productId === productId);
+    const items = (order.items as Array<{ productId: string; quantity?: number }>) || [];
+    const hasProduct = items.some((i) => i.productId === productId);
     if (hasProduct) {
       for (const item of items) {
         if (item.productId && item.productId !== productId) {
@@ -155,35 +165,47 @@ async function getCrossSell(productId: string, limit: number = 10): Promise<any[
 }
 
 export async function fetchRecommendations(context: { page: string; productId?: string; categoryId?: string; limit?: number }) {
-  const { page, productId, categoryId, limit = 8 } = context;
+  const { page: _page, productId, categoryId, limit = 8 } = context;
   const session = await getSession();
   const userId = session?.user?.id;
 
+  const w = {
+    personalized: getConfigNumber(CONFIG_KEYS.RECS_WEIGHT_PERSONALIZED, 90) / 100,
+    content: getConfigNumber(CONFIG_KEYS.RECS_WEIGHT_CONTENT, 80) / 100,
+    crossSell: getConfigNumber(CONFIG_KEYS.RECS_WEIGHT_CROSS_SELL, 85) / 100,
+    collaborative: getConfigNumber(CONFIG_KEYS.RECS_WEIGHT_COLLABORATIVE, 75) / 100,
+    trending: getConfigNumber(CONFIG_KEYS.RECS_WEIGHT_TRENDING, 70) / 100,
+  };
+
   const results: RecommendationResult[] = [];
+  const recsEnabled = await isAIFeatureEnabled("recommendations");
 
   // Personalized (highest weight for logged-in users)
-  if (userId && await isAIFeatureEnabled("recommendations")) {
+  if (userId && recsEnabled) {
     const personal = await getPersonalized(userId, Math.ceil(limit * 0.4));
-    for (const p of personal) {
-      results.push({ product: serializeProduct(p), strategy: "PERSONALIZED", score: 0.9, reason: "Based on your behavior" });
-    }
+    for (const p of personal) results.push({ product: serializeProduct(p), strategy: "PERSONALIZED", score: w.personalized, reason: "Based on your behavior" });
+
+    // Collaborative filtering — "customers like you also bought"
+    const collab = await getCollaborativeFilters(userId, Math.ceil(limit * 0.3));
+    for (const p of collab) results.push({ product: serializeProduct(p), strategy: "COLLABORATIVE", score: w.collaborative, reason: "Customers also bought" });
   }
 
-  // Context-based
+  // Context-based (product page)
   if (productId) {
     const similar = await getContentBased(productId, Math.ceil(limit * 0.3));
-    for (const p of similar) {
-      results.push({ product: serializeProduct(p), strategy: "CONTENT_BASED", score: 0.8, reason: "Similar products" });
-    }
+    for (const p of similar) results.push({ product: serializeProduct(p), strategy: "CONTENT_BASED", score: w.content, reason: "Similar products" });
+
+    // Cross-sell — frequently bought together
+    const cross = await getCrossSell(productId, Math.ceil(limit * 0.3));
+    for (const p of cross) results.push({ product: serializeProduct(p), strategy: "CROSS_SELL", score: w.crossSell, reason: "Frequently bought together" });
   }
 
   // Trending (always available fallback)
   const trending = await getTrendingProducts(categoryId, Math.ceil(limit * 0.3));
-  for (const p of trending) {
-    results.push({ product: serializeProduct(p), strategy: "TRENDING", score: 0.7, reason: "Popular right now" });
-  }
+  for (const p of trending) results.push({ product: serializeProduct(p), strategy: "TRENDING", score: w.trending, reason: "Popular right now" });
 
-  // Deduplicate by product ID
+  // Sort by score, then deduplicate by product ID
+  results.sort((a, b) => b.score - a.score);
   const seen = new Set<string>();
   const deduped = results.filter((r) => {
     if (seen.has(r.product.id)) return false;
@@ -201,7 +223,7 @@ export async function trackRecommendationClick(productId: string, recommendation
       strategy: "CLICK",
       score: 1,
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      metadata: { recommendationId, clicked: true } as any,
+      metadata: { recommendationId, clicked: true } as Prisma.InputJsonValue,
     },
   });
 }

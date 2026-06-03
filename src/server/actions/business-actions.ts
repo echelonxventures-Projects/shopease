@@ -1,6 +1,7 @@
 "use server";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getSession, isAdminRole } from "@/lib/auth";
+import type { Prisma } from "@prisma/client";
 
 export async function registerBusiness(data: {
   name: string;
@@ -26,6 +27,7 @@ export async function registerBusiness(data: {
   const profile = await prisma.businessProfile.create({
     data: {
       name: data.name,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- enum string cast
       businessType: data.businessType as any,
       industry: data.industry,
       companySize: data.companySize,
@@ -104,6 +106,7 @@ export async function updateBusinessProfile(businessId: string, data: Partial<{
 
   return prisma.businessProfile.update({
     where: { id: businessId },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
     data: data as any,
   });
 }
@@ -159,16 +162,17 @@ export async function createBusinessTaxExemption(businessId: string, data: {
   if (!session?.user?.id) return { error: "Unauthorized" };
 
   return prisma.businessTaxExemption.create({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- enum string cast
     data: { businessId, regionCode: data.regionCode, exemptionType: data.exemptionType as any, certificateNumber: data.certificateNumber, issuedBy: data.issuedBy, validFrom: data.validFrom, validUntil: data.validUntil, fileUrl: data.fileUrl, status: "ACTIVE" as any },
   });
 }
 
 export async function listBusinesses(filter?: { status?: string; search?: string }) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
-  const where: any = {};
-  if (filter?.status) where.verificationStatus = filter.status;
+  const where: Prisma.BusinessProfileWhereInput = {};
+  if (filter?.status) where.verificationStatus = filter.status as Prisma.BusinessProfileWhereInput["verificationStatus"];
   if (filter?.search) {
     where.OR = [
       { name: { contains: filter.search, mode: "insensitive" } },
@@ -189,7 +193,7 @@ export async function listBusinesses(filter?: { status?: string; search?: string
 
 export async function updateBusinessStatus(businessId: string, status: string, adminNote?: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   const verificationStatusMap: Record<string, string> = {
     approve: "VERIFIED",
@@ -201,6 +205,7 @@ export async function updateBusinessStatus(businessId: string, status: string, a
   return prisma.businessProfile.update({
     where: { id: businessId },
     data: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- enum string cast
       verificationStatus: verificationStatusMap[status] || status as any,
       verifiedBy: session.user?.id as string,
       verifiedAt: status === "approve" ? new Date() : undefined,

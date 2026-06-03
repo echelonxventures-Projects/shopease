@@ -26,6 +26,7 @@ export async function inviteMember(businessId: string, email: string, role: stri
     data: {
       businessId,
       userId: session.user.id, // temporary, will be updated on accept
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
       role: role as any,
       email,
       inviteToken: token,
@@ -85,6 +86,7 @@ export async function changeMemberRole(businessId: string, userId: string, newRo
 
   return prisma.businessUser.updateMany({
     where: { businessId, userId },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
     data: { role: newRole as any },
   });
 }
@@ -122,6 +124,7 @@ export async function createApprovalRule(businessId: string, data: {
       type: data.type,
       minOrderAmount: data.minOrderAmount,
       maxDiscount: data.maxDiscount,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
       approverRole: data.approverRole as any,
       requiresMultiApprover: data.requiresMultiApprover,
       minApprovers: data.minApprovers || 2,
@@ -143,6 +146,7 @@ export async function updateApprovalRule(ruleId: string, data: {
 
   return prisma.businessApprovalRule.update({
     where: { id: ruleId },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
     data: data as any,
   });
 }

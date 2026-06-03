@@ -13,7 +13,7 @@ import { toast } from "sonner";
 
 declare global {
   interface Window {
-    Razorpay: any;
+    Razorpay: unknown;
   }
 }
 
@@ -31,10 +31,10 @@ export function AddMoneySection({ onAdded }: { onAdded?: () => void }) {
 
     setLoading(true);
     try {
-      // Create top-up record
-      const topUp = await createTopUp(val, method);
+      // Create a pending top-up + real Razorpay order
+      const { topUpId, razorpayOrderId, currency } = await createTopUp(val, method);
 
-      // Load Razorpay
+      // Load Razorpay checkout script
       if (!window.Razorpay) {
         const script = document.createElement("script");
         script.src = "https://checkout.razorpay.com/v1/checkout.js";
@@ -42,14 +42,38 @@ export function AddMoneySection({ onAdded }: { onAdded?: () => void }) {
         await new Promise((resolve) => { script.onload = resolve; });
       }
 
-      // For demo: auto-confirm (in production, create Razorpay order first)
-      const result = await confirmTopUp(topUp.id, topUp.id);
-      toast.success(`₹${val} added to your wallet`);
-      setAmount("");
-      onAdded?.();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to add money");
-    } finally {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Razorpay global is loaded at runtime
+      const rzp = new (window.Razorpay as any)({
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
+        amount: Math.round(val * 100),
+        currency,
+        order_id: razorpayOrderId,
+        name: "Wallet Top-up",
+        description: `Add ₹${val} to wallet`,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Razorpay handler response shape
+        handler: async (response: any) => {
+          try {
+            await confirmTopUp(
+              topUpId,
+              response.razorpay_order_id,
+              response.razorpay_payment_id,
+              response.razorpay_signature,
+            );
+            toast.success(`₹${val} added to your wallet`);
+            setAmount("");
+            onAdded?.();
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Failed to confirm top-up");
+          } finally {
+            setLoading(false);
+          }
+        },
+        modal: { ondismiss: () => setLoading(false) },
+        theme: { color: "#2563eb" },
+      });
+      rzp.open();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to add money");
       setLoading(false);
     }
   };
@@ -73,7 +97,7 @@ export function AddMoneySection({ onAdded }: { onAdded?: () => void }) {
                 size="sm"
                 onClick={() => setAmount(p.toString())}
               >
-                ₹{p.toLocaleString()}
+                ₹{p.toLocaleString("en-IN")}
               </Button>
             ))}
           </div>

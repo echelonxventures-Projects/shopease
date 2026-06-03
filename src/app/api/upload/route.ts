@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { writeFile } from "fs/promises";
 import path from "path";
 import { getSession } from "@/lib/auth";
 import { validateFileType, validateImageDimensions } from "@/lib/file-validator";
 import { checkRateLimit, buildRateLimitKey, RATE_LIMITS } from "@/lib/rate-limit";
 import { getRealIp } from "@/lib/get-real-ip";
+import { storeUpload } from "@/lib/upload";
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -57,11 +57,10 @@ export async function POST(req: Request) {
     // Sanitize filename
     const safeExt = path.extname(file.name).toLowerCase().replace(/[^a-z.]/g, "") || `.${typeResult.mimeType!.split("/")[1]}`;
     const filename = `${Date.now()}-${crypto.randomUUID()}${safeExt}`;
-    const filepath = path.join(process.cwd(), "public/uploads", filename);
 
-    await writeFile(filepath, buffer);
+    const { url } = await storeUpload(buffer, filename, typeResult.mimeType!);
 
-    return NextResponse.json({ url: `/uploads/${filename}` });
+    return NextResponse.json({ url });
   } catch {
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }

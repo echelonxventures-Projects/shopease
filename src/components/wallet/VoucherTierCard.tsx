@@ -49,8 +49,8 @@ export function VoucherTierCard({ slug, name, icon, color, balanceMode, balance,
       const result = await redeemVoucherToTier(code, slug);
       toast.success(result.message);
       window.location.reload();
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed");
     } finally {
       setRedeeming(false);
     }

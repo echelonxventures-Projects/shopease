@@ -112,9 +112,9 @@ export default function ListDetailPage() {
                   </Link>
                   {p.brand && <p className="text-xs text-gray-500 mt-1">{p.brand.name}</p>}
                   <div className="flex items-center gap-2 mt-2">
-                    <span className="font-bold">₹{Number(p.price).toLocaleString()}</span>
+                    <span className="font-bold">₹{Number(p.price).toLocaleString("en-IN")}</span>
                     {p.comparePrice && (
-                      <span className="text-sm text-gray-400 line-through">₹{Number(p.comparePrice).toLocaleString()}</span>
+                      <span className="text-sm text-gray-400 line-through">₹{Number(p.comparePrice).toLocaleString("en-IN")}</span>
                     )}
                   </div>
                   <div className="flex gap-2 mt-3">

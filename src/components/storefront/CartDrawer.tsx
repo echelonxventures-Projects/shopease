@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCartStore, CartItem } from "@/stores/useCartStore";
+import { useCartStore } from "@/stores/useCartStore";
 
 export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { items, savedItems, totalItems, subtotal, updateQuantity, removeItem, clearCart, saveForLater, moveToCart, removeSavedItem } = useCartStore();
@@ -38,7 +38,7 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
                   <div className="flex-1">
                     <h3 className="font-medium text-sm">{item.name}</h3>
                     {item.variantOptions && <p className="text-xs text-gray-400">{item.variantOptions}</p>}
-                    <p className="font-bold mt-1">₹{item.price.toLocaleString()}</p>
+                    <p className="font-bold mt-1">₹{item.price.toLocaleString("en-IN")}</p>
                     <div className="flex items-center gap-2 mt-2">
                       <button
                         onClick={() => updateQuantity(item.productId, item.variantId, item.quantity - 1)}
@@ -82,7 +82,7 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
                   {savedItems.map((item) => (
                     <div key={`${item.productId}::${item.variantId || ""}`} className="flex items-center gap-2 text-sm border-b pb-2">
                       <span className="flex-1 truncate">{item.name}</span>
-                      <span className="font-bold">₹{item.price.toLocaleString()}</span>
+                      <span className="font-bold">₹{item.price.toLocaleString("en-IN")}</span>
                       <button
                         onClick={() => moveToCart(item.productId, item.variantId)}
                         className="text-blue-600 hover:underline text-xs"
@@ -103,7 +103,7 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
               )}
               <div className="flex justify-between mb-4">
                 <span className="font-semibold">Subtotal:</span>
-                <span className="font-bold">₹{subtotal.toLocaleString()}</span>
+                <span className="font-bold">₹{subtotal.toLocaleString("en-IN")}</span>
               </div>
               <Link
                 href="/checkout"

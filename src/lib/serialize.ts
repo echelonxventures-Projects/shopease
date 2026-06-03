@@ -7,11 +7,11 @@ export function serializeForClient<T>(value: T): T {
 
   if (typeof value === "object") {
     // Prisma Decimal → number
-    if (typeof (value as any).toNumber === "function") {
+    if ("toNumber" in value && typeof (value as { toNumber?: unknown }).toNumber === "function") {
       try {
-        return (value as any).toNumber() as T;
+        return (value as unknown as { toNumber(): number }).toNumber() as unknown as T;
       } catch {
-        return Number(value) as any as T;
+        return Number(value) as unknown as T;
       }
     }
 
@@ -31,11 +31,11 @@ export function serializeForClient<T>(value: T): T {
     }
 
     // Plain object — recurse
-    const result: any = {};
+    const result: Record<string, unknown> = {};
     for (const key of Object.keys(value)) {
-      result[key] = serializeForClient((value as any)[key]);
+      result[key] = serializeForClient((value as Record<string, unknown>)[key]);
     }
-    return result;
+    return result as T;
   }
 
   // Primitive (string, number, boolean)
@@ -53,6 +53,6 @@ export function serializeProduct<T>(product: T): T {
 /**
  * Serialize an array of products.
  */
-export function serializeProducts<T extends any[]>(products: T): T {
+export function serializeProducts<T extends unknown[]>(products: T): T {
   return serializeForClient(products);
 }

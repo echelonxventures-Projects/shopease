@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { GiftCardSection } from "@/components/wallet/GiftCardSection";
-import { Gift, ArrowLeft, History, CreditCard } from "lucide-react";
+import { Gift, History, CreditCard } from "lucide-react";
 import Link from "next/link";
 
 export default function RedeemGiftCardPage() {

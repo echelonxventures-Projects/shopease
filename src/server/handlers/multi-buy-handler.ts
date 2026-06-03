@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 export const multiBuyHandler: PromotionHandler = {
   types: ["MINIMUM_SPEND"],
   scope() { return "TOTAL"; },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PromotionHandler interface contract
   async evaluate(promo: any, context: PromotionContext) {
     const tier = await prisma.multiBuyTier.findUnique({ where: { promoId: promo.id } });
     if (!tier) return null;

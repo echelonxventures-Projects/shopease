@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getSession, isAdminRole } from "@/lib/auth";
 import { z } from "zod";
 
 function serialize<T>(data: unknown): T {
@@ -48,7 +48,7 @@ export async function getProductByBarcode(barcode: string) {
 
 export async function createProductBarcode(productId: string, barcode: string, type?: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
   const parsed = barcodeSchema.safeParse({ barcode, type: type || "CUSTOM" });
   if (!parsed.success) throw new Error("Invalid barcode data");
   return prisma.productBarcode.create({
@@ -58,7 +58,7 @@ export async function createProductBarcode(productId: string, barcode: string, t
 
 export async function deleteProductBarcode(id: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
   return prisma.productBarcode.delete({ where: { id } });
 }
 
@@ -80,7 +80,7 @@ export async function getTierPrices(productId: string) {
 
 export async function createTierPrice(productId: string, data: z.infer<typeof tierPriceSchema>) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
   const parsed = tierPriceSchema.safeParse(data);
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Invalid tier price data");
   const sortOrder = await prisma.tierPrice.count({ where: { productId } });
@@ -91,13 +91,13 @@ export async function createTierPrice(productId: string, data: z.infer<typeof ti
 
 export async function deleteTierPrice(id: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
   return prisma.tierPrice.delete({ where: { id } });
 }
 
 // ===================== BUNDLE ITEMS =====================
 
-const bundleItemSchema = z.object({
+const _bundleItemSchema = z.object({
   productId: z.string().min(1),
   quantity: z.number().int().min(1).default(1),
   isRequired: z.boolean().default(true),
@@ -113,7 +113,7 @@ export async function getBundleItems(bundleId: string) {
 
 export async function setBundleItems(bundleId: string, items: { productId: string; quantity?: number; isRequired?: boolean }[]) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
 
   return prisma.$transaction(async (tx) => {
     await tx.bundleItem.deleteMany({ where: { bundleId } });
@@ -148,6 +148,7 @@ const serialLotSchema = z.object({
 });
 
 export async function getSerialLotTracking(productId: string, status?: string) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic Prisma where filter
   const where: any = { productId };
   if (status) where.status = status;
   return prisma.serialLotTracking.findMany({
@@ -162,7 +163,7 @@ export async function getSerialLotTracking(productId: string, status?: string) {
 
 export async function createSerialLotTracking(productId: string, data: z.infer<typeof serialLotSchema>) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
   const parsed = serialLotSchema.safeParse(data);
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Invalid tracking data");
 
@@ -176,6 +177,7 @@ export async function createSerialLotTracking(productId: string, data: z.infer<t
       locationId: parsed.data.locationId || null,
       supplierId: parsed.data.supplierId || null,
       quantity: parsed.data.quantity,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma Json field cast
       metadata: parsed.data.metadata ? JSON.stringify(parsed.data.metadata) : null as any,
     },
   });
@@ -183,7 +185,7 @@ export async function createSerialLotTracking(productId: string, data: z.infer<t
 
 export async function updateSerialLotStatus(id: string, status: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
   return prisma.serialLotTracking.update({
     where: { id },
     data: { status },
@@ -206,7 +208,7 @@ const subscriptionSchema = z.object({
 
 export async function createProductSubscription(productId: string, data: z.infer<typeof subscriptionSchema>) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
   const parsed = subscriptionSchema.safeParse(data);
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Invalid subscription data");
 
@@ -262,7 +264,7 @@ export async function subscribeToProduct(userId: string, productId: string, paym
 
 export async function cancelSubscription(subscriptionId: string, reason?: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
   return prisma.customerSubscription.update({
     where: { id: subscriptionId },
     data: { status: "CANCELLED", cancelReason: reason, cancelledAt: new Date() },
@@ -296,21 +298,25 @@ export async function getMySubscriptions(userId: string) {
 // ===================== TAX CATEGORY RULES =====================
 
 export async function getTaxCategoryRules(regionId?: string) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic Prisma where filter
   const where: any = { isActive: true };
   if (regionId) where.regionId = regionId;
   const rules = await prisma.taxCategoryRule.findMany({
     where,
     include: { region: true },
   });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   return serialize<any[]>(rules);
 }
 
 export async function createOrUpdateTaxCategoryRule(taxCategory: string, regionId: string, taxRate: number, description?: string) {
   const session = await getSession();
-  if (!session || (session as any).user?.role !== "ADMIN") throw new Error("Unauthorized");
+  if (!session || !isAdminRole(session!.user?.role)) throw new Error("Unauthorized");
   return prisma.taxCategoryRule.upsert({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
     where: { taxCategory_regionId: { taxCategory: taxCategory as any, regionId } },
     update: { taxRate, description },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
     create: { taxCategory: taxCategory as any, regionId, taxRate, description: description || null },
   });
 }
@@ -322,6 +328,7 @@ export async function getAllUoms() {
     include: { translations: true },
     orderBy: { category: "asc" },
   });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   return serialize<any[]>(uoms);
 }
 
@@ -332,5 +339,6 @@ export async function getUomConversions() {
       toUom: true,
     },
   });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
   return serialize<any[]>(conversions);
 }

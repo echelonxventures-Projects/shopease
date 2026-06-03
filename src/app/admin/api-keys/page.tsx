@@ -17,6 +17,7 @@ const PERMISSION_OPTIONS = [
 ];
 
 export default function ApiKeysPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [keys, setKeys] = useState<any[]>([]);
   const [name, setName] = useState("");
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>(["products:read"]);
@@ -85,7 +86,7 @@ export default function ApiKeysPage() {
           </div>
           {newKey && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-              <p className="text-sm text-amber-800 mb-1 font-bold">Copy your key now — it won't be shown again!</p>
+              <p className="text-sm text-amber-800 mb-1 font-bold">Copy your key now — it won&apos;t be shown again!</p>
               <div className="flex items-center gap-2">
                 <code className="text-xs bg-white border rounded px-2 py-1 flex-1 truncate">{newKey}</code>
                 <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(newKey); toast.success("Copied!"); }}>
@@ -117,8 +118,8 @@ export default function ApiKeysPage() {
                     <span key={p} className="inline-block bg-violet-100 text-violet-700 text-xs px-2 py-0.5 rounded mr-1">{p}</span>
                   ))}
                 </td>
-                <td className="py-3 px-4 text-gray-500">{key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleDateString() : "Never"}</td>
-                <td className="py-3 px-4 text-gray-500">{key.expiresAt ? new Date(key.expiresAt).toLocaleDateString() : "Never"}</td>
+                <td className="py-3 px-4 text-gray-500">{key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleDateString("en-IN") : "Never"}</td>
+                <td className="py-3 px-4 text-gray-500">{key.expiresAt ? new Date(key.expiresAt).toLocaleDateString("en-IN") : "Never"}</td>
                 <td className="py-3 px-4 text-right">
                   <Button size="sm" variant="ghost" onClick={() => handleRevoke(key.id)} className="text-red-500 hover:text-red-700">
                     <Trash2 className="w-3 h-3" />

@@ -8,13 +8,13 @@ interface GWPBannerProps {
 }
 
 export function GWPBanner({ cartTotal }: GWPBannerProps) {
-  const [offers, setOffers] = useState<any[]>([]);
+  const [offers, setOffers] = useState<{ id: string; minOrderValue: number | string | { toString(): string }; giftProduct?: { name: string } | null }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (cartTotal <= 0) { setLoading(false); return; }
     getActiveGiftWithPurchase(cartTotal)
-      .then((data: any) => setOffers(data))
+      .then((data) => setOffers(data as unknown as { id: string; minOrderValue: number | string | { toString(): string }; giftProduct?: { name: string } | null }[]))
       .finally(() => setLoading(false));
   }, [cartTotal]);
 
@@ -30,12 +30,12 @@ export function GWPBanner({ cartTotal }: GWPBannerProps) {
               <span className="text-2xl">🎁</span>
               <div className="flex-1">
                 <p className="font-semibold text-pink-800">
-                  Free {gwp.giftProduct?.name} on orders above ₹{Number(gwp.minOrderValue).toLocaleString()}
+                  Free {gwp.giftProduct?.name} on orders above ₹{Number(gwp.minOrderValue).toLocaleString("en-IN")}
                 </p>
                 {progress < 100 ? (
                   <div>
                     <p className="text-sm text-pink-600">
-                      Add ₹{Math.max(0, Number(gwp.minOrderValue) - cartTotal).toLocaleString()} more to unlock
+                      Add ₹{Math.max(0, Number(gwp.minOrderValue) - cartTotal).toLocaleString("en-IN")} more to unlock
                     </p>
                     <div className="w-full bg-pink-200 rounded-full h-1.5 mt-1">
                       <div className="bg-pink-500 h-1.5 rounded-full transition-all" style={{ width: `${progress}%` }} />

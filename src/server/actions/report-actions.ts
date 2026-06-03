@@ -1,17 +1,18 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getSession, isAdminRole } from "@/lib/auth";
+import type { Prisma } from "@prisma/client";
 
 export async function exportOrdersCSV(from?: string, to?: string, status?: string) {
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");
   if (session.user.role !== "ADMIN") throw new Error("Admin only");
 
-  const where: any = {};
+  const where: Prisma.OrderWhereInput = {};
   if (from) where.createdAt = { gte: new Date(from) };
-  if (to) where.createdAt = { ...where.createdAt, lte: new Date(to) };
-  if (status) where.status = status;
+  if (to) where.createdAt = { ...(where.createdAt as object), lte: new Date(to) };
+  if (status) where.status = status as Prisma.OrderWhereInput["status"];
 
   const orders = await prisma.order.findMany({
     where,
@@ -34,7 +35,7 @@ export async function exportProductsCSV(category?: string) {
   if (!session) throw new Error("Unauthorized");
   if (session.user.role !== "ADMIN") throw new Error("Admin only");
 
-  const where: any = {};
+  const where: Prisma.ProductWhereInput = {};
   if (category) where.categoryId = category;
 
   const products = await prisma.product.findMany({

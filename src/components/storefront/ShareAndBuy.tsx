@@ -35,7 +35,7 @@ export function OneClickBuy({ productId, productName, price }: OneClickBuyProps)
   return (
     <Button onClick={handleBuy} disabled={loading} className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold">
       {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4 mr-2" />}
-      Buy Now — ₹{price.toLocaleString()}
+      Buy Now — ₹{price.toLocaleString("en-IN")}
     </Button>
   );
 }

@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { haversineDistance, isPointInCircle, isPointInPolygon, findNearest, getBoundingBox, estimatedTime } from "@/lib/geo";
-import { DeliveryAgentStatus, VehicleType, DeliveryStatus, TrackingEventType } from "@prisma/client";
+import { DeliveryAgentStatus, VehicleType, DeliveryStatus, TrackingEventType, Prisma } from "@prisma/client";
 
 // ===================== DELIVERY ZONE CRUD =====================
 
@@ -57,7 +57,7 @@ export async function updateDeliveryZone(
   const session = await getSession();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
-  const updateData: any = { ...data };
+  const updateData: Record<string, unknown> = { ...data };
   if (data.coveragePolygon !== undefined) {
     updateData.isGeoFenced = data.coveragePolygon.length > 0;
     updateData.coveragePolygon = data.coveragePolygon.length > 0
@@ -185,7 +185,7 @@ export async function createMicroFulfillmentCenter(data: {
     data: {
       ...data,
       code,
-      operatingHours: data.operatingHours as any,
+      operatingHours: data.operatingHours as Prisma.InputJsonValue,
     },
   });
 }
@@ -217,9 +217,9 @@ export async function updateMicroFulfillmentCenter(
   const session = await getSession();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
-  const updateData: any = { ...data };
+  const updateData: Record<string, unknown> = { ...data };
   if (data.operatingHours) {
-    updateData.operatingHours = data.operatingHours as any;
+    updateData.operatingHours = data.operatingHours as Prisma.InputJsonValue;
   }
 
   return prisma.microFulfillmentCenter.update({
@@ -284,13 +284,14 @@ export async function findNearestAgents(
   });
 
   const withCoords = agents.filter(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
     (a: any) => a.currentLat && a.currentLng
   );
 
   return findNearest(
     lat,
     lng,
-    withCoords.map((a: any) => ({
+    withCoords.map((a) => ({
       ...a,
       lat: Number(a.currentLat),
       lng: Number(a.currentLng),
@@ -338,7 +339,7 @@ export async function assignDeliveryAgent(orderId: string, agentId: string) {
   });
   if (!agent) throw new Error("Agent not found");
 
-  const shippingAddress = order.shippingAddress as any;
+  const shippingAddress = order.shippingAddress as Record<string, string>;
   const pickupLat = agent.currentLat ? Number(agent.currentLat) : undefined;
   const pickupLng = agent.currentLng ? Number(agent.currentLng) : undefined;
   const deliveryLat = shippingAddress?.latitude ? Number(shippingAddress.latitude) : undefined;
@@ -386,7 +387,7 @@ export async function autoAssignDeliveryAgent(orderId: string) {
   const order = await prisma.order.findUnique({ where: { id: orderId } });
   if (!order) throw new Error("Order not found");
 
-  const shippingAddress = order.shippingAddress as any;
+  const shippingAddress = order.shippingAddress as Record<string, string>;
   const lat = shippingAddress?.latitude ? Number(shippingAddress.latitude) : null;
   const lng = shippingAddress?.longitude ? Number(shippingAddress.longitude) : null;
 
@@ -505,7 +506,7 @@ export async function getDeliveryTracking(assignmentId: string) {
     deliveredAt: assignment.deliveredAt,
     estimatedEta: assignment.estimatedEta,
     actualDuration: assignment.actualDuration,
-    route: assignment.route as any,
+    route: assignment.route as Record<string, unknown>,
     agent: assignment.deliveryAgent ? {
       id: assignment.deliveryAgent.id,
       name: assignment.deliveryAgent.user.name,
@@ -554,7 +555,7 @@ export async function getDeliveryAnalytics(
   const session = await getSession();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
-  const where: any = {};
+  const where: Prisma.DeliveryAssignmentWhereInput = {};
   if (zoneId) where.zoneId = zoneId;
   if (from || to) {
     where.createdAt = {};

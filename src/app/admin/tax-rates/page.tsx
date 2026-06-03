@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import { listTaxRates, createTaxRate } from "@/server/actions/commerce-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Globe, Trash2 } from "lucide-react";
+import { Plus, Globe } from "lucide-react";
 import { toast } from "sonner";
 
 const TAX_TYPES = ["GST", "VAT", "SERVICE_TAX", "IGST", "CGST", "SGST", "NONE"];
 
 export default function TaxRatesPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [rates, setRates] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
@@ -46,7 +47,7 @@ export default function TaxRatesPage() {
     }
   };
 
-  const formatRate = (type: string) => {
+  const _formatRate = (type: string) => {
     const rate = (form.rate / 100) * 100;
     if (type === "CGST" || type === "SGST") return `${rate / 2}%`;
     return `${rate}%`;

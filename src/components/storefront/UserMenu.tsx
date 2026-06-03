@@ -22,7 +22,7 @@ export function UserMenu() {
     );
   }
 
-  const userRole = (session.user as any)?.role;
+  const userRole = (session.user as { role?: string })?.role;
 
   const adminLink =
     userRole === "ADMIN" ? "/admin/dashboard" :

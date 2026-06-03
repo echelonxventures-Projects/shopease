@@ -61,6 +61,7 @@ const TIMEZONES = [
 
 export default function RegionsPage() {
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [regions, setRegions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -133,9 +134,7 @@ export default function RegionsPage() {
       setOpen(false);
       resetForm();
       fetch();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const toggleLocale = (locale: string) => {
@@ -168,7 +167,7 @@ export default function RegionsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {regions.map((region: any) => (
+        {regions.map((region) => (
           <div key={region.id} className="bg-white rounded-lg shadow p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -222,7 +221,7 @@ export default function RegionsPage() {
                     await toggleRegionActive(region.id, !region.isActive);
                     toast.success(region.isActive ? "Region disabled" : "Region enabled");
                     fetch();
-                  } catch (e: any) { toast.error(e.message); }
+                  } catch (e) { toast.error(e instanceof Error ? e.message : "Operation failed"); }
                 }}
               >
                 {region.isActive ? "Disable" : "Enable"}
@@ -338,6 +337,7 @@ export default function RegionsPage() {
     </div>
   );
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex type from external source
   function populateEditForm(region: any) {
     setForm({
       code: region.code,

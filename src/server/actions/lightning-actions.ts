@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import type { Prisma } from "@prisma/client";
 
 // ===================== LIGHTNING DEALS =====================
 
@@ -106,7 +107,7 @@ export async function createMultiBuyTier(data: {
   return prisma.multiBuyTier.create({
     data: {
       promoId: data.promoId,
-      tiers: data.tiers as any,
+      tiers: data.tiers as Prisma.InputJsonValue,
       appliesToScope: data.appliesToScope ?? "CART",
     },
   });
@@ -121,7 +122,7 @@ export async function updateMultiBuyTier(id: string, data: {
   return prisma.multiBuyTier.update({
     where: { id },
     data: {
-      ...(data.tiers && { tiers: data.tiers as any }),
+      ...(data.tiers && { tiers: data.tiers as Prisma.InputJsonValue }),
       ...(data.appliesToScope && { appliesToScope: data.appliesToScope }),
     },
   });

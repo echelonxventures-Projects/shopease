@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Truck, MapPin, Plus, Trash2, Package, ChevronRight } from "lucide-react";
+import { Truck, MapPin, Plus, Trash2, Package } from "lucide-react";
 
 interface ShipmentItem {
   productId: string;
@@ -87,7 +87,7 @@ export function SplitShipment({ cartItems }: SplitShipmentProps) {
     ));
   };
 
-  const moveItem = (shipmentId: string, productId: string, toShipmentId: string) => {
+  const _moveItem = (shipmentId: string, productId: string, toShipmentId: string) => {
     const fromShipment = shipments.find((s) => s.id === shipmentId);
     const item = fromShipment?.items.find((i) => i.productId === productId);
     if (!item || !fromShipment) return;
@@ -123,7 +123,7 @@ export function SplitShipment({ cartItems }: SplitShipmentProps) {
         </Button>
       </div>
 
-      {shipments.map((shipment, idx) => (
+      {shipments.map((shipment, _idx) => (
         <div key={shipment.id} className="bg-white rounded-xl shadow border overflow-hidden">
           {/* Header */}
           <div className="bg-gray-50 px-5 py-3 flex justify-between items-center border-b">
@@ -183,13 +183,13 @@ export function SplitShipment({ cartItems }: SplitShipmentProps) {
                 <MapPin className="w-3 h-3" /> Delivery Address
               </label>
               <div className="grid grid-cols-2 gap-3">
-                <Input placeholder="Full Name" value={shipment.address.name} onChange={(e: any) => updateAddress(shipment.id, "name", e.target.value)} />
-                <Input placeholder="Phone" value={shipment.address.phone} onChange={(e: any) => updateAddress(shipment.id, "phone", e.target.value)} />
-                <Input placeholder="Address Line 1" value={shipment.address.line1} onChange={(e: any) => updateAddress(shipment.id, "line1", e.target.value)} className="col-span-2" />
-                <Input placeholder="Address Line 2" value={shipment.address.line2} onChange={(e: any) => updateAddress(shipment.id, "line2", e.target.value)} className="col-span-2" />
-                <Input placeholder="City" value={shipment.address.city} onChange={(e: any) => updateAddress(shipment.id, "city", e.target.value)} />
-                <Input placeholder="State" value={shipment.address.state} onChange={(e: any) => updateAddress(shipment.id, "state", e.target.value)} />
-                <Input placeholder="Pincode" value={shipment.address.pincode} onChange={(e: any) => updateAddress(shipment.id, "pincode", e.target.value)} />
+                <Input placeholder="Full Name" value={shipment.address.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateAddress(shipment.id, "name", e.target.value)} />
+                <Input placeholder="Phone" value={shipment.address.phone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateAddress(shipment.id, "phone", e.target.value)} />
+                <Input placeholder="Address Line 1" value={shipment.address.line1} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateAddress(shipment.id, "line1", e.target.value)} className="col-span-2" />
+                <Input placeholder="Address Line 2" value={shipment.address.line2} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateAddress(shipment.id, "line2", e.target.value)} className="col-span-2" />
+                <Input placeholder="City" value={shipment.address.city} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateAddress(shipment.id, "city", e.target.value)} />
+                <Input placeholder="State" value={shipment.address.state} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateAddress(shipment.id, "state", e.target.value)} />
+                <Input placeholder="Pincode" value={shipment.address.pincode} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateAddress(shipment.id, "pincode", e.target.value)} />
               </div>
             </div>
           </div>

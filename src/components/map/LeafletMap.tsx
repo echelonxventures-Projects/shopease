@@ -101,7 +101,7 @@ export default function LeafletMap({
 
 function MapClickHandler({ onClick }: { onClick?: (lat: number, lng: number) => void }) {
   useMapEvents({
-    click(e: any) {
+    click(e: { latlng: { lat: number; lng: number } }) {
       onClick?.(e.latlng.lat, e.latlng.lng);
     },
   });

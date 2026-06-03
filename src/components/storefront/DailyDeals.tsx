@@ -4,20 +4,29 @@ import { useEffect, useState } from "react";
 import { listDailyDeals } from "@/server/actions/commerce-actions";
 import Link from "next/link";
 
+interface DailyDeal {
+  id: string;
+  discountType: string;
+  discountValue: number | string;
+  description?: string;
+  bannerImage?: string | null;
+  product: { slug: string; name: string; price: number | string };
+}
+
 export function DailyDeals() {
-  const [deals, setDeals] = useState<any[]>([]);
+  const [deals, setDeals] = useState<DailyDeal[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     listDailyDeals()
-      .then(setDeals)
+      .then((data) => setDeals(data as unknown as DailyDeal[]))
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <div className="animate-pulse h-48 bg-gray-100 rounded" />;
   if (deals.length === 0) return null;
 
-  const getDiscount = (deal: any) => {
+  const getDiscount = (deal: DailyDeal) => {
     if (deal.discountType === "PERCENTAGE") return `${deal.discountValue}% OFF`;
     return `₹${Number(deal.discountValue)} OFF`;
   };
@@ -27,7 +36,7 @@ export function DailyDeals() {
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xl font-bold text-orange-800">🔥 Daily Deals</h3>
         <span className="text-sm text-orange-600">
-          Ends {new Date().toLocaleDateString()}
+          Ends {new Date().toLocaleDateString("en-IN")}
         </span>
       </div>
 
@@ -47,7 +56,7 @@ export function DailyDeals() {
               <p className="text-xs text-gray-500 mt-1">{deal.description}</p>
               <div className="flex items-center justify-between mt-2">
                 <span className="text-lg font-bold text-red-600">
-                  ₹{Number(deal.product.price) - (deal.discountType === "FLAT" ? Number(deal.discountValue) : Number(deal.product.price) * deal.discountValue / 100)}
+                  ₹{Number(deal.product.price) - (deal.discountType === "FLAT" ? Number(deal.discountValue) : Number(deal.product.price) * Number(deal.discountValue) / 100)}
                 </span>
                 <span className="text-sm line-through text-gray-400">
                   ₹{Number(deal.product.price)}

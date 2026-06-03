@@ -31,7 +31,7 @@ export function initLiveChatServer(server: ReturnType<typeof createServer>) {
     path: "/api/chat",
   });
 
-  wss.on("connection", (ws: ExtendedWebSocket, req: any) => {
+  wss.on("connection", (ws: ExtendedWebSocket, req: { url?: string; headers: { host?: string } }) => {
     // Extract userId from query params or auth header
     const url = new URL(req.url || "/", `http://${req.headers.host}`);
     const userId = url.searchParams.get("userId");
@@ -171,10 +171,10 @@ export function initLiveChatServer(server: ReturnType<typeof createServer>) {
             break;
           }
         }
-      } catch (err: any) {
+      } catch (err) {
         ws.send(JSON.stringify({
           type: "ERROR",
-          message: err.message,
+          message: (err instanceof Error ? err.message : String(err)),
         }));
       }
     });

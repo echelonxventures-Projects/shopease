@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { registerSeller, getSeller } from "@/server/actions/seller-actions";
+import { registerSeller } from "@/server/actions/seller-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Store, MapPin } from "lucide-react";

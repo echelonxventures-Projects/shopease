@@ -1,4 +1,4 @@
-import Link from "next/link";
+
 import { getProductWithTranslation } from "@/server/actions/product-actions";
 import { getLocaleCookie } from "@/lib/cookies";
 import { ProductDetailWrapper } from "@/components/storefront/ProductDetailWrapper";
@@ -78,6 +78,68 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           subscription={product.subscription}
           bundleItems={product.bundleItems}
         />
+      </div>
+
+      {/* Product Details & Specifications */}
+      <div className="mt-12 border-t pt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {(product.warrantyType && product.warrantyType !== "NONE") && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <h3 className="font-semibold text-green-800 mb-2">🛡️ Warranty</h3>
+            <p className="text-sm text-green-700">{product.warrantyType} — {product.warrantyDurationMonths ? `${product.warrantyDurationMonths} months` : "Included"}</p>
+          </div>
+        )}
+        {product.returnPolicy && product.returnPolicy !== "NO_RETURN" && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 className="font-semibold text-blue-800 mb-2">↩️ Returns</h3>
+            <p className="text-sm text-blue-700">{product.returnPolicy.replace("DAYS_", "")} Day Return Policy</p>
+          </div>
+        )}
+        {product.condition && product.condition !== "NEW" && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <h3 className="font-semibold text-amber-800 mb-2">📦 Condition</h3>
+            <p className="text-sm text-amber-700">{product.condition.replace(/_/g, " ")}</p>
+          </div>
+        )}
+        {(product.manufacturer || product.countryOfOrigin) && (
+          <div className="bg-gray-50 border rounded-lg p-4">
+            <h3 className="font-semibold mb-2">🏭 Origin</h3>
+            {product.manufacturer && <p className="text-sm">Manufacturer: {product.manufacturer}</p>}
+            {product.countryOfOrigin && <p className="text-sm">Made in: {product.countryOfOrigin}</p>}
+          </div>
+        )}
+        {product.ingredients && (
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 col-span-full">
+            <h3 className="font-semibold text-orange-800 mb-2">🧪 Ingredients</h3>
+            <p className="text-sm text-orange-700">{product.ingredients}</p>
+            {product.allergens && product.allergens.length > 0 && (
+              <p className="text-xs text-red-600 mt-2 font-medium">⚠️ Allergens: {product.allergens.join(", ")}</p>
+            )}
+          </div>
+        )}
+        {product.material && (
+          <div className="bg-gray-50 border rounded-lg p-4">
+            <h3 className="font-semibold mb-2">🧵 Material</h3>
+            <p className="text-sm">{product.material}</p>
+          </div>
+        )}
+        {(product.powerConsumption || product.batteryCapacity || product.displaySize) && (
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <h3 className="font-semibold text-purple-800 mb-2">⚡ Technical</h3>
+            <div className="text-sm text-purple-700 space-y-1">
+              {product.displaySize && <p>Display: {product.displaySize}</p>}
+              {product.processorType && <p>Processor: {product.processorType}</p>}
+              {product.ramSize && <p>RAM: {product.ramSize}</p>}
+              {product.storageSize && <p>Storage: {product.storageSize}</p>}
+              {product.batteryCapacity && <p>Battery: {product.batteryCapacity}</p>}
+            </div>
+          </div>
+        )}
+        {product.freeShipping && (
+          <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+            <h3 className="font-semibold text-indigo-800 mb-2">🚚 Free Shipping</h3>
+            <p className="text-sm text-indigo-700">This item ships free</p>
+          </div>
+        )}
       </div>
 
       {/* Reviews */}

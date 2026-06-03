@@ -17,8 +17,8 @@ class PayPalProvider implements PaymentProvider {
     if (this.clientId) return;
     if (regionId) {
       const config = await getGatewayConfig("paypal", regionId);
-      this.clientId = (config?.config as any)?.clientId || process.env.PAYPAL_CLIENT_ID || null;
-      this.clientSecret = (config?.config as any)?.clientSecret || process.env.PAYPAL_CLIENT_SECRET || null;
+      this.clientId = (config?.config as { clientId?: string })?.clientId || process.env.PAYPAL_CLIENT_ID || null;
+      this.clientSecret = (config?.config as { clientSecret?: string })?.clientSecret || process.env.PAYPAL_CLIENT_SECRET || null;
     }
     if (!this.clientId) {
       this.clientId = process.env.PAYPAL_CLIENT_ID || null;
@@ -27,7 +27,7 @@ class PayPalProvider implements PaymentProvider {
   }
 
   async createPaymentIntent(params: PaymentIntentParams): Promise<PaymentResult> {
-    await this.init(params.metadata?.regionId);
+    await this.init(params.metadata?.regionId as string | undefined);
     if (!this.clientId) {
       return { success: false, paymentId: "", status: "failed", error: "PayPal credentials not configured" };
     }
@@ -42,12 +42,13 @@ class PayPalProvider implements PaymentProvider {
         redirectUrl: `https://www.paypal.com/checkoutnow?token=${Math.random().toString(36).slice(2, 15)}`,
         metadata: { provider: "paypal", amount: params.amount, currency: params.currency },
       };
-    } catch (error: any) {
-      return { success: false, paymentId: "", status: "failed", error: error.message };
+    } catch (error) {
+      return { success: false, paymentId: "", status: "failed", error: (error instanceof Error ? error.message : String(error)) };
     }
   }
 
-  async confirmPayment(paymentId: string, params?: any): Promise<PaymentResult> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async confirmPayment(paymentId: string, _params?: Record<string, unknown>): Promise<PaymentResult> {
     await this.init();
     if (!this.clientId) {
       return { success: false, paymentId, status: "failed", error: "PayPal credentials not configured" };
@@ -61,8 +62,8 @@ class PayPalProvider implements PaymentProvider {
         status: "succeeded",
         metadata: { provider: "paypal" },
       };
-    } catch (error: any) {
-      return { success: false, paymentId, status: "failed", error: error.message };
+    } catch (error) {
+      return { success: false, paymentId, status: "failed", error: (error instanceof Error ? error.message : String(error)) };
     }
   }
 
@@ -80,13 +81,15 @@ class PayPalProvider implements PaymentProvider {
         amount: amount || 0,
         status: "completed",
       };
-    } catch (error: any) {
-      return { success: false, refundId: "", amount: 0, status: "failed", error: error.message };
+    } catch (error) {
+      return { success: false, refundId: "", amount: 0, status: "failed", error: (error instanceof Error ? error.message : String(error)) };
     }
   }
 
-  async handleWebhook(body: any, signature?: string): Promise<WebhookEvent> {
-    const raw = typeof body === "string" ? JSON.parse(body) : body;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async handleWebhook(body: unknown, _signature?: string): Promise<WebhookEvent> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- webhook payload shape varies
+    const raw: any = typeof body === "string" ? JSON.parse(body as string) : body;
     return {
       type: raw.event_type || "unknown",
       paymentId: raw.resource?.id || "",

@@ -3,9 +3,15 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { evaluatePromotions, type PromotionContext, type EvaluationResult } from "@/server/repositories/promotion-engine";
+import type { Prisma } from "@prisma/client";
 
 // ===================== PROMOTION CRUD =====================
 
+interface PromotionConditionInput { type: string; scope: string; value: string; minValue?: string; sortOrder?: number }
+interface PromotionEffectInput { type: string; value: string; maxDiscount?: string; scope?: string; config?: unknown; sortOrder?: number }
+interface PromotionLinkInput { targetType: string; targetId: string; sortOrder?: number }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- data shape is dynamic from client forms; sub-fields are typed via destructuring
 export async function createPromotion(data: any) {
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");
@@ -17,7 +23,7 @@ export async function createPromotion(data: any) {
 
     if (conditions?.length > 0) {
       await tx.promotionCondition.createMany({
-        data: conditions.map((c: any, i: number) => ({
+        data: conditions.map((c: PromotionConditionInput, i: number) => ({
           promotionId: promo.id,
           type: c.type,
           scope: c.scope,
@@ -30,7 +36,7 @@ export async function createPromotion(data: any) {
 
     if (effects?.length > 0) {
       await tx.promotionEffect.createMany({
-        data: effects.map((e: any, i: number) => ({
+        data: effects.map((e: PromotionEffectInput, i: number) => ({
           promotionId: promo.id,
           type: e.type,
           value: e.value,
@@ -44,7 +50,7 @@ export async function createPromotion(data: any) {
 
     if (links?.length > 0) {
       await tx.promotionLink.createMany({
-        data: links.map((l: any, i: number) => ({
+        data: links.map((l: PromotionLinkInput, i: number) => ({
           promotionId: promo.id,
           targetType: l.targetType,
           targetId: l.targetId,
@@ -75,6 +81,7 @@ export async function createPromotion(data: any) {
   });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- data shape is dynamic from client forms
 export async function updatePromotion(id: string, data: any) {
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");
@@ -88,7 +95,7 @@ export async function updatePromotion(id: string, data: any) {
       await tx.promotionCondition.deleteMany({ where: { promotionId: id } });
       if (conditions.length > 0) {
         await tx.promotionCondition.createMany({
-          data: conditions.map((c: any, i: number) => ({
+          data: conditions.map((c: PromotionConditionInput, i: number) => ({
             promotionId: id,
             type: c.type,
             scope: c.scope,
@@ -104,7 +111,7 @@ export async function updatePromotion(id: string, data: any) {
       await tx.promotionEffect.deleteMany({ where: { promotionId: id } });
       if (effects.length > 0) {
         await tx.promotionEffect.createMany({
-          data: effects.map((e: any, i: number) => ({
+          data: effects.map((e: PromotionEffectInput, i: number) => ({
             promotionId: id,
             type: e.type,
             value: e.value,
@@ -121,7 +128,7 @@ export async function updatePromotion(id: string, data: any) {
       await tx.promotionLink.deleteMany({ where: { promotionId: id } });
       if (links.length > 0) {
         await tx.promotionLink.createMany({
-          data: links.map((l: any, i: number) => ({
+          data: links.map((l: PromotionLinkInput, i: number) => ({
             promotionId: id,
             targetType: l.targetType,
             targetId: l.targetId,
@@ -184,9 +191,9 @@ export async function getPromotion(id: string) {
 }
 
 export async function listPromotions(filters?: { status?: string; type?: string; regionId?: string }) {
-  const where: any = {};
-  if (filters?.status) where.status = filters.status;
-  if (filters?.type) where.type = filters.type;
+  const where: Prisma.PromoWhereInput = {};
+  if (filters?.status) where.status = filters.status as Prisma.PromoWhereInput["status"];
+  if (filters?.type) where.type = filters.type as Prisma.PromoWhereInput["type"];
   if (filters?.regionId) where.regionId = filters.regionId;
 
   return prisma.promo.findMany({
@@ -203,6 +210,7 @@ export async function listPromotions(filters?: { status?: string; type?: string;
 
 // ===================== CONDITION MANAGEMENT =====================
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic form data from client
 export async function addCondition(promotionId: string, data: any) {
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");
@@ -212,6 +220,7 @@ export async function addCondition(promotionId: string, data: any) {
   });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic form data from client
 export async function updateCondition(id: string, data: any) {
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");
@@ -226,6 +235,7 @@ export async function deleteCondition(id: string) {
 
 // ===================== EFFECT MANAGEMENT =====================
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic form data from client
 export async function addEffect(promotionId: string, data: any) {
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");
@@ -235,6 +245,7 @@ export async function addEffect(promotionId: string, data: any) {
   });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic form data from client
 export async function updateEffect(id: string, data: any) {
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");
@@ -268,6 +279,7 @@ export async function removeLink(promotionId: string, targetType: string, target
 
 // ===================== BANK OFFER MANAGEMENT =====================
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic form data from client
 export async function upsertBankOffer(promotionId: string, data: any) {
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");
@@ -286,6 +298,7 @@ export async function deleteBankOffer(promotionId: string) {
 
 // ===================== SHIPPING PROMOTION MANAGEMENT =====================
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic form data from client
 export async function upsertShippingPromotion(promotionId: string, data: any) {
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");
@@ -304,6 +317,7 @@ export async function deleteShippingPromotion(promotionId: string) {
 
 // ===================== PAYMENT METHOD PROMOTION MANAGEMENT =====================
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic form data from client
 export async function upsertPaymentMethodPromotion(promotionId: string, data: any) {
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");
@@ -327,7 +341,9 @@ export async function upsertStackRule(group: string, strategy: string, maxPromos
   if (!session) throw new Error("Unauthorized");
   return prisma.promotionStackRule.upsert({
     where: { group },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
     create: { group, strategy: strategy as any, maxPromos, description },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion for Prisma compatibility
     update: { strategy: strategy as any, maxPromos, description },
   });
 }

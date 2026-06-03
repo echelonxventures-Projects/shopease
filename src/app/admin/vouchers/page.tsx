@@ -46,7 +46,9 @@ async function fetchSecureCode(): Promise<string> {
 
 export default function VouchersPage() {
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [vouchers, setVouchers] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [tiers, setTiers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -133,9 +135,7 @@ export default function VouchersPage() {
       setOpen(false);
       resetForm();
       fetch();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const getTypeBadge = (type: string) => {
@@ -220,7 +220,7 @@ export default function VouchersPage() {
             {vouchers.length === 0 ? (
               <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-500">No vouchers</td></tr>
             ) : (
-              vouchers.map((v: any) => {
+              vouchers.map((v) => {
                 const credit = calculateCredit(Number(v.faceValue), Number(v.redeemRate), v.type);
                 return (
                   <tr key={v.id} className="border-t">
@@ -295,11 +295,11 @@ export default function VouchersPage() {
               <Label>Voucher Tier
                 <Link href="/admin/vouchers/tiers" className="text-xs text-blue-600 ml-2 hover:underline">Manage Tiers</Link>
               </Label>
-              <Select value={form.voucherTierId || "none"} onValueChange={(v) => setForm({ ...form, voucherTierId: v || "none" })}>
+              <Select value={form.voucherTierId || "none"} onValueChange={(v) => { if (v) setForm({ ...form, voucherTierId: v || "none" }); }}>
                 <SelectTrigger><SelectValue placeholder="No tier" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No tier</SelectItem>
-                  {tiers.map((tier: any) => (
+                  {tiers.map((tier) => (
                     <SelectItem key={tier.id} value={tier.id}>
                       <span className="flex items-center gap-2">
                         <span className="w-3 h-3 rounded-full" style={{ backgroundColor: tier.color }} />
@@ -367,6 +367,7 @@ export default function VouchersPage() {
     </div>
   );
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex type from external source
   function populateEditForm(v: any) {
     setForm({
       code: v.code,

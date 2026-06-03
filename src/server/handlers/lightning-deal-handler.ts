@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 export const lightningDealHandler: PromotionHandler = {
   types: ["FLASH_SALE"],
   scope() { return "ITEM"; },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PromotionHandler interface contract
   async evaluate(promo: any, context: PromotionContext) {
     const deal = await prisma.lightningDeal.findUnique({ where: { promoId: promo.id } });
     if (!deal || !deal.isActive) return null;
@@ -12,6 +13,7 @@ export const lightningDealHandler: PromotionHandler = {
     if (now < deal.startTime || now > deal.endTime) return null;
     if (deal.claimedSlots >= deal.totalSlots) return null;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic structure
     let userClaim: any = null;
     if (context.userId) {
       userClaim = await prisma.lightningDealClaim.findUnique({

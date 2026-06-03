@@ -38,7 +38,7 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [delivery, setDelivery] = useState<any>(null);
-  const [etaMinutes, setEtaMinutes] = useState<number | null>(null);
+  const [etaMinutes, _setEtaMinutes] = useState<number | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
 
   // SSE: connect to delivery tracking stream
@@ -49,7 +49,7 @@ export default function OrderDetailPage() {
     const es = new EventSource(`/api/delivery/track/${assignmentId}`);
     eventSourceRef.current = es;
 
-    es.addEventListener("heartbeat", (e: MessageEvent) => {
+    es.addEventListener("heartbeat", (_e: MessageEvent) => {
       // Could use this to check latest event timestamp
     });
 
@@ -159,7 +159,7 @@ export default function OrderDetailPage() {
                     )}
                     <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
                   </div>
-                  <p className="font-bold">₹{(Number(item.price) * item.quantity).toLocaleString()}</p>
+                  <p className="font-bold">₹{(Number(item.price) * item.quantity).toLocaleString("en-IN")}</p>
                 </div>
               ))}
             </div>
@@ -245,7 +245,7 @@ export default function OrderDetailPage() {
                       <div>
                         <p className="font-medium text-gray-700">{event.message}</p>
                         <p className="text-gray-400">
-                          {new Date(event.createdAt).toLocaleTimeString()}
+                          {new Date(event.createdAt).toLocaleTimeString("en-IN")}
                         </p>
                       </div>
                     </div>
@@ -257,11 +257,11 @@ export default function OrderDetailPage() {
           <Card className="p-6">
             <h2 className="text-lg font-bold mb-4">Price Breakdown</h2>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>₹{order.subtotal != null ? Number(order.subtotal).toLocaleString() : '0'}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Tax</span><span>₹{order.tax != null ? Number(order.tax).toLocaleString() : '0'}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>₹{order.subtotal != null ? Number(order.subtotal).toLocaleString("en-IN") : '0'}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Tax</span><span>₹{order.tax != null ? Number(order.tax).toLocaleString("en-IN") : '0'}</span></div>
               <div className="flex justify-between"><span className="text-gray-500">Shipping</span><span className="text-green-600">Free</span></div>
-              {order.discount != null && Number(order.discount) > 0 && <div className="flex justify-between text-green-600"><span>Discount</span><span>-₹{Number(order.discount).toLocaleString()}</span></div>}
-              <div className="flex justify-between font-bold text-lg border-t pt-2"><span>Total</span><span>₹{order.total != null ? Number(order.total).toLocaleString() : '0'}</span></div>
+              {order.discount != null && Number(order.discount) > 0 && <div className="flex justify-between text-green-600"><span>Discount</span><span>-₹{Number(order.discount).toLocaleString("en-IN")}</span></div>}
+              <div className="flex justify-between font-bold text-lg border-t pt-2"><span>Total</span><span>₹{order.total != null ? Number(order.total).toLocaleString("en-IN") : '0'}</span></div>
             </div>
           </Card>
 
@@ -301,7 +301,7 @@ export default function OrderDetailPage() {
                     <div className="w-2 h-2 mt-2 bg-blue-500 rounded-full shrink-0" />
                     <div>
                       <p className="text-sm font-medium">{h.message}</p>
-                      <p className="text-xs text-gray-400">{new Date(h.createdAt).toLocaleString()}</p>
+                      <p className="text-xs text-gray-400">{new Date(h.createdAt).toLocaleString("en-IN")}</p>
                     </div>
                   </div>
                 ))}

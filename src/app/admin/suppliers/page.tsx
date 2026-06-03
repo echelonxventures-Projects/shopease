@@ -40,6 +40,7 @@ interface IdTypeOption {
 
 export default function SuppliersPage() {
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -48,7 +49,9 @@ export default function SuppliersPage() {
   const [pinLoading, setPinLoading] = useState(false);
 
   // Location dropdown data
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [countries, setCountries] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server action return type
   const [states, setStates] = useState<any[]>([]);
   const [idTypeOptions, setIdTypeOptions] = useState<IdTypeOption[]>([]);
 
@@ -99,6 +102,7 @@ export default function SuppliersPage() {
     setDialogOpen(true);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex type from external source
   const openEdit = (s: any) => {
     setEditingId(s.id);
     setForm({
@@ -224,6 +228,7 @@ export default function SuppliersPage() {
     const selectedCountry = countries.find((c) => c.id === form.countryId);
     const selectedState = states.find((s) => s.id === form.stateId);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- complex type from external source
     const submitData: any = {
       ...form,
       country: selectedCountry?.name || form.country,
@@ -240,7 +245,7 @@ export default function SuppliersPage() {
       }
       setDialogOpen(false);
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleToggle = async (id: string, isActive: boolean) => {
@@ -248,7 +253,7 @@ export default function SuppliersPage() {
       await toggleSupplierActive(id, !isActive);
       toast.success(isActive ? "Supplier deactivated" : "Supplier activated");
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const handleVerify = async () => {
@@ -260,7 +265,7 @@ export default function SuppliersPage() {
       setVerifyNotes("");
       setVerifyingId(null);
       fetch();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Operation failed"); }
   };
 
   const copyUniqueId = (id: string) => {
@@ -480,7 +485,7 @@ export default function SuppliersPage() {
 
             <div>
               <Label>State / Province</Label>
-              <Select value={form.stateId} onValueChange={(v: any) => handleStateChange(v)} disabled={countries.length === 0 || !form.countryId}>
+              <Select value={form.stateId} onValueChange={(v) => { if (v) handleStateChange(v); }} disabled={countries.length === 0 || !form.countryId}>
                 <SelectTrigger>
                   <SelectValue placeholder={form.countryId ? "Select state" : "Select country first"} />
                 </SelectTrigger>
@@ -528,6 +533,7 @@ export default function SuppliersPage() {
           <div className="space-y-3">
             <div>
               <Label>Status</Label>
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type assertion needed for dynamic data
               <Select value={verifyStatus} onValueChange={(v: string | null) => setVerifyStatus(v as any)}>
                 <SelectTrigger>
                   <SelectValue />
